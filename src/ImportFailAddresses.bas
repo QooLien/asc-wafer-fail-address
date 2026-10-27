@@ -5,6 +5,7 @@ Private Const READ_BYTES As Long = 262144
 Private Const MAX_PENDING_RECORD As Long = 16384
 Private Const MAX_RESULT_ROWS As Long = 1048575
 Private mTokenRegex As Object
+Private mHeaderRegex As Object
 Private mBitMasks As Variant
 
 ' No logs. Keep one address index and one bit per selected TNO/address.
@@ -14,6 +15,7 @@ Public Sub ImportASCFailAddresses()
     Dim fd As Object, settings As Variant, headers() As Variant, data() As Variant
     Dim bits() As Byte, fields As Variant, v As Variant
     Dim raw As String, buffer As String, encoding As String, path As String
+    Dim metadata As Object, metadataBuffer As String, outputPath As String, outputBase As String, fso As Object
     Dim stage As String, headerTNO As String, s As String
     Dim r As Long, j As Long, b As Long, k As Long, rowIndex As Long, bitValue As Long
     Dim flagBytes As Long, capacity As Long, selectedSections As Long, columnCount As Long
@@ -32,6 +34,8 @@ Public Sub ImportASCFailAddresses()
     mBitMasks = Array(1, 2, 4, 8, 16, 32, 64, 128)
     Set tnos = CreateObject("Scripting.Dictionary")
     Set addresses = CreateObject("Scripting.Dictionary")
+    Set metadata = CreateObject("Scripting.Dictionary")
+    Set fso = CreateObject("Scripting.FileSystemObject")
     stage = "Validate Config"
     Set cfg = ThisWorkbook.Worksheets("Config")
     Set dst = ThisWorkbook.Worksheets("Fail Addresses")
@@ -58,7 +62,7 @@ Public Sub ImportASCFailAddresses()
     End With
     startedAt = Now
     stage = "Open ASC"
-    If CreateObject("Scripting.FileSystemObject").GetFile(path).Size > 2147483647# Then Err.Raise vbObjectError + 8, , "ASC exceeds the 2 GB binary-reader limit. Split the input file."
+    If fso.GetFile(path).Size > 2147483647# Then Err.Raise vbObjectError + 8, , "ASC exceeds the 2 GB binary-reader limit. Split the input file."
     fileNo = FreeFile
     Open path For Binary Access Read As #fileNo
     fileOpen = True
@@ -74,6 +78,10 @@ Public Sub ImportASCFailAddresses()
         stage = "Read ASC chunk"
         raw = ReadASCChunk(fileNo, encoding)
         bytePosition = Seek(fileNo) - 1
+        If metadata.Count < 4 Then
+            metadataBuffer = metadataBuffer & raw
+            CaptureASCMetadata metadataBuffer, False, metadata
+        End If
         buffer = buffer & raw
         raw = ""
         stage = "Parse and merge addresses"
@@ -86,6 +94,10 @@ Public Sub ImportASCFailAddresses()
     Loop
     Close #fileNo
     fileOpen = False
+    CaptureASCMetadata metadataBuffer, True, metadata
+    stage = "Validate output filename"
+    outputBase = BuildResultBaseName(metadata)
+    outputPath = UniqueResultPath(fso, fso.GetParentFolderName(path), outputBase)
     stage = "Parse final buffer"
     ParseASCBuffer buffer, True, headerTNO, selectedSections, accepted, skipped, tnos, addresses, bits, flagBytes, capacity
     If selectedSections = 0 Then Err.Raise vbObjectError + 5, , "No selected tno= section found. Check TNO and file encoding."
@@ -146,9 +158,13 @@ Public Sub ImportASCFailAddresses()
     cfg.Range("D4").Value2 = uniqueCount
     cfg.Range("D5").Value2 = accepted
     cfg.Range("D6").Value2 = skipped
+    cfg.Range("D16").Value2 = outputPath
+    stage = "Save result workbook"
+    Application.Calculation = oldCalc
+    ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
     n = DateDiff("s", startedAt, Now)
     elapsedText = Format$(Fix(n / 3600), "00") & ":" & Format$(Fix(n / 60) Mod 60, "00") & ":" & Format$(n Mod 60, "00")
-    MsgBox "Import complete. Unique addresses: " & uniqueCount & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "No log output.", vbInformation
+    MsgBox "Import complete. Unique addresses: " & uniqueCount & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "No log output.", vbInformation
 Done:
     On Error Resume Next
     If fileOpen Then Close #fileNo
@@ -226,6 +242,126 @@ Private Function ReadASCChunk(ByVal fileNo As Integer, ByVal encoding As String)
         ReadASCChunk = stream.ReadText
         stream.Close
     End If
+End Function
+
+' First occurrence of each header wins, including an empty/invalid first value.
+' The carry buffer is bounded; stop scanning once all four headers are captured.
+Private Sub CaptureASCMetadata(ByRef text As String, ByVal atEOF As Boolean, ByVal metadata As Object)
+    Dim matches As Object, item As Object, i As Long, startAt As Long, stopAt As Long
+    Dim lineEnd As Long, crEnd As Long, keepAt As Long, field As String, value As String
+    If metadata.Count = 4 Then text = "": Exit Sub
+    If mHeaderRegex Is Nothing Then
+        Set mHeaderRegex = CreateObject("VBScript.RegExp")
+        mHeaderRegex.Global = True: mHeaderRegex.IgnoreCase = True
+        mHeaderRegex.Pattern = "\b(LOT|WNO|STEP|Program)[ \t]*=[ \t]*"
+    End If
+    Set matches = mHeaderRegex.Execute(text)
+    For i = 0 To matches.Count - 1
+        Set item = matches(i)
+        field = UCase$(item.SubMatches(0))
+        If Not metadata.Exists(field) Then
+            startAt = item.FirstIndex + item.Length + 1
+            lineEnd = InStr(startAt, text, vbLf, vbBinaryCompare)
+            crEnd = InStr(startAt, text, vbCr, vbBinaryCompare)
+            If lineEnd = 0 Or (crEnd > 0 And crEnd < lineEnd) Then lineEnd = crEnd
+            stopAt = lineEnd
+            If i < matches.Count - 1 Then
+                If stopAt = 0 Or matches(i + 1).FirstIndex + 1 < stopAt Then stopAt = matches(i + 1).FirstIndex + 1
+            End If
+            If stopAt = 0 And Not atEOF Then
+                keepAt = item.FirstIndex + 1
+                If Len(text) - item.FirstIndex > MAX_PENDING_RECORD Then
+                    metadata.Add field, ""
+                    keepAt = 0
+                End If
+                Exit For
+            End If
+            If stopAt = 0 Then stopAt = Len(text) + 1
+            value = CleanSpace(Mid$(text, startAt, stopAt - startAt))
+            If field <> "PROGRAM" Then value = FirstHeaderToken(value)
+            metadata.Add field, value
+            If metadata.Count = 4 Then Exit For
+        End If
+    Next i
+    If metadata.Count = 4 Or atEOF Then
+        text = ""
+    ElseIf keepAt > 0 Then
+        text = Mid$(text, keepAt)
+    ElseIf Len(text) > 128 Then
+        text = Right$(text, 128)
+    End If
+End Sub
+
+Private Function FirstHeaderToken(ByVal value As String) As String
+    Dim quote As String, p As Long, j As Long, c As String
+    value = CleanSpace(value)
+    If Len(value) = 0 Then Exit Function
+    quote = Left$(value, 1)
+    If quote = Chr$(34) Or quote = "'" Then
+        p = InStr(2, value, quote, vbBinaryCompare)
+        If p > 0 Then FirstHeaderToken = Mid$(value, 2, p - 2)
+        Exit Function
+    End If
+    For j = 1 To Len(value)
+        c = Mid$(value, j, 1)
+        If c = " " Or c = "," Or c = ";" Then Exit For
+    Next j
+    FirstHeaderToken = Left$(value, j - 1)
+End Function
+
+Private Function BuildResultBaseName(ByVal metadata As Object) As String
+    Dim field As Variant, lot As String, wafer As String, stepValue As String
+    Dim program As String, re As Object, matches As Object, n As Double
+    For Each field In Array("LOT", "WNO", "STEP", "PROGRAM")
+        If Not metadata.Exists(field) Then Err.Raise vbObjectError + 9, , "Missing first ASC header: " & field & ". Results were not replaced."
+        If Len(CleanSpace(CStr(metadata(field)))) = 0 Then Err.Raise vbObjectError + 10, , "First ASC header is empty or too long: " & field
+    Next field
+    lot = SafeFilePart(CleanSpace(CStr(metadata("LOT"))))
+    wafer = CleanSpace(CStr(metadata("WNO")))
+    If Left$(wafer, 1) = "#" Then wafer = Mid$(wafer, 2)
+    If Not IntegerInRange(wafer, 0, 2147483647#, n) Then Err.Raise vbObjectError + 11, , "First WNO must be a non-negative integer."
+    wafer = CStr(CLng(n))
+    If Len(wafer) < 2 Then wafer = "0" & wafer
+    stepValue = CleanSpace(CStr(metadata("STEP")))
+    If UCase$(Left$(stepValue, 3)) = "WTT" Then stepValue = Mid$(stepValue, 4)
+    stepValue = SafeFilePart(stepValue)
+    program = CStr(metadata("PROGRAM"))
+    Set re = CreateObject("VBScript.RegExp")
+    re.IgnoreCase = True
+    re.Pattern = "VER_([A-Za-z0-9]+(_[A-Za-z0-9]+)*)"
+    Set matches = re.Execute(program)
+    If matches.Count = 0 Then Err.Raise vbObjectError + 12, , "No VER_ version found in the first Program header."
+    program = "Ver_" & matches(0).SubMatches(0)
+    BuildResultBaseName = lot & "_#" & wafer & "_" & stepValue & "_" & program
+End Function
+
+Private Function SafeFilePart(ByVal value As String) As String
+    Dim bad As Variant, j As Long
+    For Each bad In Array("\", "/", ":", "*", "?", Chr$(34), "<", ">", "|", "[", "]")
+        value = Replace(value, CStr(bad), "_")
+    Next bad
+    For j = 0 To 31: value = Replace(value, Chr$(j), "_"): Next j
+    value = Trim$(value)
+    Do While Len(value) > 0
+        If Right$(value, 1) <> "." And Right$(value, 1) <> " " Then Exit Do
+        value = Left$(value, Len(value) - 1)
+    Loop
+    If Len(value) = 0 Then Err.Raise vbObjectError + 13, , "Empty filename component after normalization."
+    SafeFilePart = value
+End Function
+
+Private Function UniqueResultPath(ByVal fso As Object, ByVal folder As String, ByVal base As String) As String
+    Dim candidate As String, sequence As Long, suffix As String
+    candidate = fso.BuildPath(folder, base & ".xlsm")
+    Do While fso.FileExists(candidate)
+        sequence = sequence + 1
+        If sequence > 9999 Then Err.Raise vbObjectError + 14, , "Too many files with this result name."
+        suffix = CStr(sequence)
+        If sequence < 1000 Then suffix = Right$("000" & suffix, 3)
+        candidate = fso.BuildPath(folder, base & "_" & suffix & ".xlsm")
+    Loop
+    If Len(candidate) > 218 Then Err.Raise vbObjectError + 15, , "Result path exceeds 218 characters. Move the ASC to a shorter folder path."
+    UniqueResultPath = candidate
 End Function
 
 Private Sub ParseASCBuffer(ByRef buffer As String, ByVal atEOF As Boolean, ByRef headerTNO As String, ByRef selectedSections As Long, ByRef accepted As Long, ByRef skipped As Long, ByVal tnos As Object, ByVal addresses As Object, ByRef bits() As Byte, ByVal flagBytes As Long, ByRef capacity As Long)
