@@ -38,7 +38,7 @@ Public Sub ImportASCFailAddresses()
     Set fso = CreateObject("Scripting.FileSystemObject")
     stage = "Validate Config"
     Set cfg = ThisWorkbook.Worksheets("Config")
-    Set dst = ThisWorkbook.Worksheets("Fail Addresses")
+    Set dst = ThisWorkbook.Worksheets("Fail Address")
     settings = cfg.Range("A2:A901").Value2
     For r = 1 To UBound(settings, 1)
         v = settings(r, 1)
@@ -109,6 +109,7 @@ Public Sub ImportASCFailAddresses()
     For j = 0 To 5: headers(1, j + 1) = fields(j): Next j
     For Each v In tnos: headers(1, 7 + CLng(tnos(v))) = CLng(v): Next v
     stage = "Write output batches"
+    If dst.AutoFilterMode Then dst.AutoFilterMode = False
     dst.UsedRange.ClearContents
     dst.Cells(1, 1).Resize(1, columnCount).Value2 = headers
     batchLimit = 131072 \ columnCount
@@ -151,14 +152,19 @@ Public Sub ImportASCFailAddresses()
     End With
     With dst.Cells(1, 1).Resize(1, columnCount)
         .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True
-        .Columns.ColumnWidth = 12
+        .Orientation = 0: .RowHeight = 60
+        .Columns.ColumnWidth = 10
     End With
+    With dst.Cells(1, 7).Resize(1, tnos.Count)
+        .Interior.Color = RGB(244, 180, 65): .Font.Color = RGB(23, 50, 77)
+        .Orientation = 90: .Columns.ColumnWidth = 5
+    End With
+    dst.Cells(1, 1).Resize(uniqueCount + 1, columnCount).AutoFilter
     cfg.Range("D2").Value2 = path
     cfg.Range("D3").Value2 = Now
     cfg.Range("D4").Value2 = uniqueCount
     cfg.Range("D5").Value2 = accepted
     cfg.Range("D6").Value2 = skipped
-    cfg.Range("D16").Value2 = outputPath
     stage = "Save result workbook"
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
@@ -311,12 +317,12 @@ End Function
 
 Private Function BuildResultBaseName(ByVal metadata As Object) As String
     Dim field As Variant, lot As String, wafer As String, stepValue As String
-    Dim program As String, re As Object, matches As Object, n As Double
+    Dim program As String, version As String, versionPos As Long, j As Long, letter As Long, n As Double
     For Each field In Array("LOT", "WNO", "STEP", "PROGRAM")
         If Not metadata.Exists(field) Then Err.Raise vbObjectError + 9, , "Missing first ASC header: " & field & ". Results were not replaced."
         If Len(CleanSpace(CStr(metadata(field)))) = 0 Then Err.Raise vbObjectError + 10, , "First ASC header is empty or too long: " & field
     Next field
-    lot = SafeFilePart(CleanSpace(CStr(metadata("LOT"))))
+    lot = SafeFilePart(Left$(CleanSpace(CStr(metadata("LOT"))), 6))
     wafer = CleanSpace(CStr(metadata("WNO")))
     If Left$(wafer, 1) = "#" Then wafer = Mid$(wafer, 2)
     If Not IntegerInRange(wafer, 0, 2147483647#, n) Then Err.Raise vbObjectError + 11, , "First WNO must be a non-negative integer."
@@ -326,13 +332,16 @@ Private Function BuildResultBaseName(ByVal metadata As Object) As String
     If UCase$(Left$(stepValue, 3)) = "WTT" Then stepValue = Mid$(stepValue, 4)
     stepValue = SafeFilePart(stepValue)
     program = CStr(metadata("PROGRAM"))
-    Set re = CreateObject("VBScript.RegExp")
-    re.IgnoreCase = True
-    re.Pattern = "VER_([A-Za-z0-9]+(_[A-Za-z0-9]+)*)"
-    Set matches = re.Execute(program)
-    If matches.Count = 0 Then Err.Raise vbObjectError + 12, , "No VER_ version found in the first Program header."
-    program = "Ver_" & matches(0).SubMatches(0)
-    BuildResultBaseName = lot & "_#" & wafer & "_" & stepValue & "_" & program
+    versionPos = InStr(1, program, "VER_", vbTextCompare)
+    If versionPos = 0 Then Err.Raise vbObjectError + 12, , "No VER_ version found in the first Program header."
+    version = UCase$(Mid$(program, versionPos + 4, 2))
+    If Len(version) <> 2 Then Err.Raise vbObjectError + 12, , "First VER_ must be followed by two English letters."
+    For j = 1 To 2
+        letter = AscW(Mid$(version, j, 1))
+        If letter < 65 Or letter > 90 Then Err.Raise vbObjectError + 12, , "First VER_ must be followed by two English letters."
+    Next j
+    program = "Ver_" & version
+    BuildResultBaseName = lot & "#" & wafer & "_" & stepValue & "_" & program
 End Function
 
 Private Function SafeFilePart(ByVal value As String) As String

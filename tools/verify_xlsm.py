@@ -29,7 +29,7 @@ workbook_path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'templates/AS
 verify_macro_package(workbook_path)
 parser = VBA_Parser(str(workbook_path))
 sources = {name: code for _, _, name, code in parser.extract_macros()}
-assert len(sources) == 6, list(sources)
+assert len(sources) == 4, list(sources)
 code = next(code for name, code in sources.items() if name.startswith('ImportFailAddresses.'))
 expected = (ROOT / 'src/ImportFailAddresses.bas').read_text(encoding='utf-8')
 assert code.replace('\r\n', '\n').strip() == expected.replace('\r\n', '\n').strip()

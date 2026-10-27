@@ -1,19 +1,19 @@
 # ASC 標頭自動命名另存（本機更新）
 
-此更新發布為 v0.7.0 測試版。使用 `templates/ASC_Fail_Address_Fast.xlsm`，VBA 已內嵌。
+v0.8.0：LOT 前六碼直接接 #WNO，版本只取兩個英文字母。使用 `templates/ASC_Fail_Address_Fast.xlsm`，VBA 已內嵌。
 
 ## 規則
 
 讀取 ASC 中各自第一次出現的 `LOT=`、`WNO=`、`STEP=`、`Program=`，後續同名欄位不覆寫第一次的值。
 
-- LOT：使用 LotID。
+- LOT：取 LotID 前 6 碼，直接接 #WNO，不加底線。
 - WNO：非負整數，少於兩位補零，例如 3 → 03、10 → 10。
 - STEP：去掉開頭的 WTT，例如 WTTAAAA → AAAA。
-- Program：在第一個 Program 欄位中尋找第一個 `VER_` 版本，忽略它前面的亂碼。支援英數字與底線版本，輸出前綴統一為 `Ver_`。
+- Program：在第一個 Program 欄位中尋找第一個 `VER_` 版本，忽略它前面的亂碼。只取其後兩個英文字母並轉大寫，輸出前綴為 `Ver_`。第一個 VER_ 無效即報錯。
 
-範例：`LOT=L12345 WNO=3 STEP=WTTAAAA Program=亂碼VER_FB` → `L12345_#03_AAAA_Ver_FB.xlsm`。
+範例：`LOT=FAX7680T0 WNO=7 STEP=WTTAAAA Program=亂碼VER_FB` → `FAX768#07_AAAA_Ver_FB.xlsm`。
 
-結果存到來源 ASC 所在資料夾。完成視窗顯示完整另存路徑與運行時間，Config!D16 也保存輸出路徑。計時包含另存檔所花的時間。
+結果存到來源 ASC 所在資料夾。完成視窗顯示完整另存路徑與運行時間。Config!C11:D16 保持空白。計時包含另存檔所花的時間。
 
 同名檔已存在時增加 `_001`、`_002` 等流水號，不覆蓋現有檔案。原範本的磁碟檔案保留；Excel 中目前的活頁簿會改為新名稱。
 

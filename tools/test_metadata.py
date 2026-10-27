@@ -27,16 +27,26 @@ For Each size In Array(1,7,262144)
  Next
  CaptureASCMetadata text,True,metadata
  result=BuildResultBaseName(metadata)
- If result<>"L12345_#03_AAAA_Ver_FB" Then Die "First occurrence / WTT prefix / noise / split chunks: " & result
+ If result<>"L12345#03_AAAA_Ver_FB" Then Die "First occurrence / WTT prefix / noise / split chunks: " & result
 Next
 Set metadata=CreateObject("Scripting.Dictionary")
 text="Program=garbledVER_RC2_xyz" & vbLf & "STEP=WTTABCD" & vbLf & "WNO=10" & vbLf & "LOT=LOT-01"
 CaptureASCMetadata text,True,metadata
-If BuildResultBaseName(metadata)<>"LOT-01_#10_ABCD_Ver_RC2_xyz" Then Die "Program order or EOF"
+If BuildResultBaseName(metadata)<>"LOT-01#10_ABCD_Ver_RC" Then Die "Program order or EOF"
 metadata("WNO")="0"
-If InStr(BuildResultBaseName(metadata),"_#00_")=0 Then Die "WNO zero"
+If InStr(BuildResultBaseName(metadata),"#00_")=0 Then Die "WNO zero"
 metadata("WNO")="09"
-If InStr(BuildResultBaseName(metadata),"_#09_")=0 Then Die "Already padded"
+If InStr(BuildResultBaseName(metadata),"#09_")=0 Then Die "Already padded"
+metadata("LOT")="FAX7680T0": metadata("WNO")="7"
+If BuildResultBaseName(metadata)<>"FAX768#07_ABCD_Ver_RC" Then Die "Six character LOT / direct wafer join"
+metadata("PROGRAM")="noiseVER_fb123VER_ZZ"
+If BuildResultBaseName(metadata)<>"FAX768#07_ABCD_Ver_FB" Then Die "First prefix / exactly two letters"
+metadata("PROGRAM")="VER_1B VER_FA"
+On Error Resume Next
+result=BuildResultBaseName(metadata): saved=Err.Number: Err.Clear
+On Error GoTo 0
+If saved=0 Then Die "Invalid first version skipped"
+metadata("PROGRAM")="VER_RC"
 metadata("LOT")="A/B:C"
 If Left(BuildResultBaseName(metadata),5)<>"A_B_C" Then Die "Invalid filename characters"
 metadata("LOT")="A[B]"
@@ -58,13 +68,13 @@ On Error GoTo 0
 If saved=0 Then Die "Missing first header accepted"
 Set fso=CreateObject("Scripting.FileSystemObject")
 folder=WScript.Arguments(0)
-target=UniqueResultPath(fso,folder,"L12345_#03_AAAA_Ver_FB")
+target=UniqueResultPath(fso,folder,"L12345#03_AAAA_Ver_FB")
 Set file=fso.CreateTextFile(target,False): file.Close
-If fso.GetFileName(UniqueResultPath(fso,folder,"L12345_#03_AAAA_Ver_FB"))<>"L12345_#03_AAAA_Ver_FB_001.xlsm" Then Die "Collision handling"
+If fso.GetFileName(UniqueResultPath(fso,folder,"L12345#03_AAAA_Ver_FB"))<>"L12345#03_AAAA_Ver_FB_001.xlsm" Then Die "Collision handling"
 For n=1 To 999
- Set file=fso.CreateTextFile(fso.BuildPath(folder,"L12345_#03_AAAA_Ver_FB_" & Right("000" & n,3) & ".xlsm"),False): file.Close
+ Set file=fso.CreateTextFile(fso.BuildPath(folder,"L12345#03_AAAA_Ver_FB_" & Right("000" & n,3) & ".xlsm"),False): file.Close
 Next
-If fso.GetFileName(UniqueResultPath(fso,folder,"L12345_#03_AAAA_Ver_FB"))<>"L12345_#03_AAAA_Ver_FB_1000.xlsm" Then Die "Collision sequence 1000"
+If fso.GetFileName(UniqueResultPath(fso,folder,"L12345#03_AAAA_Ver_FB"))<>"L12345#03_AAAA_Ver_FB_1000.xlsm" Then Die "Collision sequence 1000"
 WScript.Echo "PASS: first headers, chunk boundaries, noisy Program versions, WTT removal, WNO padding, missing/invalid headers, safe names and non-overwrite paths."
 Sub Die(message)
  WScript.Echo "FAIL: " & message: WScript.Quit 1

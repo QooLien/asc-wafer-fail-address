@@ -8,11 +8,17 @@ root = Path(__file__).resolve().parents[1]
 S = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 workbook_path = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'templates/ASC_Fail_Address_Fast.xlsm'
 with zipfile.ZipFile(workbook_path) as archive:
+    book = ET.fromstring(archive.read('xl/workbook.xml'))
+    assert [node.get('name') for node in book.find(S + 'sheets')] == ['Config', 'Fail Address']
+    cfg = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
+    for cell in cfg.iter(S + 'c'):
+        if cell.get('r') in {f'{col}{row}' for col in 'CD' for row in range(11,17)}:
+            assert cell.find(S+'v') is None and cell.find(S+'is') is None, cell.get('r')
     styles = ET.fromstring(archive.read('xl/styles.xml'))
     fonts = list(styles.find(S + 'fonts'))
     formats = list(styles.find(S + 'cellXfs'))
     count = 0
-    for index in range(1, 5):
+    for index in range(1, 3):
         sheet = ET.fromstring(archive.read(f'xl/worksheets/sheet{index}.xml'))
         for cell in sheet.iter(S + 'c'):
             if cell.find(S + 'v') is None and cell.find(S + 'is') is None:
@@ -25,7 +31,11 @@ with zipfile.ZipFile(workbook_path) as archive:
             count += 1
         if index == 2:
             for row in sheet.find(S + 'sheetData'):
-                assert float(row.get('ht', '15')) == 26, ('row height', row.get('r'))
+                assert float(row.get('ht', '15')) == (60 if row.get('r') == '1' else 26), ('row height', row.get('r'))
+    output = ET.fromstring(archive.read('xl/worksheets/sheet2.xml'))
+    assert output.find(S+'autoFilter').get('ref') == 'A1:G1'
+    tno = next(c for c in output.iter(S+'c') if c.get('r')=='G1')
+    assert formats[int(tno.get('s'))].find(S+'alignment').get('textRotation') == '90'
     config = ET.fromstring(archive.read('xl/worksheets/sheet1.xml'))
     assert config.find(S + 'legacyDrawing') is not None
     vml = ET.fromstring(archive.read('xl/drawings/vmlDrawing1.vml'))
@@ -34,4 +44,4 @@ with zipfile.ZipFile(workbook_path) as archive:
     assert vml.find('.//' + X + 'TextHAlign').text == 'Center'
     assert vml.find('.//' + X + 'TextVAlign').text == 'Center'
     assert vml.find('.//font').get('face') == 'Calibri'
-print(f'PASS: {count} populated cells use centered Calibri; Fail Addresses rows=26 pt; Forms button centered and macro-linked.')
+print(f'PASS: {count} populated cells use centered Calibri; Fail Address body rows=26 pt, header=60 pt, TNO rotation=90, filter enabled; Forms button centered and macro-linked.')
