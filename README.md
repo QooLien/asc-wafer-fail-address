@@ -4,11 +4,12 @@
 
 ## 快速開始
 
-1. 下載本專案，使用 Windows 電腦版 Excel 開啟 `templates/ASC_Fail_Address_template.xlsx`。
-2. 另存為支援巨集的 `.xlsm`。
-3. 按 Alt+F11，在 VBA 編輯器的「檔案 → 匯入檔案」選擇 `src/ImportFailAddresses.bas`，儲存。
-4. 在 `Config!A2:A901` 每列輸入一個 100–999 的整數 TNO，預設為 100。
-5. 按 Alt+F8 執行 `ImportASCFailAddresses`，選擇一個 `.asc` 檔案。
+1. [下載內嵌 VBA 的 ASC_Fail_Address.xlsm](https://github.com/QooLien/asc-wafer-fail-address/raw/refs/heads/main/templates/ASC_Fail_Address.xlsm)，使用 Windows 電腦版 Excel 開啟。
+2. 依公司政策允許該檔案的巨集執行；**不需要匯入 `.bas`，也不需要執行 `.bat`**。
+3. 在 `Config!A2:A901` 每列輸入一個 100–999 的整數 TNO，預設為 100。
+4. 按 Alt+F8 執行 `ImportASCFailAddresses`，選擇一個 `.asc` 檔案。
+
+`src/ImportFailAddresses.bas` 保留供版本管理與檢閱。舊版 `.xlsx` 是沒有巨集的原始範本；日常使用請開啟新的 `.xlsm`。
 
 VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或查看輸出；iPad 版 Excel 不執行 VBA。
 
@@ -18,7 +19,7 @@ VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或�
 tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
 ```
 
-方括號欄位依序為：第一欄、TNO、X、Y、BLK、WL、BL、IO。`dbk` 與第一欄不參與地址判定；TNO 必須與目前 `tno=` 區段一致。接受最後的逗號、同一行多組地址及跨行方括號。
+方括號欄位依序為：第一欄、TNO、X、Y、BLK、WL、BL、IO。`dbk` 與第一欄不參與地址判定；TNO 必須與目前 `tno=` 區段一致。以逗號為欄位分界，讀取各欄逗號前的完整整數；接受最後的逗號、一般空格、Tab、換行、不換行空格、全形空白、同一行多組地址及跨行方括號。小數及數字中間的空格不會被強行拼接成地址。
 
 | 欄位 | 有效範圍 |
 |---|---|
@@ -33,7 +34,7 @@ tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
 
 `Fail Addresses` 分頁 A1:F1 固定為 **X / Y / BLK / WL / BL / IO**。G1 起是指定的 TNO，按 Config 首次出現順序排列。同一組六欄地址只輸出一列；該 TNO 有有效 Fail 記錄填 **1**，其餘留白。重複 Fail 不累加，重複 TNO 不重複建欄。
 
-空白表示輸入檔中未找到對應的有效 Fail 記錄，不能據此推論已測試或 Pass。每次匯入取代舊結果；取消檔案選擇及輸入驗證失敗時保留舊結果。
+空白表示輸入檔中未找到對應的有效 Fail 記錄，不能據此推論已測試或 Pass。每次匯入取代舊結果；取消檔案選擇、輸入驗證失敗、沒有指定的 TNO 區段及全部地址無效時保留舊結果。錯誤對話框保留原始錯誤代碼及原因；全部地址無效時附第一筆遭略過的記錄。
 
 ## 128-chip wafer 參考
 
@@ -60,7 +61,15 @@ tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
 
 ## 狀態與限制
 
-- 第一版範本，依使用者提供的格式建立，尚未取得實際 ASC 樣本。
-- 已檢查 Excel 欄位及範本視覺配置；開發環境未安裝 Excel，VBA 尚未原生編譯與執行驗證。
-- ASC 目前整檔讀入記憶體，使用 Windows 系統文字編碼解析 ASCII 數字標記；UTF-16 或特殊編碼需調整。
+- 第二版已內嵌修正版 VBA，依使用者提供的格式建立，尚未取得實際 ASC 樣本。
+- 使用 Windows VBScript 引擎執行從 VBA 原始碼轉換的解析函式及區段處理：19 種地址案例通過，涵蓋空白字元、範圍上下限、錯誤欄位、多 TNO、重複地址與 1 標記。
+- VBA 容器已經獨立的 `olevba` 讀回，核對內嵌原始碼與 `.bas` 完全一致；XML/ZIP、巨集關聯及文件代碼名稱已檢查。
+- 開發環境未安裝 Excel；上述測試不代表已完成 Excel 原生編譯、檔案選擇及真實 ASC 匯入驗證。
+- ASC 目前整檔讀入記憶體。自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。
 - 尚未驗證 iPad 端下載、開啟及遠端執行流程。
+
+## 開發驗證
+
+Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
+
+VBA 二進位容器以 [ovba-writer](https://github.com/kay-ws/ovba-writer)（MIT）建置，使用其測試容器的專案參考資料；範例程式與事件已全部移除，僅保留必要文件屬性及本專案模組。建置工具與授權來源見 `tools/THIRD_PARTY_NOTICES.md`。

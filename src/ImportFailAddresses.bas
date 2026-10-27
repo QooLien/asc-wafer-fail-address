@@ -1,7 +1,7 @@
 Attribute VB_Name = "ImportFailAddresses"
 Option Explicit
 
-' Windows desktop Excel. Import this module into the supplied workbook.
+' Embedded in ASC_Fail_Address.xlsm. Windows desktop Excel.
 ' Config!A2:A901: selected TNOs. Fail Addresses: one row per unique address.
 Public Sub ImportASCFailAddresses()
     Dim cfg As Worksheet, dst As Worksheet, tnos As Object, addresses As Object
@@ -9,8 +9,10 @@ Public Sub ImportASCFailAddresses()
     Dim token As Object, flags As Object, fields As Variant, addr As Variant, keys As Variant
     Dim raw As String, path As String, s As String, key As String, tno As String
     Dim r As Long, j As Long, col As Long, headerTNO As String, n As Double
-    Dim nums(0 To 7) As Long, valid As Boolean, v As Variant
+    Dim nums As Variant, valid As Boolean, v As Variant
     Dim skipped As Long, accepted As Long, result() As Variant, oldScreen As Boolean
+    Dim selectedSections As Long, errorNumber As Long, errorText As String
+    Dim rejectReason As String, firstReject As String
     On Error GoTo Failed
     oldScreen = Application.ScreenUpdating
     Set cfg = ThisWorkbook.Worksheets("Config")
@@ -39,11 +41,7 @@ Public Sub ImportASCFailAddresses()
         If .Show <> -1 Then Exit Sub
         path = .SelectedItems(1)
     End With
-    Set fso = CreateObject("Scripting.FileSystemObject")
-    Set stream = fso.OpenTextFile(path, 1, False, -2)
-    raw = stream.ReadAll
-    stream.Close
-    Set stream = Nothing
+    raw = ReadASCText(path)
     Set re = CreateObject("VBScript.RegExp")
     re.Global = True
     re.IgnoreCase = True
@@ -53,30 +51,14 @@ Public Sub ImportASCFailAddresses()
     For Each token In tokens
         s = CStr(token.Value)
         If Left$(s, 1) <> "[" Then
-            headerTNO = Trim$(Replace(Replace(Replace(Mid$(s, InStr(s, "=") + 1), vbTab, " "), vbCr, " "), vbLf, " "))
+            headerTNO = CleanSpace(Mid$(s, InStr(s, "=") + 1))
+            If tnos.Exists(headerTNO) Then selectedSections = selectedSections + 1
         ElseIf tnos.Exists(headerTNO) Then
-            fields = Split(Mid$(s, 2, Len(s) - 2), ",")
-            ' Exactly 8 values, with an optional trailing comma.
-            If UBound(fields) = 8 Then
-                If Len(Trim$(CStr(fields(8)))) = 0 Then ReDim Preserve fields(0 To 7)
-            End If
-            valid = (UBound(fields) = 7)
-            If valid Then
-                For j = 0 To 7
-                    If Not IntegerInRange(CStr(fields(j)), -2147483648#, 2147483647#, n) Then
-                        valid = False
-                        Exit For
-                    End If
-                    nums(j) = CLng(n)
-                Next j
-            End If
+            valid = TryParseAddress(s, nums, rejectReason)
             If valid Then
                 tno = CStr(nums(1))
                 valid = (tno = headerTNO) And tnos.Exists(tno)
-                valid = valid And nums(4) >= 0 And nums(4) <= 255
-                valid = valid And nums(5) >= 0 And nums(5) <= 1023
-                valid = valid And nums(6) >= 0 And nums(6) <= 15
-                valid = valid And nums(7) >= 0 And nums(7) <= 15
+                If Not valid Then rejectReason = "Bracket TNO differs from section TNO."
             End If
             If valid Then
                 key = CStr(nums(2)) & "," & CStr(nums(3)) & "," & CStr(nums(4)) & "," & CStr(nums(5)) & "," & CStr(nums(6)) & "," & CStr(nums(7))
@@ -89,9 +71,12 @@ Public Sub ImportASCFailAddresses()
                 accepted = accepted + 1
             Else
                 skipped = skipped + 1
+                If Len(firstReject) = 0 Then firstReject = rejectReason & " " & Left$(s, 160)
             End If
         End If
     Next token
+    If selectedSections = 0 Then Err.Raise vbObjectError + 5, , "No selected tno= section found. Check TNO and file encoding."
+    If accepted = 0 And skipped > 0 Then Err.Raise vbObjectError + 6, , "No valid addresses. First rejected record: " & firstReject
     If addresses.Count > dst.Rows.Count - 1 Then Err.Raise vbObjectError + 4, , "Too many unique addresses for one Excel sheet."
     ' Stage all results before replacing the previous output.
     ReDim result(1 To addresses.Count + 1, 1 To 6 + tnos.Count)
@@ -129,16 +114,100 @@ Public Sub ImportASCFailAddresses()
     MsgBox "Import complete. Unique addresses: " & addresses.Count & vbCrLf & "Accepted records: " & accepted & vbCrLf & "Skipped invalid records in selected sections: " & skipped, vbInformation
     Exit Sub
 Failed:
+    errorNumber = Err.Number
+    errorText = Err.Description
     On Error Resume Next
     If Not stream Is Nothing Then stream.Close
     Application.ScreenUpdating = oldScreen
-    MsgBox "Import failed: " & Err.Description, vbExclamation
+    MsgBox "Import failed (" & errorNumber & "): " & errorText, vbExclamation
 End Sub
+
+Private Function ReadASCText(ByVal path As String) As String
+    Dim binary As Object, textStream As Object, fso As Object, stream As Object
+    Dim prefix As Variant, charset As String
+    Set binary = CreateObject("ADODB.Stream")
+    binary.Type = 1
+    binary.Open
+    binary.LoadFromFile path
+    If binary.Size > 0 Then prefix = binary.Read(3)
+    If binary.Size >= 2 Then
+        If prefix(0) = 255 And prefix(1) = 254 Then charset = "unicode"
+        If prefix(0) = 254 And prefix(1) = 255 Then charset = "unicodeFFFE"
+    End If
+    If binary.Size >= 3 Then
+        If prefix(0) = 239 And prefix(1) = 187 And prefix(2) = 191 Then charset = "utf-8"
+    End If
+    binary.Close
+    If Len(charset) > 0 Then
+        Set textStream = CreateObject("ADODB.Stream")
+        textStream.Type = 2
+        textStream.Charset = charset
+        textStream.Open
+        textStream.LoadFromFile path
+        ReadASCText = textStream.ReadText
+        textStream.Close
+    Else
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        Set stream = fso.OpenTextFile(path, 1, False, -2)
+        ReadASCText = stream.ReadAll
+        stream.Close
+    End If
+End Function
+
+' Commas define the fields. Whitespace around each complete integer is ignored.
+Private Function TryParseAddress(ByVal bracket As String, ByRef nums As Variant, ByRef reason As String) As Boolean
+    Dim fields As Variant, j As Long, n As Double
+    reason = ""
+    bracket = CleanSpace(bracket)
+    If Left$(bracket, 1) <> "[" Or Right$(bracket, 1) <> "]" Then
+        reason = "Missing brackets."
+        Exit Function
+    End If
+    fields = Split(Mid$(bracket, 2, Len(bracket) - 2), ",")
+    If UBound(fields) = 8 Then
+        If CleanSpace(CStr(fields(8))) = "" Then ReDim Preserve fields(0 To 7)
+    End If
+    If UBound(fields) <> 7 Then
+        reason = "Expected 8 comma-separated integer fields."
+        Exit Function
+    End If
+    ReDim nums(0 To 7)
+    For j = 0 To 7
+        If Not IntegerInRange(CStr(fields(j)), -2147483648#, 2147483647#, n) Then
+            reason = "Invalid integer before comma at field " & (j + 1) & "."
+            Exit Function
+        End If
+        nums(j) = CLng(n)
+    Next j
+    If nums(1) < 100 Or nums(1) > 999 Then
+        reason = "TNO out of range.": Exit Function
+    End If
+    If nums(4) < 0 Or nums(4) > 255 Then
+        reason = "BLK out of range.": Exit Function
+    End If
+    If nums(5) < 0 Or nums(5) > 1023 Then
+        reason = "WL out of range.": Exit Function
+    End If
+    If nums(6) < 0 Or nums(6) > 15 Then
+        reason = "BL out of range.": Exit Function
+    End If
+    If nums(7) < 0 Or nums(7) > 15 Then
+        reason = "IO out of range.": Exit Function
+    End If
+    TryParseAddress = True
+End Function
+
+Private Function CleanSpace(ByVal text As String) As String
+    text = Replace(Replace(Replace(text, vbTab, " "), vbCr, " "), vbLf, " ")
+    text = Replace(Replace(Replace(text, ChrW(160), " "), ChrW(8239), " "), ChrW(12288), " ")
+    text = Replace(text, ChrW(-257), "") ' UTF BOM U+FEFF
+    CleanSpace = Trim$(text)
+End Function
 
 Private Function IntegerInRange(ByVal text As String, ByVal lower As Double, ByVal upper As Double, ByRef number As Double) As Boolean
     Dim re As Object
     On Error GoTo Invalid
-    text = Trim$(Replace(Replace(Replace(text, vbTab, " "), vbCr, " "), vbLf, " "))
+    text = CleanSpace(text)
     Set re = CreateObject("VBScript.RegExp")
     re.Pattern = "^[+-]?[0-9]+$"
     If Not re.Test(text) Then Exit Function
