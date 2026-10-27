@@ -138,7 +138,15 @@ Public Sub ImportASCFailAddresses()
     With dst.Range("A1").Resize(1, 6 + tnos.Count)
         .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True
     End With
-    dst.Range("A1").Resize(uniqueCount + 1, 6 + tnos.Count).NumberFormat = "0"
+    With dst.Range("A1").Resize(uniqueCount + 1, 6 + tnos.Count)
+        .NumberFormat = "0"
+        .Font.Name = "Calibri"
+        .Font.Size = 11
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = False
+        .RowHeight = 26
+    End With
     dst.Range("A1").Resize(1, 6 + tnos.Count).Columns.ColumnWidth = 12
     cfg.Range("D2").Value2 = path
     cfg.Range("D3").Value2 = Now
@@ -374,13 +382,23 @@ Private Sub FlushImportLog(ByRef logs As Object)
     ws.Range("B" & row & ":F" & (row + count - 1)).NumberFormat = "@"
     ws.Range("I" & row & ":J" & (row + count - 1)).NumberFormat = "@"
     ws.Range("A" & row).Resize(count, 10).Value2 = data
+    With ws.Range("A" & row & ":J" & (row + count - 1))
+        .Font.Name = "Calibri"
+        .Font.Size = 11
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
     logs.RemoveAll
     ws.Range("A" & row).Resize(count, 1).NumberFormat = "yyyy-mm-dd hh:mm:ss"
     ws.Range("G" & row & ":H" & (row + count - 1)).NumberFormat = "0"
     With ws.Range("A1:J1")
         .Interior.Color = RGB(23, 50, 77)
+        .Font.Name = "Calibri"
+        .Font.Size = 11
         .Font.Color = vbWhite
         .Font.Bold = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
     End With
     ws.Columns("A:B").ColumnWidth = 24
     ws.Columns("C:D").ColumnWidth = 18

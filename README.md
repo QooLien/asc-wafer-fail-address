@@ -7,7 +7,7 @@
 1. [下載內嵌 VBA 的 ASC_Fail_Address.xlsm](https://github.com/QooLien/asc-wafer-fail-address/raw/refs/heads/main/templates/ASC_Fail_Address.xlsm)，使用 Windows 電腦版 Excel 開啟。
 2. 依公司政策允許該檔案的巨集執行；**不需要匯入 `.bas`，也不需要執行 `.bat`**。
 3. 在 `Config!A2:A901` 每列輸入一個 100–999 的整數 TNO，預設為 100。
-4. 按 Alt+F8 執行 `ImportASCFailAddresses`，選擇一個 `.asc` 檔案。
+4. 在 Config 分頁按 **「選擇 ASC 並匯入」**，選擇一個 `.asc` 檔案。也保留 Alt+F8 執行 `ImportASCFailAddresses` 的方式。
 
 `src/ImportFailAddresses.bas` 保留供版本管理與檢閱。舊版 `.xlsx` 是沒有巨集的原始範本；日常使用請開啟新的 `.xlsm`。
 
@@ -16,6 +16,8 @@ VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或�
 **Excel 2016 請下載 v0.4.1 或更新版本。** v0.4.0 及較早的 `.xlsm` 有封裝內容類型與 OPC 命名空間問題，可能顯示「檔案格式或副檔名無效」。v0.4.1 已修正，並通過 Microsoft Open XML SDK 的 Office2016 格式驗證（0 錯誤）；尚未在 Excel 2016 實機開啟或執行測試。
 
 ## ASC 格式與輸出
+
+v0.5.0 統一所有分頁的儲存格文字為 **Calibri、水平置中及垂直置中**。Fail Addresses 標題及資料列均固定 **26 pt** 列高，匯入新資料後維持一致。Config 的匯入按鈕使用 Excel 原生 Forms 控制項，已直接連結內嵌 VBA，不需手動指定巨集。按鈕需在 Windows 桌面版 Excel 允許巨集後操作。
 
 ```text
 tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
@@ -95,6 +97,7 @@ v0.4.0 針對約 265,646 KB（259 MB）的 ASC 改為 64 KB 二進位分段讀�
 - 以 272,021,735 bytes 的合成檔進行分段解析測試，保留的未解析緩衝區最高 128 字元。此檔主要由無地址的填充內容及少量有效/錯誤案例構成，用於驗證檔案大小不造成整檔字串堆積，不代表大量唯一地址的 Excel 寫入效能或記憶體壓力測試。
 - VBA 容器已經獨立的 `olevba` 讀回，核對內嵌原始碼與 `.bas` 完全一致；XML/ZIP、巨集關聯及文件代碼名稱已檢查。
 - v0.4.1 另加入實際生效的巨集內容類型及 OPC 命名空間檢查，並通過 Microsoft Open XML SDK 2.20.0 的 Office2016 規則驗證（0 錯誤）。前版僅檢查 XML/ZIP 與 VBA 內容，未能發現影響開啟的封裝錯誤。
+- v0.5.0 已檢查儲存檔中的字型、水平/垂直置中、Fail Addresses 固定列高及 Forms 按鈕的巨集連結，並通過 Office2016 格式驗證（0 錯誤）；按鈕實際點擊及巨集執行仍待 Excel 實機驗證。儲存格圖片預覽不包含原生 Forms 按鈕。
 - 開發環境未安裝 Excel；上述測試不代表已完成 Excel 原生編譯、檔案選擇及真實 ASC 匯入驗證。
 - 自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。位元組解碼與 Excel 工作表寫入尚待桌面版 Excel 實機驗證。
 - 尚未驗證 iPad 端下載、開啟及遠端執行流程。
@@ -104,5 +107,7 @@ v0.4.0 針對約 265,646 KB（259 MB）的 ASC 改為 64 KB 二進位分段讀�
 Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份分段解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。加上 `--large-kb 265646` 可建立約 259 MB 的暫存合成檔，透過 Windows FSO 分段讀取測試解析緩衝；此測試不會執行 VBA 二進位讀檔或 Excel 寫入。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
 
 可使用 NuGet 官方 `DocumentFormat.OpenXml` 2.20.0 套件的 `lib/net46/DocumentFormat.OpenXml.dll`，執行 `tools/validate_office2016.ps1 -SdkAssembly <DLL路徑>`，檢查 Office2016 格式。這是格式驗證，不代表已在 Excel 原生應用程式執行巨集。
+
+`python tools/verify_layout.py` 檢查儲存格排版、固定列高與按鈕連結。`add_import_button.py` 只使用 XlsxWriter 產生 Forms 控制項，不建立或替換原有儲存格資料。
 
 VBA 二進位容器以 [ovba-writer](https://github.com/kay-ws/ovba-writer)（MIT）建置，使用其測試容器的專案參考資料；範例程式與事件已全部移除，僅保留必要文件屬性及本專案模組。建置工具與授權來源見 `tools/THIRD_PARTY_NOTICES.md`。
