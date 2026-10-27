@@ -13,6 +13,8 @@
 
 VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或查看輸出；iPad 版 Excel 不執行 VBA。
 
+**Excel 2016 請下載 v0.4.1 或更新版本。** v0.4.0 及較早的 `.xlsm` 有封裝內容類型與 OPC 命名空間問題，可能顯示「檔案格式或副檔名無效」。v0.4.1 已修正，並通過 Microsoft Open XML SDK 的 Office2016 格式驗證（0 錯誤）；尚未在 Excel 2016 實機開啟或執行測試。
+
 ## ASC 格式與輸出
 
 ```text
@@ -92,6 +94,7 @@ v0.4.0 針對約 265,646 KB（259 MB）的 ASC 改為 64 KB 二進位分段讀�
 - 使用 Windows VBScript 引擎執行從 VBA 原始碼轉換的解析函式：20 種地址案例、每段 1 / 7 / 65,536 字元的跨段測試、EOF 與過長未閉合記錄測試均通過，並檢查去重、TNO 標記與 Log 行號及原因。
 - 以 272,021,735 bytes 的合成檔進行分段解析測試，保留的未解析緩衝區最高 128 字元。此檔主要由無地址的填充內容及少量有效/錯誤案例構成，用於驗證檔案大小不造成整檔字串堆積，不代表大量唯一地址的 Excel 寫入效能或記憶體壓力測試。
 - VBA 容器已經獨立的 `olevba` 讀回，核對內嵌原始碼與 `.bas` 完全一致；XML/ZIP、巨集關聯及文件代碼名稱已檢查。
+- v0.4.1 另加入實際生效的巨集內容類型及 OPC 命名空間檢查，並通過 Microsoft Open XML SDK 2.20.0 的 Office2016 規則驗證（0 錯誤）。前版僅檢查 XML/ZIP 與 VBA 內容，未能發現影響開啟的封裝錯誤。
 - 開發環境未安裝 Excel；上述測試不代表已完成 Excel 原生編譯、檔案選擇及真實 ASC 匯入驗證。
 - 自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。位元組解碼與 Excel 工作表寫入尚待桌面版 Excel 實機驗證。
 - 尚未驗證 iPad 端下載、開啟及遠端執行流程。
@@ -99,5 +102,7 @@ v0.4.0 針對約 265,646 KB（259 MB）的 ASC 改為 64 KB 二進位分段讀�
 ## 開發驗證
 
 Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份分段解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。加上 `--large-kb 265646` 可建立約 259 MB 的暫存合成檔，透過 Windows FSO 分段讀取測試解析緩衝；此測試不會執行 VBA 二進位讀檔或 Excel 寫入。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
+
+可使用 NuGet 官方 `DocumentFormat.OpenXml` 2.20.0 套件的 `lib/net46/DocumentFormat.OpenXml.dll`，執行 `tools/validate_office2016.ps1 -SdkAssembly <DLL路徑>`，檢查 Office2016 格式。這是格式驗證，不代表已在 Excel 原生應用程式執行巨集。
 
 VBA 二進位容器以 [ovba-writer](https://github.com/kay-ws/ovba-writer)（MIT）建置，使用其測試容器的專案參考資料；範例程式與事件已全部移除，僅保留必要文件屬性及本專案模組。建置工具與授權來源見 `tools/THIRD_PARTY_NOTICES.md`。

@@ -1,8 +1,30 @@
 """Independent VBA extraction check. Requires oletools (development only)."""
 from pathlib import Path
+import zipfile
+from xml.etree import ElementTree as ET
 from oletools.olevba import VBA_Parser
 
 ROOT = Path(__file__).resolve().parents[1]
+def verify_macro_package(path):
+    with zipfile.ZipFile(path) as archive:
+        assert archive.testzip() is None
+        types = ET.fromstring(archive.read('[Content_Types].xml'))
+        # Office/Windows OPC readers require the conventional unprefixed roots.
+        assert b'<Types ' in archive.read('[Content_Types].xml'), 'Content-types root must use its default namespace'
+        assert b'<Relationships ' in archive.read('xl/_rels/workbook.xml.rels'), 'Relationships root must use its default namespace'
+        ns = '{http://schemas.openxmlformats.org/package/2006/content-types}'
+        overrides = {node.get('PartName'): node.get('ContentType') for node in types if node.tag == ns + 'Override'}
+        defaults = {node.get('Extension'): node.get('ContentType') for node in types if node.tag == ns + 'Default'}
+        effective = overrides.get('/xl/workbook.xml', defaults.get('xml'))
+        assert effective == 'application/vnd.ms-excel.sheet.macroEnabled.main+xml', f'Workbook MIME mismatch: {effective}'
+        assert overrides.get('/xl/vbaProject.bin', defaults.get('bin')) == 'application/vnd.ms-office.vbaProject'
+        assert archive.read('xl/vbaProject.bin')[:8] == bytes.fromhex('d0cf11e0a1b11ae1')
+        rels = ET.fromstring(archive.read('xl/_rels/workbook.xml.rels'))
+        macro_rels = [r for r in rels if r.get('Type') == 'http://schemas.microsoft.com/office/2006/relationships/vbaProject']
+        assert len(macro_rels) == 1 and macro_rels[0].get('Target') in ('vbaProject.bin', '/xl/vbaProject.bin')
+    print('PASS: effective XLSM workbook MIME, VBA content type/relationship, ZIP and OLE signatures.')
+
+verify_macro_package(ROOT / 'templates/ASC_Fail_Address.xlsm')
 parser = VBA_Parser(str(ROOT / 'templates/ASC_Fail_Address.xlsm'))
 sources = {name: code for _, _, name, code in parser.extract_macros()}
 assert len(sources) == 6, list(sources)

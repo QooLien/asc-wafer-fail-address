@@ -17,14 +17,27 @@ ET.register_namespace('', NS)
 with zipfile.ZipFile(base) as z:
     entries = {name: z.read(name) for name in z.namelist()}
 ct = ET.fromstring(entries['[Content_Types].xml'])
-for node in ct:
-    if node.get('PartName') == '/xl/workbook.xml':
-        node.set('ContentType', 'application/vnd.ms-excel.sheet.macroEnabled.main+xml')
-ET.SubElement(ct, f'{{{CT}}}Override', PartName='/xl/vbaProject.bin', ContentType='application/vnd.ms-office.vbaProject')
+def set_content_type(part, content_type):
+    node = next((item for item in ct if item.tag == f'{{{CT}}}Override' and item.get('PartName') == part), None)
+    if node is None:
+        node = ET.SubElement(ct, f'{{{CT}}}Override', PartName=part)
+    node.set('ContentType', content_type)
+
+# Artifact Tool may declare workbook.xml through Default Extension="xml",
+# rather than an explicit workbook Override. Always add the explicit XLSM type.
+set_content_type('/xl/workbook.xml', 'application/vnd.ms-excel.sheet.macroEnabled.main+xml')
+set_content_type('/xl/vbaProject.bin', 'application/vnd.ms-office.vbaProject')
+ET.register_namespace('', CT)
 entries['[Content_Types].xml'] = ET.tostring(ct, encoding='utf-8', xml_declaration=True)
 rels = ET.fromstring(entries['xl/_rels/workbook.xml.rels'])
-ET.SubElement(rels, f'{{{REL}}}Relationship', Id='rIdVBAProject', Type='http://schemas.microsoft.com/office/2006/relationships/vbaProject', Target='vbaProject.bin')
+macro_rel = next((item for item in rels if item.get('Type') == 'http://schemas.microsoft.com/office/2006/relationships/vbaProject'), None)
+if macro_rel is None:
+    macro_rel = ET.SubElement(rels, f'{{{REL}}}Relationship', Id='rIdVBAProject', Type='http://schemas.microsoft.com/office/2006/relationships/vbaProject')
+macro_rel.set('Target', 'vbaProject.bin')
+ET.register_namespace('', REL)
 entries['xl/_rels/workbook.xml.rels'] = ET.tostring(rels, encoding='utf-8', xml_declaration=True)
+ET.register_namespace('', NS)
+ET.register_namespace('r', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships')
 book = ET.fromstring(entries['xl/workbook.xml'])
 props = book.find(f'{{{NS}}}workbookPr')
 if props is None:
@@ -55,4 +68,9 @@ with zipfile.ZipFile(output) as z:
     for name in entries:
         if name.endswith('.xml') or name.endswith('.rels'):
             ET.fromstring(z.read(name))
-print(f'Packaged XLSM: VBA relationship, macro content type, {sheet_count + 1} host code names, XML/ZIP integrity verified.')
+    saved_ct = ET.fromstring(z.read('[Content_Types].xml'))
+    overrides = {item.get('PartName'): item.get('ContentType') for item in saved_ct if item.tag == f'{{{CT}}}Override'}
+    assert overrides['/xl/workbook.xml'] == 'application/vnd.ms-excel.sheet.macroEnabled.main+xml'
+    assert overrides['/xl/vbaProject.bin'] == 'application/vnd.ms-office.vbaProject'
+    assert z.read('xl/vbaProject.bin')[:8] == bytes.fromhex('d0cf11e0a1b11ae1')
+print(f'Packaged XLSM: explicit macro workbook content type, VBA relationship/container, {sheet_count + 1} host code names, XML/ZIP integrity verified.')
