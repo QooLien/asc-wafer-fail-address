@@ -36,7 +36,8 @@ if props is None:
     book.insert(idx, props)
 props.set('codeName', 'ThisWorkbook')
 entries['xl/workbook.xml'] = ET.tostring(book, encoding='utf-8', xml_declaration=True)
-for idx in range(1, 4):
+sheet_count = len(book.find(f'{{{NS}}}sheets'))
+for idx in range(1, sheet_count + 1):
     name = f'xl/worksheets/sheet{idx}.xml'
     sheet = ET.fromstring(entries[name])
     props = sheet.find(f'{{{NS}}}sheetPr')
@@ -54,4 +55,4 @@ with zipfile.ZipFile(output) as z:
     for name in entries:
         if name.endswith('.xml') or name.endswith('.rels'):
             ET.fromstring(z.read(name))
-print('Packaged XLSM: VBA relationship, macro content type, 4 host code names, XML/ZIP integrity verified.')
+print(f'Packaged XLSM: VBA relationship, macro content type, {sheet_count + 1} host code names, XML/ZIP integrity verified.')
