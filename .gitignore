@@ -1,0 +1,8 @@
+~$*
+*.tmp
+*.log
+node_modules/
+.DS_Store
+Thumbs.db
+# Raw production data is excluded by default.
+*.asc

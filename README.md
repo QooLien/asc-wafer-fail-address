@@ -1,0 +1,66 @@
+# ASC Wafer Fail Address
+
+使用 Excel VBA 從 `.asc` Raw data 讀取指定測試項目（TNO）的 SRAM Fail Address，並保留 128-chip wafer map 與四象限計數範本。
+
+## 快速開始
+
+1. 下載本專案，使用 Windows 電腦版 Excel 開啟 `templates/ASC_Fail_Address_template.xlsx`。
+2. 另存為支援巨集的 `.xlsm`。
+3. 按 Alt+F11，在 VBA 編輯器的「檔案 → 匯入檔案」選擇 `src/ImportFailAddresses.bas`，儲存。
+4. 在 `Config!A2:A901` 每列輸入一個 100–999 的整數 TNO，預設為 100。
+5. 按 Alt+F8 執行 `ImportASCFailAddresses`，選擇一個 `.asc` 檔案。
+
+VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或查看輸出；iPad 版 Excel 不執行 VBA。
+
+## ASC 格式與輸出
+
+```text
+tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
+```
+
+方括號欄位依序為：第一欄、TNO、X、Y、BLK、WL、BL、IO。`dbk` 與第一欄不參與地址判定；TNO 必須與目前 `tno=` 區段一致。接受最後的逗號、同一行多組地址及跨行方括號。
+
+| 欄位 | 有效範圍 |
+|---|---|
+| TNO | 100–999，由 Config 指定 |
+| X、Y | 原始整數座標，本版不依 wafer 外形篩除 |
+| BLK | 0–255 |
+| WL | 0–1023 |
+| BL | 0–15 |
+| IO | 0–15 |
+
+超出範圍、缺欄及非整數記錄略過。原需求中的 WLK 按 WL 解讀。
+
+`Fail Addresses` 分頁 A1:F1 固定為 **X / Y / BLK / WL / BL / IO**。G1 起是指定的 TNO，按 Config 首次出現順序排列。同一組六欄地址只輸出一列；該 TNO 有有效 Fail 記錄填 **1**，其餘留白。重複 Fail 不累加，重複 TNO 不重複建欄。
+
+空白表示輸入檔中未找到對應的有效 Fail 記錄，不能據此推論已測試或 Pass。每次匯入取代舊結果；取消檔案選擇及輸入驗證失敗時保留舊結果。
+
+## 128-chip wafer 參考
+
+| Y | X 範圍 | 每列 chips |
+|---|---|---|
+| 10–11 | 10–13 | 4 |
+| 12–13 | 8–15 | 8 |
+| 14–21 | 7–16 | 10 |
+| 22–23 | 8–15 | 8 |
+| 24–25 | 10–13 | 4 |
+
+共 128 chips；X 向右增加，Y 向下增加。完整座標見 `docs/coordinates.json`。
+
+| 左上：第二象限 | 右上：第一象限 |
+|---|---|
+| Read | Write |
+| **左下：第三象限 ReadWrite** | **右下：第四象限 No detected Fail address** |
+
+四格皆記錄 address count。空白表示未記錄，0 表示實際零值。四象限表位於 `templates/wafer128_SRAM_quadrants.xlsx`；目前尚未定義各 TNO 對應哪一分類，ASC 匯入不會自動回填 wafer map。
+
+![單顆 chip 四象限](docs/chip_quadrants.png)
+
+[查看完整 wafer map](docs/wafer128_quadrants.png)
+
+## 狀態與限制
+
+- 第一版範本，依使用者提供的格式建立，尚未取得實際 ASC 樣本。
+- 已檢查 Excel 欄位及範本視覺配置；開發環境未安裝 Excel，VBA 尚未原生編譯與執行驗證。
+- ASC 目前整檔讀入記憶體，使用 Windows 系統文字編碼解析 ASCII 數字標記；UTF-16 或特殊編碼需調整。
+- 尚未驗證 iPad 端下載、開啟及遠端執行流程。
