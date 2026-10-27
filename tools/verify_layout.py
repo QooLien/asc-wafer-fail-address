@@ -1,11 +1,13 @@
 """Verify saved formatting and the native button binding without opening Excel."""
 from pathlib import Path
+import sys
 import zipfile
 from xml.etree import ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 S = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
-with zipfile.ZipFile(root / 'templates/ASC_Fail_Address.xlsm') as archive:
+workbook_path = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'templates/ASC_Fail_Address_Fast.xlsm'
+with zipfile.ZipFile(workbook_path) as archive:
     styles = ET.fromstring(archive.read('xl/styles.xml'))
     fonts = list(styles.find(S + 'fonts'))
     formats = list(styles.find(S + 'cellXfs'))
