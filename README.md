@@ -78,17 +78,26 @@ tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
 
 [查看完整 wafer map](docs/wafer128_quadrants.png)
 
+## 大型 ASC 與記憶體
+
+v0.4.0 針對約 265,646 KB（259 MB）的 ASC 改為 64 KB 二進位分段讀取。不再使用整檔 `ReadAll` / `LoadFromFile`，正規表示式僅處理目前的小緩衝區。跨段的 TNO、方括號地址、UTF-8 多位元組字元及 CRLF 換行會保留到下一段處理。
+
+去重索引只儲存「六欄地址 → Excel 列號」，不再為每個地址建立另一個 TNO 字典。匯入先寫入暫存工作表，成功解析後每批最多 1,000 列移至正式輸出；Log 累積到 500 筆時分批寫入。暫存工作表在成功或錯誤結束時移除；解析失敗時保留上一次正式結果。
+
+讀檔字串不再隨檔案大小成長，但唯一地址索引與 Excel 結果本身仍會佔用記憶體。單一檔案必須小於 2 GB；唯一地址最多 1,048,575 列。未閉合方括號累積超過 16,384 字元會記錄 WARN 並略過，避免格式損壞造成字串無限累積。
+
 ## 狀態與限制
 
-- 第三版內嵌 VBA 並加入 Import Log，依使用者提供的格式建立，尚未取得實際 ASC 樣本。
-- 使用 Windows VBScript 引擎執行從 VBA 原始碼轉換的解析函式及區段處理：20 種地址案例通過，涵蓋空白字元、範圍上下限、錯誤欄位、多 TNO、重複地址與 1 標記；也已測試 WARN 的原因、原始內容、TNO、來源行號與 ERROR 的階段、錯誤代碼。
+- 第四版內嵌 VBA、Import Log 及分段讀檔，依使用者提供的格式建立，尚未取得實際 ASC 樣本。
+- 使用 Windows VBScript 引擎執行從 VBA 原始碼轉換的解析函式：20 種地址案例、每段 1 / 7 / 65,536 字元的跨段測試、EOF 與過長未閉合記錄測試均通過，並檢查去重、TNO 標記與 Log 行號及原因。
+- 以 272,021,735 bytes 的合成檔進行分段解析測試，保留的未解析緩衝區最高 128 字元。此檔主要由無地址的填充內容及少量有效/錯誤案例構成，用於驗證檔案大小不造成整檔字串堆積，不代表大量唯一地址的 Excel 寫入效能或記憶體壓力測試。
 - VBA 容器已經獨立的 `olevba` 讀回，核對內嵌原始碼與 `.bas` 完全一致；XML/ZIP、巨集關聯及文件代碼名稱已檢查。
 - 開發環境未安裝 Excel；上述測試不代表已完成 Excel 原生編譯、檔案選擇及真實 ASC 匯入驗證。
-- ASC 目前整檔讀入記憶體。自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。
+- 自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。位元組解碼與 Excel 工作表寫入尚待桌面版 Excel 實機驗證。
 - 尚未驗證 iPad 端下載、開啟及遠端執行流程。
 
 ## 開發驗證
 
-Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
+Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份分段解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。加上 `--large-kb 265646` 可建立約 259 MB 的暫存合成檔，透過 Windows FSO 分段讀取測試解析緩衝；此測試不會執行 VBA 二進位讀檔或 Excel 寫入。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
 
 VBA 二進位容器以 [ovba-writer](https://github.com/kay-ws/ovba-writer)（MIT）建置，使用其測試容器的專案參考資料；範例程式與事件已全部移除，僅保留必要文件屬性及本專案模組。建置工具與授權來源見 `tools/THIRD_PARTY_NOTICES.md`。
