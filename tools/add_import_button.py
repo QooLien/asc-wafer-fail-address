@@ -11,7 +11,8 @@ import zipfile
 from xml.etree import ElementTree as ET
 import xlsxwriter
 
-base, output = map(pathlib.Path, sys.argv[1:])
+base, output = map(pathlib.Path, sys.argv[1:3])
+caption = sys.argv[3] if len(sys.argv) > 3 else '選擇 ASC 並匯入'
 memory = io.BytesIO()
 with xlsxwriter.Workbook(memory, {'in_memory': True}) as donor:
     sheet = donor.add_worksheet('Config')
@@ -22,7 +23,7 @@ with xlsxwriter.Workbook(memory, {'in_memory': True}) as donor:
     sheet.set_default_row(26)
     for row in range(1, 6): sheet.set_row(row, 32)
     for row in range(7, 10): sheet.set_row(row, 28)
-    sheet.insert_button('C8', {'macro': 'ImportASCFailAddresses', 'caption': '選擇 ASC 並匯入', 'width': 600, 'height': 52})
+    sheet.insert_button('C8', {'macro': 'ImportASCFailAddresses', 'caption': caption, 'width': 600, 'height': 52})
 with zipfile.ZipFile(io.BytesIO(memory.getvalue())) as donor_zip:
     vml_name = next(name for name in donor_zip.namelist() if name.endswith('.vml'))
     vml = donor_zip.read(vml_name).decode('utf-8')

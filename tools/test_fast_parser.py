@@ -25,6 +25,7 @@ end = source.index('        Next v', start) + len('        Next v')
 output_loop = source[start:end]
 output_loop = re.sub(r'(?m)^\s*dst\.Cells\(written \+ 2.*?Value2 = data$', '                CaptureBatch data', output_loop)
 output_loop = adapt(output_loop)
+header_loop = adapt(next(line for line in source.splitlines() if 'headers(1, 7 + CLng(tnos(v)))' in line))
 cases = (ROOT / 'tools/address_cases.vbs').read_text(encoding='utf-8').strip()
 fixture = ('tno=100 > [ 2,100,10,14,0,25,3,4, ] [2,100,10,14,0,25,3,4,]\n'
            '[2,100,11,14,255,1023,15,15,] [SUMMARY] [2,100,10,14,256,0,0,0,]\n'
@@ -38,6 +39,7 @@ Dim mTokenRegex, mBitMasks, nums(7), bits(), tnos, addresses, buffer, headerTNO
 Dim flagBytes, capacity, sections, skipped, accepted, chunkSize, raw, p, i, count
 Dim data(), fields, v, rowIndex, batchRow, b, bitValue, k, j, written
 Dim columnCount, batchLimit, batchSize, uniqueCount, captured, t, file, total, maxBuffer
+Dim headers(), oracle, expectedTNO, actualTNO
 Set mTokenRegex = Nothing
 mBitMasks = Array(1,2,4,8,16,32,64,128)
 Set tnos = CreateObject("Scripting.Dictionary")
@@ -102,6 +104,38 @@ Next
 CheckOutput
 WScript.Echo "PASS: " & count & " address cases; split chunks; 900 TNO bit flags; deduplication; capacity growth; full/partial output batches with blank-vs-1 checks."
 
+' Independent oracle: expected TNO comes from the fixture address WL, NOT bits or tnos indexes.
+' Config order is permuted while raw sections run in descending numeric order.
+Set tnos=CreateObject("Scripting.Dictionary")
+For i=0 To 899
+ t=100+((i*137) Mod 900)
+ tnos.Add CStr(t),tnos.Count
+Next
+ResetState
+For i=999 To 100 Step -1
+ buffer="tno=" & i & " > [2," & i & ",10,14,0," & (i-100) & ",2,3,]"
+ Pump False
+Next
+Pump True
+oracle=True
+CheckOutput
+If captured.Count<>900 Then Die "Independent oracle row count"
+' Sparse, nonconsecutive TNOs; 9 flags crosses the first byte boundary.
+Set tnos=CreateObject("Scripting.Dictionary")
+For Each t In Array(999,108,100,777,255,512,101,888,107)
+ tnos.Add CStr(t),tnos.Count
+Next
+ResetState
+For i=100 To 999
+ buffer="tno=" & i & " > [2," & i & ",10,14,0," & (i-100) & ",2,3,]"
+ Pump False
+Next
+Pump True
+CheckOutput
+If captured.Count<>9 Then Die "Sparse selection oracle row count"
+oracle=False
+WScript.Echo "PASS independent TNO-column oracle: actual VBA header and output loops; 900 shuffled TNO columns; reverse raw order; 9 sparse TNOs; every output cell checked against fixture TNO, not internal flags."
+
 If WScript.Arguments.Count>0 Then
  Set tnos=CreateObject("Scripting.Dictionary")
  tnos.Add "100",0: tnos.Add "101",1
@@ -139,6 +173,8 @@ End Function
 Sub CheckOutput
  Set captured=CreateObject("Scripting.Dictionary")
  columnCount=6+tnos.Count: uniqueCount=addresses.Count: batchLimit=37
+ ReDim headers(1,columnCount)
+ __HEADER_LOOP__
  written=0: batchRow=0: batchSize=batchLimit
  If batchSize>uniqueCount Then batchSize=uniqueCount
  ReDim data(batchSize,columnCount)
@@ -155,6 +191,18 @@ Sub CaptureBatch(packet)
   Next
   If Not addresses.Exists(key) Or captured.Exists(key) Then Die "Output address duplicate/missing"
   captured.Add key,True
+  If oracle Then
+   expectedTNO=100+CLng(packet(rr,4))
+   For cc=7 To columnCount
+    actualTNO=CLng(headers(1,cc))
+    If actualTNO=expectedTNO Then
+     If IsEmpty(packet(rr,cc)) Then Die "Independent oracle: missing 1 under TNO " & actualTNO
+     If packet(rr,cc)<>1 Then Die "Independent oracle: incorrect fail value"
+    Else
+     If Not IsEmpty(packet(rr,cc)) Then Die "Independent oracle: 1 written under WRONG TNO " & actualTNO & "; expected " & expectedTNO
+    End If
+   Next
+  End If
   For Each tno In tnos
    expected=HasFail(key,tno)
    If expected Then
@@ -173,7 +221,7 @@ End Sub
 Sub Die(message)
  WScript.Echo "FAIL: " & message: WScript.Quit 1
 End Sub
-'''.replace('__CASES__', cases).replace('__FIXTURE__', fixture_vbs).replace('__OUTPUT_LOOP__', output_loop)
+'''.replace('__CASES__', cases).replace('__FIXTURE__', fixture_vbs).replace('__OUTPUT_LOOP__', output_loop).replace('__HEADER_LOOP__',header_loop)
 
 cli = argparse.ArgumentParser()
 cli.add_argument('--large-kb', type=int, default=0)
