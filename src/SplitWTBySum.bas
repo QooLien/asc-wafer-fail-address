@@ -14,6 +14,7 @@ Public Sub SplitWTByTNOSum()
     Dim screen As Boolean, events As Boolean, calc As XlCalculation, oldStatus As Variant
     Dim started As Date, stage As String, message As String, success As Boolean, color As Long
     Dim outHeader() As Variant, stats(1 To 3, 1 To 4) As Variant
+    Dim tempPath As String, errorNumber As Long, errorText As String, detail As String
     If busy Then Exit Sub
     busy = True
     screen = Application.ScreenUpdating: events = Application.EnableEvents
@@ -35,6 +36,8 @@ Public Sub SplitWTByTNOSum()
     Application.Calculation = xlCalculationManual
     Set seen = CreateObject("Scripting.Dictionary")
     Set report = Workbooks.Add(xlWBATWorksheet)
+    stage = "Ensure report supports 1048576 rows"
+    EnsureModernReport report, tempPath
     Set statusSheet = report.Worksheets(1): statusSheet.Name = "WT Status"
     statusSheet.Range("A1:L1").Value2 = Array("X", "Y", "BLK", "WL", "BL", "IO", "WT1 Sum", "WT1 Status", "WT2 Sum", "WT2 Status", "WT3 Sum", "WT3 Status")
     For p = 1 To 3
@@ -48,12 +51,13 @@ Public Sub SplitWTByTNOSum()
     Next p
     batch = 131072 \ lastCol: If batch > 4096 Then batch = 4096
     For start = 2 To lastRow Step batch
-        stage = "Sum WT TNO values at source row " & start
         count = lastRow - start + 1: If count > batch Then count = batch
+        stage = "Read Fail Address rows " & start & ":" & start + count - 1
         packet = src.Cells(start, 1).Resize(count, lastCol).Value2
         ReDim sums(1 To count, 1 To 3): ReDim statusData(1 To count, 1 To 12)
         For p = 1 To 3: blockCount(p) = 0: Next p
         For r = 1 To count
+            stage = "Sum WT TNO values at source row " & start + r - 1
             key = AddressKey(packet, r)
             If seen.Exists(key) Then Err.Raise vbObjectError + 202, , "Duplicate source address at row " & start + r - 1 & ": " & key
             seen.Add key, True
@@ -66,13 +70,16 @@ Public Sub SplitWTByTNOSum()
                 marks(p) = marks(p) + sums(r, p)
             Next p
         Next r
-        statusSheet.Cells(processed + 2, 1).Resize(count, 12).Value2 = statusData
+        stage = "Write WT Status rows " & processed + 2 & ":" & processed + count + 1
+        WriteWTBlock statusSheet, processed + 2, statusData
         For p = 1 To 3
             If blockCount(p) > 0 Then
+                stage = "Build WT" & p & " Fail from source rows " & start & ":" & start + count - 1
                 ReDim output(1 To blockCount(p), 1 To n + 8)
                 BuildWTFailBatch packet, sums, colMap, p, n, output, rr
                 If rr <> blockCount(p) Then Err.Raise vbObjectError + 203, , "WT Fail count reconciliation failed."
-                dst(p).Cells(totals(p) + 2, 1).Resize(rr, n + 8).Value2 = output
+                stage = "Write WT" & p & " Fail rows " & totals(p) + 2 & ":" & totals(p) + rr + 1
+                WriteWTBlock dst(p), totals(p) + 2, output
                 totals(p) = totals(p) + rr
             End If
         Next p
@@ -133,13 +140,54 @@ Cleanup:
     If Not success Then
         If Not report Is Nothing Then report.Close SaveChanges:=False
     End If
+    If Len(tempPath) > 0 Then
+        Set fso = CreateObject("Scripting.FileSystemObject")
+        If Not success Then
+            If fso.FileExists(tempPath) Then fso.DeleteFile tempPath, True
+        ElseIf StrComp(report.FullName, tempPath, vbTextCompare) <> 0 Then
+            If fso.FileExists(tempPath) Then fso.DeleteFile tempPath, True
+        End If
+    End If
     Application.Calculation = calc: Application.EnableEvents = events
     Application.ScreenUpdating = screen: Application.StatusBar = oldStatus: busy = False
     If Len(message) > 0 Then MsgBox message, IIf(success, vbInformation, vbExclamation)
     Exit Sub
 Failed:
-    message = "WT Sum failed (" & Err.Number & "): " & Err.Description & vbCrLf & "Stage: " & stage & vbCrLf & "Original Fail Address was not changed."
+    errorNumber = Err.Number: errorText = Err.Description
+    detail = WTErrorContext(src, report)
+    message = "WT Sum failed (" & errorNumber & "): " & errorText & vbCrLf & "Stage: " & stage & detail & vbCrLf & "Original Fail Address was not changed."
     Resume Cleanup
+End Sub
+
+' Workbooks.Add can inherit legacy compatibility settings. Verify before any data write.
+Private Sub EnsureModernReport(ByRef report As Workbook, ByRef tempPath As String)
+    Dim fso As Object
+    If report.Worksheets(1).Rows.Count >= 1048576 And report.Worksheets(1).Columns.Count >= 16384 Then Exit Sub
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    tempPath = fso.BuildPath(fso.GetSpecialFolder(2), fso.GetTempName & ".xlsx")
+    report.SaveAs Filename:=tempPath, FileFormat:=xlOpenXMLWorkbook, CreateBackup:=False
+    If report.Worksheets(1).Rows.Count < 1048576 Or report.Worksheets(1).Columns.Count < 16384 Then
+        report.Close SaveChanges:=False
+        Set report = Workbooks.Open(Filename:=tempPath, UpdateLinks:=0, ReadOnly:=False, AddToMru:=False)
+    End If
+    If report.Worksheets(1).Rows.Count < 1048576 Or report.Worksheets(1).Columns.Count < 16384 Then
+        Err.Raise vbObjectError + 207, , "Report remains in legacy Excel compatibility mode. An XLSX report with 1048576 rows is required."
+    End If
+End Sub
+
+Private Function WTErrorContext(ByVal src As Worksheet, ByVal report As Workbook) As String
+    On Error Resume Next
+    If Not src Is Nothing Then WTErrorContext = WTErrorContext & vbCrLf & "Source row capacity: " & src.Rows.Count
+    If Not report Is Nothing Then WTErrorContext = WTErrorContext & vbCrLf & "Report row capacity: " & report.Worksheets(1).Rows.Count & "; FileFormat: " & report.FileFormat
+End Function
+
+Private Sub WriteWTBlock(ByVal ws As Worksheet, ByVal firstRow As Long, ByRef data() As Variant)
+    Dim rows As Long, columns As Long
+    rows = UBound(data, 1): columns = UBound(data, 2)
+    If firstRow < 1 Or rows < 1 Or firstRow + rows - 1 > ws.Rows.Count Or columns > ws.Columns.Count Then
+        Err.Raise vbObjectError + 208, , "Output range exceeds " & ws.Name & " capacity. First row=" & firstRow & "; rows=" & rows & "; columns=" & columns & "; row capacity=" & ws.Rows.Count
+    End If
+    ws.Cells(firstRow, 1).Resize(rows, columns).Value2 = data
 End Sub
 
 Private Sub SumWTRow(ByRef packet As Variant, ByVal r As Long, ByRef colWT() As Byte, ByRef sums() As Long)
