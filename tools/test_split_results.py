@@ -4,6 +4,10 @@ import re,subprocess,tempfile
 root=Path(__file__).resolve().parents[1]
 source=(root/'src/SplitThreeASCResults.bas').read_text()
 helpers=source[source.index('Private Sub ValidateWTHeaders'):source.index('Private Sub FormatWTOutput')]
+baseline=subprocess.run(['git','show','134c9cb:src/SplitThreeASCResults.bas'],cwd=root,capture_output=True,check=True).stdout.decode()
+old_helpers=baseline[baseline.index('Private Sub ValidateWTHeaders'):baseline.index('Private Sub FormatWTOutput')]
+for name in ('ValidateWTHeaders','ClassifyWTRow','AddressKey'):
+    old_helpers=old_helpers.replace(name,'Old'+name)
 a=source.index('                rr = 0')
 copy=source[a:source.index('                targets(g).Cells',a)]
 def adapt(text):
@@ -18,7 +22,7 @@ def adapt(text):
     return re.sub(r'\bNext \w+','Next',text)
 tests=r'''
 Dim header(),packet(),colWT(),classes(),output(),seen,key,mode,n,c,p,i,r,g,rr,count,lastCol
-Dim expected,mask,t,actual,counts(4),saved,dummy,expectedPhase
+Dim expected,mask,t,actual,counts(4),saved,dummy,expectedPhase,noFail(),oldResult,oldError,newError
 For Each n In Array(1,3,9,900)
  lastCol=6+3*n
  ReDim header(1,lastCol)
@@ -31,18 +35,20 @@ For Each n In Array(1,3,9,900)
   Next
  Next
  ValidateWTHeaders header,colWT
- count=8:ReDim packet(count,lastCol):ReDim classes(count)
+ count=8:ReDim packet(count,lastCol):ReDim classes(count):ReDim noFail(count)
  For r=1 To count
   packet(r,1)=10:packet(r,2)=14:packet(r,3)=0:packet(r,4)=r:packet(r,5)=2:packet(r,6)=3
   mask=r-1
   For p=1 To 3
    If (mask And (2^(p-1)))<>0 Then
     For c=7 To lastCol
-     If colWT(c)=p Then packet(r,c)=1:Exit For
+     If colWT(c)=p Then packet(r,c)=CDbl(1):Exit For
     Next
    End If
   Next
   actual=ClassifyWTRow(packet,r,colWT)
+  If actual<>OldClassifyWTRow(packet,r,colWT) Then Die "Regression against released v0.11.0"
+  If AddressKey(packet,r)<>OldAddressKey(packet,r) Then Die "Address key regression"
   Select Case mask
    Case 0:expected=0
    Case 1:expected=1
@@ -51,7 +57,7 @@ For Each n In Array(1,3,9,900)
    Case Else:expected=4
   End Select
   If actual<>expected Then Die "Wrong WT combination class"
-  If actual=0 Then actual=4
+  If actual=0 Then noFail(r)=True:actual=4
   classes(r)=actual:counts(actual)=counts(actual)+1
  Next
  Set seen=CreateObject("Scripting.Dictionary")
@@ -94,6 +100,19 @@ actual=ClassifyWTRow(packet,1,colWT):saved=Err.Number:Err.Clear
 On Error GoTo 0
 If saved=0 Then Die "Invalid fail value accepted"
 WScript.Echo "PASS header duplicate and non-blank/non-1 rejection."
+For Each dummy In Array(Empty,"","  ","1"," 1 ",1,CDbl(1),0,2,1.5,True,False)
+ ReDim packet(1,9)
+ packet(1,7)=dummy
+ On Error Resume Next
+ oldResult=OldClassifyWTRow(packet,1,colWT):oldError=Err.Number:Err.Clear
+ actual=ClassifyWTRow(packet,1,colWT):newError=Err.Number:Err.Clear
+ On Error GoTo 0
+ If (oldError=0)<>(newError=0) Then Die "Value acceptance changed"
+ If oldError=0 Then
+  If actual<>oldResult Then Die "Value classification changed"
+ End If
+Next
+WScript.Echo "PASS v0.11.0 regression: numeric Double flags, text/space/blank/integer handling, invalid values and booleans; identical classification and address keys."
 Sub Die(message)
  WScript.Echo "FAIL: " & message:WScript.Quit 1
 End Sub
@@ -103,9 +122,9 @@ End Function
 '''
 with tempfile.TemporaryDirectory() as folder:
     path=Path(folder)/'split.vbs'
-    path.write_text(adapt(tests.replace('__COPY__',copy)+'\n'+helpers),encoding='ascii')
+    path.write_text(adapt(tests.replace('__COPY__',copy)+'\n'+helpers+'\n'+old_helpers),encoding='ascii')
     result=subprocess.run(['cscript.exe','//nologo',str(path)],capture_output=True,check=True)
     output=(result.stdout+result.stderr).decode(errors='replace')
     print(output)
-    if 'PASS header duplicate and non-blank/non-1 rejection.' not in output:
+    if 'PASS v0.11.0 regression:' not in output:
         raise RuntimeError('Stage-two tests did not complete')

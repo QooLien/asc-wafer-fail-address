@@ -1,5 +1,7 @@
 # ThreeASC 完成後的第二階段拆分
 
+v0.11.1 加速修正：資料陣列改用 ByRef；空白格略過字串轉換，數值 Double 的 1 直接判斷；Conflict 原因使用第一次分類的快取，不再重掃該列；每八批才更新狀態與處理介面事件。原本的分類、地址驗證、欄位複製與數量核對保留。尚未在原生 Excel 量測速度或加速倍數。
+
 程式：`src/SplitThreeASCResults.bas`；入口：`SplitWTFailAddresses`。適用 Excel 2016，不需 Python。這是獨立模組，既有 ThreeASC 匯入程式不變。
 
 ## 使用

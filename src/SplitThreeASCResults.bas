@@ -7,6 +7,7 @@ Public Sub SplitWTFailAddresses()
     Static busy As Boolean
     Dim source As Worksheet, report As Workbook, targets(1 To 4) As Worksheet, summary As Worksheet
     Dim header As Variant, packet As Variant, output() As Variant, colWT() As Byte, classes() As Byte
+    Dim noFail() As Boolean, chunks As Long
     Dim names As Variant, seen As Object, key As String, path As String, suffix As String
     Dim lastCol As Long, lastRow As Long, batch As Long, start As Long, count As Long
     Dim r As Long, c As Long, g As Long, rr As Long, category As Long, blockCounts(1 To 4) As Long
@@ -45,13 +46,14 @@ Public Sub SplitWTFailAddresses()
         count = lastRow - start + 1: If count > batch Then count = batch
         packet = source.Cells(start, 1).Resize(count, lastCol).Value2
         ReDim classes(1 To count)
+        ReDim noFail(1 To count)
         For g = 1 To 4: blockCounts(g) = 0: Next g
         For r = 1 To count
             key = AddressKey(packet, r)
             If seen.Exists(key) Then Err.Raise vbObjectError + 102, , "Duplicate source address at row " & start + r - 1 & ": " & key
             seen.Add key, True
             category = ClassifyWTRow(packet, r, colWT)
-            If category = 0 Then zeroCount = zeroCount + 1: category = 4
+            If category = 0 Then zeroCount = zeroCount + 1: noFail(r) = True: category = 4
             classes(r) = CByte(category)
             blockCounts(category) = blockCounts(category) + 1
             sourceCount = sourceCount + 1
@@ -66,7 +68,7 @@ Public Sub SplitWTFailAddresses()
                         ' Copy every original cell in the same column; no reindexing or OR merge.
                         For c = 1 To lastCol: output(rr, c) = packet(r, c): Next c
                         If g = 4 Then
-                            If ClassifyWTRow(packet, r, colWT) = 0 Then
+                            If noFail(r) Then
                                 output(rr, lastCol + 1) = "No selected TNO fail in any WT"
                             Else
                                 output(rr, lastCol + 1) = "Selected TNO fail in multiple WTs"
@@ -78,8 +80,11 @@ Public Sub SplitWTFailAddresses()
                 totals(g) = totals(g) + blockCounts(g)
             End If
         Next g
-        Application.StatusBar = "Split WT results: " & sourceCount & " / " & lastRow - 1 & " addresses"
-        DoEvents
+        chunks = chunks + 1
+        If chunks Mod 8 = 0 Then
+            Application.StatusBar = "Split WT results: " & sourceCount & " / " & lastRow - 1 & " addresses"
+            DoEvents
+        End If
     Next start
     stage = "Validate address totals"
     For g = 1 To 4: written = written + totals(g): Next g
@@ -129,7 +134,7 @@ Failed:
     Resume Cleanup
 End Sub
 
-Private Sub ValidateWTHeaders(ByVal header As Variant, ByRef colWT() As Byte)
+Private Sub ValidateWTHeaders(ByRef header As Variant, ByRef colWT() As Byte)
     Dim expected As Variant, seen(1 To 3) As Object, re As Object, matches As Object
     Dim c As Long, p As Long, tno As String, key As Variant
     expected = Array("X", "Y", "BLK", "WL", "BL", "IO")
@@ -156,14 +161,21 @@ Private Sub ValidateWTHeaders(ByVal header As Variant, ByRef colWT() As Byte)
     Next key
 End Sub
 
-Private Function ClassifyWTRow(ByVal packet As Variant, ByVal r As Long, ByRef colWT() As Byte) As Long
+Private Function ClassifyWTRow(ByRef packet As Variant, ByVal r As Long, ByRef colWT() As Byte) As Long
     Dim found(1 To 3) As Boolean, c As Long, p As Long, count As Long, result As Long, text As String
     For c = 7 To UBound(packet, 2)
-        If IsError(packet(r, c)) Then Err.Raise vbObjectError + 109, , "Error value in source TNO column " & c
-        text = Trim$(CStr(packet(r, c)))
-        If Len(text) > 0 Then
-            If text <> "1" Or VarType(packet(r, c)) = vbBoolean Then Err.Raise vbObjectError + 109, , "Expected blank or 1 in source TNO column " & c
-            found(colWT(c)) = True
+        If Not IsEmpty(packet(r, c)) Then
+            If VarType(packet(r, c)) = vbDouble Then
+                If packet(r, c) <> 1 Then Err.Raise vbObjectError + 109, , "Expected blank or 1 in source TNO column " & c
+                found(colWT(c)) = True
+            Else
+                If IsError(packet(r, c)) Then Err.Raise vbObjectError + 109, , "Error value in source TNO column " & c
+                text = Trim$(CStr(packet(r, c)))
+                If Len(text) > 0 Then
+                    If text <> "1" Or VarType(packet(r, c)) = vbBoolean Then Err.Raise vbObjectError + 109, , "Expected blank or 1 in source TNO column " & c
+                    found(colWT(c)) = True
+                End If
+            End If
         End If
     Next c
     For p = 1 To 3
@@ -173,7 +185,7 @@ Private Function ClassifyWTRow(ByVal packet As Variant, ByVal r As Long, ByRef c
     ClassifyWTRow = result
 End Function
 
-Private Function AddressKey(ByVal packet As Variant, ByVal r As Long) As String
+Private Function AddressKey(ByRef packet As Variant, ByVal r As Long) As String
     Dim c As Long, text As String, n As Double, key As String
     For c = 1 To 6
         If IsError(packet(r, c)) Then Err.Raise vbObjectError + 110, , "Error in source address."
