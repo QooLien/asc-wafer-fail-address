@@ -1,4 +1,4 @@
-# ThreeASC Monitor / Function (v0.14.0)
+# ThreeASC Monitor / Function (v0.14.1)
 
 Download and open templates/ASC_ThreeASC_Monitor_Function.xlsm in Windows desktop Excel. All VBA is embedded; no Python or separate VBA import is required.
 
@@ -25,3 +25,7 @@ Only Monitor TNOs contribute to Vmin. Their order follows Config. Function rows 
 Tests cover original reader/parser and address/TNO output for 1/3/9/900 shuffled selections, three WT isolation, all256 raw BLK indices, first duplicates, missing and malformed data, Legacy/cumulative Vmin, dual-list input validation and address indices, Function exclusion from Vmin, Function-only output without Vmin, exact embedded VBA and Office2016 OpenXML validation. Native Excel2016 macro execution has not been tested in this environment.
 
 Synthetic examples/default_tnos use all22 default Monitor TNOs. Older examples/three_asc fixtures require their four configured TNOs; they are used by regression tests.
+
+## v0.14.1 recovery fix
+
+FBC parser errors retain group/sheet/row state until BLK_Release, preventing a secondary Error424 from masking the original FBC parse diagnostic. Original error/line details remain in Config T2. A parser failure invalidates BLK data for that WT; it is never silently treated as valid zero FBC. Original Fail Address parser and Vmin rules are unchanged. Added regression coverage for the actual shipped failure handler.

@@ -53,7 +53,6 @@ Public Sub BLK_Feed(ByVal raw As String, ByVal atEOF As Boolean)
 Failed:
     mBLKError = "FBC Parse Error (" & Err.Number & "): " & Err.Description & "; line=" & mLine
     mCarry = "": mActive = False
-    Set mGroups = Nothing: Set mSheetNames = Nothing: Set mNextRows = Nothing
 End Sub
 
 Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As String
@@ -162,6 +161,7 @@ End Function
 Public Sub BLK_Release()
     Set mData = Nothing: Set mWanted = Nothing: Set mDUTs = Nothing
     mCarry = "": mActive = False
+    Set mGroups = Nothing: Set mSheetNames = Nothing: Set mNextRows = Nothing
 End Sub
 
 Private Sub ReadConfiguration(ByVal ws As Worksheet, ByRef tnos() As String, ByRef names() As String, ByRef volts() As Double, ByRef dutList As Collection, ByRef threshold As Double)

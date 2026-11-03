@@ -11,7 +11,9 @@ engine=engine.replace('Private mThreshold As Double', 'Private mTestNames() As S
 engine=engine.replace('ReadConfiguration cfg, mSequence, mVoltage, mConfiguredDUTs, mThreshold','ReadConfiguration cfg, mSequence, mTestNames, mVoltage, mConfiguredDUTs, mThreshold\n    Set mGroups = BuildNameGroups(mTestNames)\n    SetupNameSheets cfg.Parent')
 a=engine.index('Public Function BLK_WritePhase');b=engine.index('Public Sub BLK_Release',a)
 engine=engine[:a]+(root/'tools/parts/testname_writer.vba').read_text()+'\n'+engine[b:]
-engine=engine.replace('    mCarry = "": mActive = False\nEnd Sub','    mCarry = "": mActive = False\n    Set mGroups = Nothing: Set mSheetNames = Nothing: Set mNextRows = Nothing\nEnd Sub',1)
+release_start=engine.index('Public Sub BLK_Release()')
+release_end=engine.index('End Sub',release_start)
+engine=engine[:release_end]+'    Set mGroups = Nothing: Set mSheetNames = Nothing: Set mNextRows = Nothing\n'+engine[release_end:]
 a=engine.index('Private Sub ReadConfiguration');b=engine.index('Private Sub ResetParser',a)
 config=engine[a:b]
 config=config.replace('ByRef tnos() As String, ByRef volts()', 'ByRef tnos() As String, ByRef names() As String, ByRef volts()')
