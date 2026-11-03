@@ -1,3 +1,5 @@
+> 新增：同一WT依Config的Pattern順序，前序終點FBC=0才進入下一Pattern；例如Scan Pass才計March。Map不讀Address Count。詳見PATTERN_SEQUENCE.md。
+
 # Soft Fail BLK Map
 
 - Config D/E/F remains Function TNO / Func. / Test Voltage.

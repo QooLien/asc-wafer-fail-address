@@ -1,3 +1,19 @@
+# Wafer ASC 互動分析 v0.20.0
+
+[下載正式 Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.20.0/ASC_Wafer_Analysis_Interactive.xlsm) · [下載互動示範檔](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.20.0/ASC_Wafer_Interactive_Demo.xlsm) · [下載完整試跑包](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.20.0/ASC_ThreeASC_HomeTry.zip)
+
+所有 VBA 與雙擊事件均內嵌，Windows Excel 2016 可執行，不需要 Python 或另外匯入程式碼。
+
+- Config H2「匯入並分析」一次完成 Fail Address、FBC 比較、Map 與地址數量核對；支援 1～3 份 ASC，只輸出已匯入 WT。
+- 雙擊 Map 的 Fail Chip，查看所點 Pattern 範圍內的 Function／BLK，並跳到精確匹配 WT／TNO／Chip／BLK 的 WL／BL／IO。詳見 [互動操作說明](INTERACTIVE_MAP.md)。
+- Hard Fail 與前序 Pattern／WT 已 Fail 的 BLK 排除；March 必須先通過 Scan。Map 不以 Address Count 判斷。
+- 地址核對區分完整、部分不足、完全無地址；來源無法核對時另行標示。
+- 黃到紅色階顯示 Fail BLK Count，零值隱藏；Calibri 11、置中，TNO 標題由下至上。Chip Locations 倒數第二、Log 最後。
+
+原生 Excel 已驗證雙擊事件、內部連結、Pattern 範圍、998 筆 Scan Address、FBC100／Address50，以及來源資料保持一致。
+
+以下保留前版功能說明；下載與新功能請以上方 v0.20.0 為準。
+
 # ThreeASC：Fail Address、FBC 與 Stop Sign Fail Map
 
 [下載完整 VBA Excel v0.19.0](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.19.0/ASC_ThreeASC_FBC.xlsm)

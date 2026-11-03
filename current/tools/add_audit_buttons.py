@@ -32,7 +32,7 @@ with xlsxwriter.Workbook(memory, {'in_memory': True}) as donor:
     for row in range(23): sheet.set_row(row,30)
     for row in range(1,4): sheet.set_row(row,48)
     sheet.insert_button('J13', {'macro': 'ImportASCFailAddresses', 'caption': '僅匯入 Fail Address', 'width': 600, 'height': 52})
-    sheet.insert_button('J22', {'macro': 'FindMissingBLKAddresses', 'caption': 'Function：FBC 有 Fail，但缺少詳細 Address 的 BLK', 'width': 600, 'height': 52})
+    sheet.insert_button('J22', {'macro': 'FindMissingBLKAddresses', 'caption': '核對 Map BLK 的 Address 數量（完整 / 部分不足 / 無 Address）', 'width': 600, 'height': 52})
     sheet.insert_button('J19', {'macro': 'BuildFailMaps', 'caption': '建立 / 更新 Stop Sign Fail Maps', 'width': 600, 'height': 52})
     sheet.insert_button('J16', {'macro': 'ImportASCFBC', 'caption': '僅匯入 FBC by BLK（WT1 / WT2 / WT3）', 'width': 600, 'height': 52})
 with zipfile.ZipFile(io.BytesIO(memory.getvalue())) as donor_zip:

@@ -3,6 +3,8 @@ from pathlib import Path
 import re, subprocess, tempfile
 root=Path(__file__).resolve().parents[1]
 source=(root/'src/ImportThreeASC_BLKVmin.bas').read_text()
+# Legacy three-stage adapter; native_import_all tests actual1/2/3-file execution.
+source=source.replace("For phase = 1 To fileCount - 1","For phase = 1 To 2").replace("For phase = 1 To fileCount","For phase = 1 To 3").replace("For other = phase + 1 To fileCount","For other = phase + 1 To 3")
 base=(root/'reference/ImportFailAddresses.bas').read_text()
 assert source[source.index('Private Sub DetectEncoding'):]==base[base.index('Private Sub DetectEncoding'):]
 def adapt(text):

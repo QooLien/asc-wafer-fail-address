@@ -1,6 +1,8 @@
 from pathlib import Path
 import re,subprocess,tempfile
 r=Path(__file__).resolve().parents[1];s=(r/'src/ImportThreeASC_BLKVmin.bas').read_text()
+# Legacy three-stage adapter; native_import_all tests actual1/2/3-file execution.
+s=s.replace("For phase = 1 To fileCount - 1","For phase = 1 To 2").replace("For phase = 1 To fileCount","For phase = 1 To 3").replace("For other = phase + 1 To fileCount","For other = phase + 1 To 3")
 a=s.index('Private Sub AddAddressLabels');helper=s[a:s.index('End Sub',a)+len('End Sub')]
 a=s.index('Private Function AddressVoltageLabel');helper+='\n'+s[a:s.index('End Function',a)+len('End Function')]
 helper=helper.replace('Private Sub','Sub').replace('Private Function','Function')

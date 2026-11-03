@@ -20,12 +20,15 @@ for line in body.splitlines():
   assert False in stack or text.startswith('If Not fbcOnly Then '),text
  if any(token in text for token in ['BLKVminEngine.BLK_Feed ','BLKVminEngine.BLK_WritePhase(', 'BLKVminEngine.BLK_Finalize(', 'BLKVminEngine.BLK_BeginFile ']):
   fbc_lines+=1
-  assert True in stack or text.startswith('If fbcOnly Then '),text
+  assert False not in stack,text
 assert not stack
 assert address_lines>0 and fbc_lines>0
 engine=(r/'src/BLKVminEngine.bas').read_text()
-assert 'Worksheets("Fail Address")' not in engine and 'ParseASCBuffer' not in engine
+assert 'ParseASCBuffer' not in engine
+assert 'AuditFunctionBlocks(ThisWorkbook)' in body
+assert 'fileCount < 1 Or fileCount > 3' in body
+assert 'If Not fbcOnly And Len(blkWarnings) = 0 Then' in body
 assert 'Private busy As Boolean' in s and 'If busy Then' in body
 map_entry=s[s.index('Public Sub BuildFailMaps'):s.index('Private Sub RunThreeASC')]
 assert 'If busy Then' in map_entry and 'BLK_BuildFailMaps(ThisWorkbook)' in map_entry
-print('PASS separate actions: independent public entry points; every address parse/write/allocation is Address-only; every FBC feed/write is FBC-only; shared busy guard; FBC engine has no Address worksheet access.')
+print('PASS integrated action: primary entry parses Address plus FBC in one pass and audits automatically; optional FBC action keeps Address unchanged;1-3 files; shared busy guard.')

@@ -1,31 +1,44 @@
-# Function FBC / 詳細 Address 的缺失 BLK 比對
+# Fail Map BLK / 詳細 Address 數量核對
 
-本功能只讀既有結果，不重讀 ASC、不重新計算或改寫 Fail Address / FBC。
+本功能只核對實際被 Fail Map 計入的 BLK。讀取既有結果，不重讀 ASC，不改寫 Fail Address 或 FBC。
 
 ## 使用
 
-1. Config!Q2 選 **All Function**（D欄全部 Function TNO）或 **Stop Sign**（只檢查 G欄非空白的 Function TNO）。Monitor 不參與。
-2. 按 **Config!J22**。
-3. 如果新版範本尚無資料，選取之前已輸出的 Excel 結果檔，檔內需同時包含 Config、Fail Address、FBC by BLK。工具會唯讀開啟來源，把報表寫在新版工具，不必再匯入 Address。
-4. 查看 **Missing BLK Address**，依 WT、TNO、X/Y、BLK 篩選。
+1. Config G 設定 Pattern 終點及 Hard Fail；Function TNO 設定必須與 Map 一致。
+2. 按 Config J22。新版空白範本可選取舊結果 Excel，工具唯讀開啟來源並把報表寫在新版工具。
+3. 查看 Missing BLK Address，以 Finding 篩選分類。Config Q2 固定顯示 Fail Map；舊檔的 All Function / Stop Sign 不再改變核對範圍。
 
-## 精確條件
+## 核對範圍
 
-對每筆 Function FBC，逐 BLK 檢查：
+與 Map 共用同一段 BLK 篩選程式，不依工作表目前的 AutoFilter 畫面判斷：
 
-`FBC > 0` 且 `Fail Address 中相同 WT + TNO + X + Y + BLK 的1標記筆數 = 0`。
+- 只檢查有 Pattern Name 的終點 Function TNO。Hard Fail 標記本身不是 Pattern。
+- 排除當前與之前 WT 的 Hard Fail BLK。
+- WT2 排除 WT1 任一設定 Function TNO FBC>0 的 BLK。
+- WT3 排除 WT1 或 WT2 任一設定 Function TNO FBC>0 的 BLK。
+- 必要記錄缺失而使 Map 灰底留白的 Chip/WT 不列入。未出現在 Chip Locations 的位置不列入。
+- 僅對通過上述條件、終點 FBC>0 的 BLK 輸出一列；Monitor 不參與。
 
-不同 TNO 或不同 WT 的 Address 不算相符。有任一筆相符 Address 的 BLK 不列入；本功能不推算缺少的 WL/BL/IO。
+## 數量與分類
 
-報表列出 WT、TNO、Func.、電壓、Pattern、X、Y、BLK、FBC，以及該 WT/TNO/Chip 已記錄的 Address 數。記錄數>=1000時標示 Yes，作為可能達輸出上限的佐證；未達1000時標示 Not confirmed。差異本身不證明截斷原因。
+Address Count = Fail Address 中相同 WT / TNO / X / Y / BLK 的1標記列數。
+不借用不同 TNO、WT、Chip 或 BLK 的 Address。原始匯入輸出的一列是一個唯一 X/Y/BLK/WL/BL/IO 地址。
 
-## 正確性保護
+| Finding | 規則 | 顏色 |
+|---|---|---|
+| Complete | Address Count = FBC | 綠 |
+| Partial Address | 0 < Address Count < FBC | 橘 |
+| No Address | Address Count = 0，且 FBC>0 | 紅 |
+| Address Count > FBC | Address Count > FBC，需檢查資料一致性 | 黃 |
 
-- 新匯入結果會保存數字 TNO/欄位索引與 LOT/WNO/STEP/版本，避免只靠顯示標題猜測。
-- 舊結果可用唯一的 WT+TNO 或 Func./Voltage 標題辨識；若重複標題造成 TNO 不明確，工具拒絕比對。此時需用新版匯入一次 Address 建立索引，之後不必重複匯入。
-- 已記錄的來源識別不一致、未完成的匯入、FBC解析錯誤、無效數字或重複 FBC 記錄，都會停止比對並保留前一份報表。
-- 來源沒有舊版識別資料時，報表會提示來源未驗證，使用者需確認兩個輸出來自同一批 Raw。
-- 檢查完整資料，不受目前畫面的 AutoFilter 影響。
-- 批次讀取、256-BLK位元旗標索引與分塊輸出，避免逐格搜尋及大量 BLK 字串索引。
+Missing Count = max(FBC - Address Count, 0)。例如 FBC=10、Address Count=4，分類 Partial Address，缺6筆。
+不足可能來自輸出上限，但差異本身不能證明截斷原因；工具不推算未輸出的 WL/BL/IO。
 
-已使用原生 Excel16 合成測試驗證：1000筆Address、精確WT/TNO/Chip/BLK、BLK255、大FBC、Monitor排除、篩選隱藏列、單列與Stop範圍、數字/舊版標題索引、來源不符/未完成/解析錯誤、失敗保留報表及唯讀舊檔。尚未以公司實際資料驗證。
+保留分頁名稱 Missing BLK Address，但現在包含完整及不完整的所有 Map 計入 BLK。Row1 顯示四類數量，各類總和等於核對 BLK 總數。
+
+## 保護與驗證
+
+數字 TNO 欄位索引、舊標題歧義、LOT/WNO/STEP/版本不符、未完成匯入、FBC 解析錯誤、重複記錄等既有保護持續保留。失敗保留上一份報表，來源唯讀。
+批次讀取 Address，以每 WT/TNO/Chip 的256個 BLK計數陣列建立索引，批次輸出報表。
+
+原生 Excel16 合成資料已驗證：Map 4/1/1 個 BLK 與核對6列一致、四種分類及缺少筆數、BLK255、超過 Long 的 FBC、精確 WT/TNO/Chip/BLK、跨 WT 排除、Hard Fail、篩選隱藏列、唯讀舊檔、錯誤保留及來源不變。尚未取得公司實際 ASC 進行驗證。

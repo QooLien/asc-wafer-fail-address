@@ -4,10 +4,12 @@ r=Path(__file__).resolve().parents[1];s=(r/'src/BLKVminEngine.bas').read_text()
 def function(name):
  a=s.index('Private Function '+name);return s[a:s.index('End Function',a)+len('End Function')]
 helpers='\n'.join(function(n) for n in ['ReadStopPatterns','CountFBCRow','MapResult','MapStatus','MapColor','FailMapSheetName','UnsignedValue','Coordinate'])
-helpers=helpers.replace('Private Function','Function')
-helpers=re.sub(r' As (Variant|String|Long|Double|Object|Boolean|Worksheet)\b','',helpers)
+helpers=helpers.replace('Private Function','Function').replace(', Optional ByRef includedMask As Variant', '')
+helpers=helpers.replace(', Optional ByVal priorPatterns As Object = Nothing', '')
+helpers=re.sub(r' As (Variant|String|Long|Double|Object|Boolean|Worksheet|Collection)\b','',helpers)
 helpers=re.sub(r'\b(\w+)\$',r'\1',helpers);helpers=re.sub(r'(\d)#',r'\1',helpers)
 helpers=re.sub(r'\bNext \w+','Next',helpers)
+helpers=helpers.replace('Mid(includedMask, b, 1) = "1"', 'includedMask = Left(includedMask, b - 1) & "1" & Mid(includedMask, b + 1)')
 helpers=helpers.replace('Mid(blocked, b, 1) = "1"', 'blocked = Left(blocked, b - 1) & "1" & Mid(blocked, b + 1)')
 code='''
 Class ConfigRange
@@ -23,7 +25,8 @@ Class FakeConfig
   Dim cell:Set cell=New ConfigRange:cell.data=data:Set Range=cell
  End Function
 End Class
-Dim cfg,settings(3,4),patterns,wanted,counts,errors,data(1,260),result,b,saved,mDigits,used,a,c,hard,lastTno
+Dim cfg,settings(3,4),patterns,wanted,counts,errors,data(1,260),result,b,saved,mDigits,used,a,c,hard,lastTno,priorPatterns
+Set priorPatterns=Nothing
 Set mDigits=Nothing:Set cfg=New FakeConfig
 settings(1,1)=500:settings(1,2)="Scan":settings(1,3)=1.2
 settings(2,1)=501:settings(2,2)="Scan":settings(2,3)=1.1:settings(2,4)="Scan"

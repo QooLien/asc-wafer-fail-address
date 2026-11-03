@@ -16,6 +16,17 @@ CT = 'http://schemas.openxmlformats.org/package/2006/content-types'
 ET.register_namespace('', NS)
 with zipfile.ZipFile(base) as z:
     entries = {name: z.read(name) for name in z.namelist()}
+if base.suffix.lower() == '.xlsm':
+    # An Excel-saved workbook may contain unused namespace declarations referenced
+    # by mc:Ignorable / AlternateContent. Keep its XML byte-for-byte unchanged.
+    # It already has its VBA relationships, content types and document code names.
+    assert 'xl/vbaProject.bin' in entries, 'Existing XLSM has no VBA project'
+    entries['xl/vbaProject.bin'] = binary.read_bytes()
+    with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as z:
+        for name, content in entries.items():
+            z.writestr(name, content)
+    print('Updated VBA payload only; existing XLSM XML, custom button positions and user settings preserved byte-for-byte.')
+    sys.exit(0)
 ct = ET.fromstring(entries['[Content_Types].xml'])
 def set_content_type(part, content_type):
     node = next((item for item in ct if item.tag == f'{{{CT}}}Override' and item.get('PartName') == part), None)
