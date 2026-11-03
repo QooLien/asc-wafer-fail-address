@@ -37,6 +37,14 @@ with ZipFile(p) as z:
  defaults=[350+i for i in range(11)]+[370+i for i in range(11)]
  assert [int(cells[f'A{i+2}']) for i in range(22)]==defaults
  assert 'VminFBCThreshold' not in cells.values()
+ labels=['1.20','1.035','0.99','0.90','0.81','0.765','0.72','0.68','0.64','0.60','0.56']
+ fail=ET.fromstring(z.read('xl/worksheets/sheet2.xml'))
+ titles={c.get('r'):value(c) for c in fail.iter(S+'c')}
+ for wt in range(1,4):
+  for i in range(22):
+   func='W-Low pBL' if i<11 else 'R-Low pBL'
+   assert titles[col(7+(wt-1)*22+i)+'1']==f'WT{wt}\n{func}_{labels[i%11]}v'
+ assert float(fail.find(S+'sheetData').find(S+'row').get('ht'))==150
  vml=ET.fromstring(z.read('xl/drawings/vmlDrawing1.vml'))
  X='{urn:schemas-microsoft-com:office:excel}'
  buttons=vml.findall('.//'+X+'ClientData')

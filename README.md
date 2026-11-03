@@ -1,13 +1,13 @@
 # ThreeASC：Fail Address + FBC by BLK
 
-[下載最新版 Excel（內含全部 VBA）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.16.0/ASC_ThreeASC_FBC.xlsm)
+[下載最新版 Excel（內含全部 VBA）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.17.0/ASC_ThreeASC_FBC.xlsm)
 
 新版只有三個分頁：`Config`、`Fail Address`、`FBC by BLK`。
 
 ## 使用方式
 
 1. 使用 Windows 桌面版 Excel 開啟檔案並允許巨集，不需要安裝 Python 或額外匯入 VBA。
-2. Config 的 A2:A901 與 D2:D901 為兩組 TNO 清單，兩組合併處理，TNO 不可重複。保留 22 個預設 TNO。B/C/E/F 僅供備註，Func.、電壓可空白，暫不參與判斷。
+2. Config 的 A2:A901 與 D2:D901 為兩組 TNO 清單，兩組合併處理，TNO 不可重複。保留 22 個預設 TNO。B/C 與 E/F 的 Func.、Test Voltage 用於 Fail Address Row1 顯示名稱，不參與 Fail 判斷；若未填完整則保留 TNO 標題。
 3. Config!J13 為「僅匯入 Fail Address」；Config!J16 為「僅匯入 FBC by BLK」。兩個按鈕各自選取三份 ASC。完整 LOT、WNO 必須相同；STEP 數字由小到大對應 WT1/WT2/WT3。單獨重跑 FBC 不會解析或寫入 Fail Address，單獨匯入 Address 也不解析 FBC。
 4. 執行完成後另存輸出。BLK 錯誤或無資料訊息位於 Config!T2。
 
@@ -24,7 +24,11 @@
 | C / D | X / Y |
 | E:IZ | BLK 0～255 |
 
-WT1、WT2、WT3 依序追加至同頁，以藍／橘／綠底色區分。各 WT 內按 X/Y 排序，同 Chip 依設定 TNO 順序輸出。只輸出實際存在的有效 FBC 記錄；找不到記錄不會補成 0。
+三個 WT 完成後按 Chip X/Y、Config TNO 順序、WT 排序。同一 Chip／同一 TNO 的 WT1、WT2、WT3 連續排列，以藍／橘／綠底色區分。整列 FBC 一起移動，不加總、不合併數值。只輸出實際存在的有效 FBC 記錄；找不到記錄不會補成 0。
+
+## Fail Address Row1 名稱
+
+保留 WT 標示，TNO 標題改成 `Func._Test Voltage`，例如 `WT1` 換行 `W-Low pBL_1.20v`。至少兩位小數，保留有意義的額外精度，例如 `1.035v`、`0.765v`。Config 兩組設定皆適用；缺少 Func. 或有效電壓時保留原 TNO。欄位索引及 Fail 的 1 標記邏輯不變。標題列維持由下往上旋轉，列高調整為 150 pt，資料列保持 26 pt。
 
 ## Raw Data 讀取規則
 

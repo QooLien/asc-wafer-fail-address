@@ -30,7 +30,7 @@ Const MAX_RESULT_ROWS=1048575
 Dim mTokenRegex,mBitMasks,tnos,localTNOs,addresses,bits(),flagBytes,capacity,phase,i,t
 Dim buffer,headerTNO,sections,accepted,skipped,expected,key,addr,sizes,sz,p,raw
 Dim headers(),columnCount,totalTNOs,data(),batchLimit,batchSize,batchRow,written,uniqueCount
-Dim fields,v,rowIndex,b,bitValue,k,j,captured,variantCase,saved,dummy,chunkSizes
+Dim fields,v,rowIndex,b,bitValue,k,j,captured,variantCase,saved,dummy,chunkSizes,addressLabels
 Dim paths(3),meta(3),steps(3),other,swapPath,swapStep,swapMeta
 Set mTokenRegex=Nothing
 mBitMasks=Array(1,2,4,8,16,32,64,128)
@@ -47,6 +47,8 @@ For Each variantCase In Array(1,3,9,900)
  Else
   chunkSizes=Array(7,262144)
  End If
+ Set addressLabels=CreateObject("Scripting.Dictionary")
+ For Each v In tnos:addressLabels.Add CStr(v),CStr(v):Next
  For Each sz In chunkSizes
   Set addresses=CreateObject("Scripting.Dictionary")
   Set expected=CreateObject("Scripting.Dictionary")

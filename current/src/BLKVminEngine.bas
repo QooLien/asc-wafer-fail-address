@@ -104,14 +104,53 @@ Failed:
 End Function
 
 Public Function BLK_Finalize(ByVal wb As Workbook) As String
-    Dim ws As Worksheet
+    Dim ws As Worksheet, ranks As Object, values As Variant, helper As Variant, i As Long, lastRow As Long
     On Error GoTo Failed
     Set ws = wb.Worksheets("FBC by BLK")
     If ws.AutoFilterMode Then ws.AutoFilterMode = False
-    ws.Cells(1, 1).Resize(mNextRow - 1, 260).AutoFilter
+    lastRow = mNextRow - 1
+    If lastRow > 1 Then
+        Set ranks = CreateObject("Scripting.Dictionary")
+        For i = LBound(mSequence) To UBound(mSequence): ranks.Add mSequence(i), i: Next i
+        ' Read only the TNO column, not the 256-column FBC table.
+        values = ws.Cells(2, 2).Resize(lastRow - 1, 1).Value2
+        helper = BuildTNORanks(values, ranks, lastRow - 1)
+        ws.Cells(1, 261).Value2 = "Temporary TNO order"
+        ws.Cells(2, 261).Resize(lastRow - 1, 1).Value2 = helper
+        With ws.Sort
+            .SortFields.Clear
+            .SortFields.Add Key:=ws.Cells(2, 3).Resize(lastRow - 1, 1), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+            .SortFields.Add Key:=ws.Cells(2, 4).Resize(lastRow - 1, 1), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+            .SortFields.Add Key:=ws.Cells(2, 261).Resize(lastRow - 1, 1), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+            .SortFields.Add Key:=ws.Cells(2, 1).Resize(lastRow - 1, 1), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+            .SetRange ws.Cells(1, 1).Resize(lastRow, 261)
+            .Header = xlYes: .MatchCase = False: .Orientation = xlTopToBottom
+            .Apply
+            .SortFields.Clear
+        End With
+        ws.Cells(1, 261).Resize(lastRow, 1).ClearContents
+    End If
+    ws.Cells(1, 1).Resize(lastRow, 260).AutoFilter
     Exit Function
 Failed:
     BLK_Finalize = "FBC final formatting: " & Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        ws.Sort.SortFields.Clear
+        If lastRow > 0 Then ws.Cells(1, 261).Resize(lastRow, 1).ClearContents
+    End If
+End Function
+
+Private Function BuildTNORanks(ByVal values As Variant, ByVal ranks As Object, ByVal rowCount As Long) As Variant
+    Dim result() As Variant, i As Long, value As Variant, key As String
+    ReDim result(1 To rowCount, 1 To 1)
+    For i = 1 To rowCount
+        If rowCount = 1 Then value = values Else value = values(i, 1)
+        key = CStr(CLng(value))
+        If Not ranks.Exists(key) Then Err.Raise vbObjectError + 405, , "Output TNO is not configured: " & key
+        result(i, 1) = CLng(ranks(key))
+    Next i
+    BuildTNORanks = result
 End Function
 
 Public Sub BLK_Release()

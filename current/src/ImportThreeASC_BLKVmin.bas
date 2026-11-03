@@ -23,7 +23,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Dim phase As Long, other As Long, swapPath As String, swapStep As Long, swapMeta As Object
     Dim localTNOs As Object, allAccepted As Long, allSkipped As Long, sourceStats(1 To 3, 1 To 6) As Variant
     Dim baseNames(1 To 3) As String, totalTNOs As Long, color As Long
-    Dim blkWarnings As String, blkMessage As String
+    Dim blkWarnings As String, blkMessage As String, addressLabels As Object
     Dim cfg As Worksheet, dst As Worksheet, tnos As Object, addresses As Object
     Dim fd As Object, settings As Variant, headers() As Variant, data() As Variant
     Dim bits() As Byte, fields As Variant, v As Variant
@@ -55,6 +55,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     stage = "Validate Monitor / Function settings"
     BLKVminEngine.BLK_Setup cfg
     Set tnos = BLKVminEngine.BLK_AddressTNOs()
+    If Not fbcOnly Then Set addressLabels = BuildAddressLabels(cfg)
     stage = "Select three ASC files"
     Set fd = Application.FileDialog(3)
     With fd
@@ -159,7 +160,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     For j = 0 To 5: headers(1, j + 1) = fields(j): Next j
     For phase = 1 To 3
         Set localTNOs = PhaseTNOs(tnos, phase)
-        For Each v In localTNOs: headers(1, 7 + CLng(localTNOs(v))) = "WT" & phase & vbLf & CStr(v): Next v
+        For Each v In localTNOs: headers(1, 7 + CLng(localTNOs(v))) = "WT" & phase & vbLf & CStr(addressLabels(CStr(v))): Next v
     Next phase
     stage = "Write output batches"
     If dst.AutoFilterMode Then dst.AutoFilterMode = False
@@ -206,7 +207,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     End With
     With dst.Cells(1, 1).Resize(1, columnCount)
         .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True
-        .Orientation = 0: .RowHeight = 60
+        .Orientation = 0: .RowHeight = 150
         .Columns.ColumnWidth = 10
     End With
     For phase = 1 To 3
@@ -269,6 +270,42 @@ Failed:
     Resume Done
 End Sub
 
+
+Private Function BuildAddressLabels(ByVal cfg As Worksheet) As Object
+    Dim labels As Object
+    Set labels = CreateObject("Scripting.Dictionary")
+    AddAddressLabels cfg.Range("A2:C901").Value2, labels
+    AddAddressLabels cfg.Range("D2:F901").Value2, labels
+    Set BuildAddressLabels = labels
+End Function
+
+Private Sub AddAddressLabels(ByVal data As Variant, ByVal labels As Object)
+    Dim i As Long, tno As String, name As String, label As String
+    For i = LBound(data, 1) To UBound(data, 1)
+        If Len(Trim$(CStr(data(i, 1)))) > 0 Then
+            tno = CStr(CLng(data(i, 1))): label = tno
+            If Not IsError(data(i, 2)) And Not IsError(data(i, 3)) Then
+                name = Trim$(CStr(data(i, 2)))
+                If Len(name) > 0 And Len(Trim$(CStr(data(i, 3)))) > 0 And IsNumeric(data(i, 3)) Then
+                    label = name & "_" & AddressVoltageLabel(CDbl(data(i, 3)))
+                End If
+            End If
+            labels.Add tno, label
+        End If
+    Next i
+End Sub
+
+Private Function AddressVoltageLabel(ByVal voltage As Double) As String
+    Dim value As Double, whole As Double, fraction As String, prefix As String
+    value = Round(Abs(voltage), 9): whole = Fix(value)
+    fraction = Right$("000000000" & CStr(CLng(Round((value - whole) * 1000000000#, 0))), 9)
+    Do While Len(fraction) > 2
+        If Right$(fraction, 1) <> "0" Then Exit Do
+        fraction = Left$(fraction, Len(fraction) - 1)
+    Loop
+    If voltage < 0 Then prefix = "-"
+    AddressVoltageLabel = prefix & CStr(whole) & "." & fraction & "v"
+End Function
 
 ' Only orchestration helpers below are new. Original parser/reader helpers follow unchanged.
 Private Function PhaseTNOs(ByVal selected As Object, ByVal phase As Long) As Object
