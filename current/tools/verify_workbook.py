@@ -5,12 +5,13 @@ from xml.etree import ElementTree as ET
 from oletools.olevba import VBA_Parser
 r=Path(__file__).resolve().parents[1];p=Path(sys.argv[1]) if len(sys.argv)>1 else r/'templates/ASC_ThreeASC_FBC.xlsm'
 v=VBA_Parser(str(p));modules={n:c for _,_,n,c in v.extract_macros()};v.close()
-assert len(modules)==6
+assert len(modules)==8
 for prefix,file in [('ImportFailAddresses.','ImportThreeASC_BLKVmin.bas'),('BLKVminEngine.','BLKVminEngine.bas')]:
  expected=(r/'src'/file).read_text().strip()
  actual=next(c for n,c in modules.items() if n.startswith(prefix)).replace('\r\n','\n').strip()
  assert actual==expected
 main=(r/'src/ImportThreeASC_BLKVmin.bas').read_text();base=(r/'reference/ImportThreeASC.bas').read_text()
+assert 'NativeConsumeTestRaw' not in main
 assert main[main.index('Private Function PhaseTNOs'):]==base[base.index('Private Function PhaseTNOs'):]
 def loop(s):
  a=s.index('        For Each v In addresses');return s[a:s.index('        Next v',a)]
@@ -19,7 +20,7 @@ S='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 with ZipFile(p) as z:
  assert z.testzip() is None
  book=ET.fromstring(z.read('xl/workbook.xml'))
- assert [n.get('name') for n in book.find(S+'sheets')]==['Config','Fail Address','FBC by BLK']
+ assert [n.get('name') for n in book.find(S+'sheets')]==['Config','Fail Address','FBC by BLK','Chip Locations','BLK Fail Count']
  strings=[]
  if 'xl/sharedStrings.xml' in z.namelist():strings=[''.join(n.itertext()) for n in ET.fromstring(z.read('xl/sharedStrings.xml'))]
  def value(c):
@@ -37,6 +38,14 @@ with ZipFile(p) as z:
  defaults=[350+i for i in range(11)]+[370+i for i in range(11)]
  assert [int(cells[f'A{i+2}']) for i in range(22)]==defaults
  assert 'VminFBCThreshold' not in cells.values()
+ assert cells['G1']=='Stop Sign'
+ g1=next(c for c in cfg.iter(S+'c') if c.get('r')=='G1')
+ styles=ET.fromstring(z.read('xl/styles.xml'))
+ xf=list(styles.find(S+'cellXfs'))[int(g1.get('s'))]
+ font=list(styles.find(S+'fonts'))[int(xf.get('fontId'))]
+ fill=list(styles.find(S+'fills'))[int(xf.get('fillId'))]
+ assert font.find(S+'color').get('rgb').endswith('FFFFFF')
+ assert fill.find('.//'+S+'fgColor').get('rgb').endswith('C00000')
  labels=['1.20','1.035','0.99','0.90','0.81','0.765','0.72','0.68','0.64','0.60','0.56']
  fail=ET.fromstring(z.read('xl/worksheets/sheet2.xml'))
  titles={c.get('r'):value(c) for c in fail.iter(S+'c')}
@@ -49,8 +58,8 @@ with ZipFile(p) as z:
  X='{urn:schemas-microsoft-com:office:excel}'
  buttons=vml.findall('.//'+X+'ClientData')
  macros={b.find(X+'FmlaMacro').text:b for b in buttons}
- assert set(macros)=={'[0]!ImportASCFailAddresses','[0]!ImportASCFBC'}
- for macro,row in [('[0]!ImportASCFailAddresses',12),('[0]!ImportASCFBC',15)]:
+ assert set(macros)=={'[0]!ImportASCFailAddresses','[0]!ImportASCFBC','[0]!BuildFailMaps'}
+ for macro,row in [('[0]!ImportASCFailAddresses',12),('[0]!ImportASCFBC',15),('[0]!BuildFailMaps',18)]:
   anchor=[int(v.strip()) for v in macros[macro].find(X+'Anchor').text.split(',')]
   assert anchor[0]==9 and anchor[2]==row
-print('PASS XLSM: six exact VBA modules, only three sheets, unchanged address helpers/output, all256 E:IZ BLK headers and22 default TNOs, no Vmin configuration.')
+print('PASS XLSM: eight exact VBA modules, five initial sheets, Stop Sign red/white, three native macro buttons, unchanged address helpers/output, all256 BLK headers and22 defaults.')

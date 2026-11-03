@@ -12,6 +12,7 @@ Private mValues() As Double, mCount As Long, mLine As Long, mRecordLine As Long
 
 Private mSequence() As String, mCarry As String, mBLKError As String, mNextRow As Long
 Private mIgnored As Long
+Private mLocations As Object, mPhaseErrors As Object, mLocationCarry As String, mLocationError As String
 
 Public Sub BLK_Setup(ByVal cfg As Worksheet)
     Dim cols As Variant, col As Variant, data As Variant, i As Long, count As Long, tno As String, seen As Object
@@ -35,6 +36,9 @@ Public Sub BLK_Setup(ByVal cfg As Worksheet)
     If count = 0 Then Err.Raise vbObjectError + 301, , "Enter TNOs in Config A2:A901 or D2:D901."
     ReDim Preserve mSequence(1 To count)
     mNextRow = 2
+    Set mLocations = CreateObject("Scripting.Dictionary")
+    Set mPhaseErrors = CreateObject("Scripting.Dictionary")
+    mLocationCarry = "": mLocationError = ""
 End Sub
 
 Public Function BLK_AddressTNOs() As Object
@@ -49,6 +53,7 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
     Dim duts As Collection, dut As Variant, xy As Variant, values As Variant, key As String
     Dim i As Long, b As Long, count As Long, take As Long, remaining As Long, color As Long, startRow As Long
     On Error GoTo Failed
+    mPhaseErrors("WT" & phase) = mBLKError
     Set ws = wb.Worksheets("FBC by BLK")
     If phase = 1 Then
         If ws.AutoFilterMode Then ws.AutoFilterMode = False
@@ -101,6 +106,7 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
     Exit Function
 Failed:
     BLK_WritePhase = "FBC output error (" & Err.Number & "): " & Err.Description
+    mPhaseErrors("WT" & phase) = BLK_WritePhase
 End Function
 
 Public Function BLK_Finalize(ByVal wb As Workbook) As String
@@ -131,6 +137,7 @@ Public Function BLK_Finalize(ByVal wb As Workbook) As String
         ws.Cells(1, 261).Resize(lastRow, 1).ClearContents
     End If
     ws.Cells(1, 1).Resize(lastRow, 260).AutoFilter
+    WriteMapLocations wb
     Exit Function
 Failed:
     BLK_Finalize = "FBC final formatting: " & Err.Description
@@ -155,6 +162,7 @@ End Function
 
 Public Sub BLK_Release()
     Set mData = Nothing: Set mWanted = Nothing: Set mDUTs = Nothing
+    Set mLocations = Nothing: Set mPhaseErrors = Nothing
     mCarry = "": mActive = False
 End Sub
 
@@ -163,7 +171,7 @@ Public Sub BLK_BeginFile(ByVal path As String)
     Set mWanted = CreateObject("Scripting.Dictionary")
     For i = LBound(mSequence) To UBound(mSequence): mWanted.Add mSequence(i), True: Next i
     ResetParser path
-    mCarry = "": mBLKError = "": mIgnored = 0
+    mCarry = "": mBLKError = "": mIgnored = 0: mLocationCarry = ""
 End Sub
 
 Public Sub BLK_Feed(ByVal raw As String, ByVal atEOF As Boolean)
@@ -184,7 +192,8 @@ Public Sub BLK_Feed(ByVal raw As String, ByVal atEOF As Boolean)
             mLine = mLine + 1: line = Replace(mCarry, vbCr, "")
             If mActive Or InStr(line, "=") > 0 Then ParseLine line
         End If
-        FinishRecord: mCarry = ""
+        Call FinishRecord
+        mCarry = ""
     End If
     Exit Sub
 Failed:
@@ -199,7 +208,7 @@ Private Sub ResetParser(ByVal path As String)
     mActive = False: mCount = 0
     If mTags Is Nothing Then
         Set mTags = CreateObject("VBScript.RegExp"): mTags.Global = True: mTags.IgnoreCase = True
-        mTags.Pattern = "\b(Tno|X|Y)\s*=\s*([+-]?[0-9]+)(?=\s|[,;]|$)"
+        mTags.Pattern = "\b(Tno|DUT|X|Y)\s*=\s*([+-]?[0-9]+)(?=\s|[,;]|$)"
         Set mBlockTag = CreateObject("VBScript.RegExp"): mBlockTag.IgnoreCase = True
         mBlockTag.Pattern = "\bFBC\s+BY\s+BLK\s*=\s*"
         Set mSpaces = CreateObject("VBScript.RegExp"): mSpaces.Global = True: mSpaces.Pattern = "[\s,;]+"
@@ -343,4 +352,332 @@ End Function
 
 Public Function BLK_RecordCount() As Long
     If Len(mBLKError) = 0 Then BLK_RecordCount = mData.Count
+End Function
+
+Public Function BLK_Diagnostics() As String
+    BLK_Diagnostics = "line=" & mLine & "; active=" & mActive & "; values=" & mCount & "; carry=" & Len(mCarry) & "; ignored=" & mIgnored & "; error=" & mBLKError
+End Function
+
+Private Function CountFailBlocks(ByVal values As Variant) As Long
+    Dim block As Long, count As Long
+    For block = LBound(values) To UBound(values)
+        If CDbl(values(block)) > 0 Then count = count + 1
+    Next block
+    CountFailBlocks = count
+End Function
+
+Public Sub BLK_ObserveLocations(ByVal raw As String, ByVal atEOF As Boolean)
+    Dim p As Long, line As String
+    On Error GoTo Failed
+    If mLocations Is Nothing Then Set mLocations = CreateObject("Scripting.Dictionary")
+    mLocationCarry = mLocationCarry & raw
+    Do
+        p = InStr(mLocationCarry, vbLf): If p = 0 Then Exit Do
+        line = Replace(Left$(mLocationCarry, p - 1), vbCr, "")
+        CaptureMapLocation line
+        mLocationCarry = Mid$(mLocationCarry, p + 1)
+    Loop
+    If Len(mLocationCarry) > MAX_LINE Then Err.Raise vbObjectError + 450, , "Location line exceeds 1 MB."
+    If atEOF Then CaptureMapLocation mLocationCarry: mLocationCarry = ""
+    Exit Sub
+Failed:
+    mLocationError = "Location capture error: " & Err.Description
+    mLocationCarry = ""
+End Sub
+
+Private Sub CaptureMapLocation(ByVal line As String)
+    Dim tags As Object, tag As Object, x As String, y As String, nx As Long, ny As Long, key As String, blocks As Object, isDUTRecord As Boolean
+    If InStr(line, "=") = 0 Then Exit Sub
+    line = NormalizeASCWhitespace(line)
+    Set blocks = mBlockTag.Execute(line)
+    If blocks.Count > 0 Then line = Left$(line, blocks(0).FirstIndex)
+    Set tags = mTags.Execute(line)
+    For Each tag In tags
+        Select Case UCase$(tag.SubMatches(0))
+            Case "TNO", "DUT": isDUTRecord = True
+            Case "X": nx = nx + 1: x = Coordinate(CStr(tag.SubMatches(1)))
+            Case "Y": ny = ny + 1: y = Coordinate(CStr(tag.SubMatches(1)))
+        End Select
+    Next tag
+    If nx = 1 And ny = 1 And isDUTRecord Then
+        key = x & "|" & y
+        If Not mLocations.Exists(key) Then mLocations.Add key, True
+    End If
+End Sub
+
+Private Sub WriteMapLocations(ByVal wb As Workbook)
+    Dim ws As Worksheet, ordered As Collection, item As Variant, xy As Variant, data() As Variant, i As Long
+    Set ws = wb.Worksheets("Chip Locations")
+    ws.UsedRange.Clear
+    ws.Range("A1:B1").Value2 = Array("X", "Y")
+    ws.Range("D1:F1").Value2 = Array("WT", "FBC Status", "Message")
+    Set ordered = SortedDUTs(mLocations)
+    If ordered.Count > 0 Then
+        ReDim data(1 To ordered.Count, 1 To 2)
+        For Each item In ordered
+            i = i + 1: xy = Split(CStr(item), "|"): data(i, 1) = CLng(xy(0)): data(i, 2) = CLng(xy(1))
+        Next item
+        ws.Range("A2").Resize(ordered.Count, 2).Value2 = data
+    End If
+    For i = 1 To 3
+        ws.Cells(i + 1, 4).Value2 = "WT" & i
+        If mPhaseErrors.Exists("WT" & i) Then
+            If Len(CStr(mPhaseErrors("WT" & i))) > 0 Then ws.Cells(i + 1, 5).Value2 = "Data Error" Else ws.Cells(i + 1, 5).Value2 = "OK"
+            ws.Cells(i + 1, 6).Value2 = mPhaseErrors("WT" & i)
+        Else
+            ws.Cells(i + 1, 5).Value2 = "Data Error": ws.Cells(i + 1, 6).Value2 = "WT not processed."
+        End If
+    Next i
+    If Len(mLocationError) > 0 Then ws.Range("H1").Value2 = mLocationError
+    With ws.UsedRange
+        .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26
+    End With
+    ws.Columns("A:E").ColumnWidth = 14: ws.Columns("F").ColumnWidth = 80
+    With ws.Range("A1:F1")
+        .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True
+    End With
+End Sub
+
+Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object) As Object
+    Dim result As Object, data As Variant, i As Long, name As String, tno As String, func As String, voltage As Variant
+    Set result = CreateObject("Scripting.Dictionary"): result.CompareMode = vbTextCompare
+    Set wanted = CreateObject("Scripting.Dictionary")
+    data = cfg.Range("D2:G901").Value2
+    For i = LBound(data, 1) To UBound(data, 1)
+        If IsError(data(i, 4)) Then Err.Raise vbObjectError + 451, , "Stop Sign cell error at Config G" & i + 1
+        name = Trim$(CStr(data(i, 4)))
+        If Len(name) > 0 Then
+            If IsError(data(i, 1)) Then Err.Raise vbObjectError + 451, , "Function TNO cell error at row " & i + 1
+            tno = Trim$(CStr(data(i, 1)))
+            If Len(tno) <> 3 Then Err.Raise vbObjectError + 451, , "Stop Sign requires Function TNO in column D; row=" & i + 1
+            tno = CStr(CLng(UnsignedValue(tno, 999)))
+            If CLng(tno) < 100 Then Err.Raise vbObjectError + 451, , "Stop Function TNO must be 100-999."
+            If result.Exists(name) Then Err.Raise vbObjectError + 451, , "Duplicate Stop Sign Pattern Name: " & name
+            func = "": voltage = Empty
+            If Not IsError(data(i, 2)) Then func = Trim$(CStr(data(i, 2)))
+            If Not IsError(data(i, 3)) Then voltage = data(i, 3)
+            result.Add name, Array(tno, func, voltage)
+            If Not wanted.Exists(tno) Then wanted.Add tno, True
+        End If
+    Next i
+    Set ReadStopPatterns = result
+End Function
+
+Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object) As Object
+    Dim result As Object, last As Long, start As Long, take As Long, data As Variant, i As Long, b As Long
+    Dim wt As String, tno As String, key As String, count As Long
+    Set result = CreateObject("Scripting.Dictionary")
+    last = ws.Cells(ws.Rows.Count, 2).End(xlUp).Row
+    For start = 2 To last Step 512
+        take = last - start + 1: If take > 512 Then take = 512
+        data = ws.Cells(start, 1).Resize(take, 260).Value2
+        For i = 1 To take
+            If IsError(data(i, 1)) Or IsError(data(i, 2)) Then Err.Raise vbObjectError + 452, , "Invalid FBC output row " & start + i - 1
+            tno = Trim$(CStr(data(i, 2)))
+            If wanted.Exists(tno) Then
+                wt = UCase$(Trim$(CStr(data(i, 1))))
+                If wt <> "WT1" And wt <> "WT2" And wt <> "WT3" Then Err.Raise vbObjectError + 452, , "Invalid WT at FBC output row " & start + i - 1
+                key = wt & "|" & tno & "|" & Coordinate(CStr(data(i, 3))) & "|" & Coordinate(CStr(data(i, 4)))
+                If result.Exists(key) Then Err.Raise vbObjectError + 452, , "Duplicate FBC WT/TNO/XY: " & key
+                count = CountFBCRow(data, i)
+                result.Add key, count
+            End If
+        Next i
+    Next start
+    Set LoadMapCounts = result
+End Function
+
+Private Function CountFBCRow(ByRef data As Variant, ByVal row As Long) As Long
+    Dim b As Long, count As Long
+    For b = 5 To 260
+        If IsError(data(row, b)) Then Err.Raise vbObjectError + 452, , "Invalid FBC value."
+        If Len(Trim$(CStr(data(row, b)))) = 0 Or Not IsNumeric(data(row, b)) Then Err.Raise vbObjectError + 452, , "Missing/non-numeric FBC."
+        If CDbl(data(row, b)) < 0 Or CDbl(data(row, b)) <> Fix(CDbl(data(row, b))) Then Err.Raise vbObjectError + 452, , "FBC must be non-negative integer."
+        If CDbl(data(row, b)) > 0 Then count = count + 1
+    Next b
+    CountFBCRow = count
+End Function
+
+Private Function MapResult(ByVal counts As Object, ByVal errors As Object, ByVal wt As String, ByVal tno As String, ByVal dut As String) As Variant
+    Dim key As String
+    If errors.Exists(wt) Then MapResult = "Data Error": Exit Function
+    key = wt & "|" & tno & "|" & dut
+    If counts.Exists(key) Then MapResult = CLng(counts(key)) Else MapResult = "No Data"
+End Function
+
+Private Function MapStatus(ByVal result As Variant) As String
+    If VarType(result) = vbString Then MapStatus = CStr(result): Exit Function
+    If CLng(result) = 0 Then MapStatus = "Pass" Else MapStatus = "Fail"
+End Function
+
+Private Function MapColor(ByVal result As Variant) As Long
+    Select Case MapStatus(result)
+        Case "Pass": MapColor = RGB(220, 252, 231)
+        Case "Fail": MapColor = RGB(254, 202, 202)
+        Case "No Data": MapColor = RGB(191, 191, 191)
+        Case Else: MapColor = RGB(255, 217, 102)
+    End Select
+End Function
+
+Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
+    Dim patterns As Object, wanted As Object, counts As Object, coords As Object, errors As Object, used As Object
+    Dim locations As Worksheet, summary As Worksheet, map As Worksheet, ws As Worksheet
+    Dim data As Variant, item As Variant, name As Variant, detail As Variant, xy As Variant, ordered As Collection
+    Dim i As Long, phase As Long, last As Long, minX As Long, maxX As Long, minY As Long, maxY As Long
+    Dim width As Long, col As Long, row As Long, origin As Long, sheetName As String, result As Variant
+    Dim output() As Variant, n As Long, total As Double, text As String, existing As Boolean
+    On Error GoTo Failed
+    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted)
+    If patterns.Count = 0 Then
+        Set used = CreateObject("Scripting.Dictionary")
+        PruneOldFailMaps wb, used
+        Set summary = wb.Worksheets("BLK Fail Count")
+        If summary.AutoFilterMode Then summary.AutoFilterMode = False
+        summary.UsedRange.Clear
+        summary.Range("A1:I1").Value2 = Array("Pattern", "Stop TNO", "Func.", "Test Voltage", "WT", "X", "Y", "Fail BLK Count", "Status")
+        BLK_BuildFailMaps = "Map skipped: enter Pattern Name in Config G beside a Function TNO."
+        Exit Function
+    End If
+    Set locations = wb.Worksheets("Chip Locations")
+    If Len(CStr(locations.Range("H1").Value2)) > 0 Then Err.Raise vbObjectError + 453, , CStr(locations.Range("H1").Value2)
+    last = locations.Cells(locations.Rows.Count, 1).End(xlUp).Row
+    If last < 2 Then Err.Raise vbObjectError + 453, , "Import FBC first to collect Raw Data Chip X/Y locations."
+    data = locations.Range("A2:B" & last).Value2
+    Set coords = CreateObject("Scripting.Dictionary")
+    For i = 1 To UBound(data, 1)
+        text = Coordinate(CStr(data(i, 1))) & "|" & Coordinate(CStr(data(i, 2)))
+        If Not coords.Exists(text) Then coords.Add text, True
+    Next i
+    Set ordered = SortedDUTs(coords)
+    xy = Split(CStr(ordered(1)), "|"): minX = CLng(xy(0)): maxX = minX: minY = CLng(xy(1)): maxY = minY
+    For Each item In ordered
+        xy = Split(CStr(item), "|")
+        If CLng(xy(0)) < minX Then minX = CLng(xy(0))
+        If CLng(xy(0)) > maxX Then maxX = CLng(xy(0))
+        If CLng(xy(1)) < minY Then minY = CLng(xy(1))
+        If CLng(xy(1)) > maxY Then maxY = CLng(xy(1))
+    Next item
+    If CDbl(maxX) - minX > 99 Or CDbl(maxY) - minY > 99 Then Err.Raise vbObjectError + 453, , "Raw Chip coordinate span exceeds 100; review Chip Locations."
+    Set errors = CreateObject("Scripting.Dictionary")
+    For phase = 1 To 3
+        If CStr(locations.Cells(phase + 1, 5).Value2) <> "OK" Then errors.Add "WT" & phase, True
+    Next phase
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
+    total = CDbl(patterns.Count) * coords.Count * 3
+    Set summary = wb.Worksheets("BLK Fail Count")
+    If total + 1 > summary.Rows.Count Then Err.Raise vbObjectError + 453, , "BLK Fail Count exceeds Excel row limit."
+    If summary.AutoFilterMode Then summary.AutoFilterMode = False
+    summary.UsedRange.Clear
+    summary.Range("A1:I1").Value2 = Array("Pattern", "Stop TNO", "Func.", "Test Voltage", "WT", "X", "Y", "Fail BLK Count", "Status")
+    Set used = CreateObject("Scripting.Dictionary"): used.CompareMode = vbTextCompare
+    width = maxX - minX + 1
+    For Each name In patterns
+        detail = patterns(name): sheetName = FailMapSheetName(CStr(name), used)
+        Set map = Nothing
+        On Error Resume Next
+        Set map = wb.Worksheets(sheetName)
+        On Error GoTo Failed
+        If Not map Is Nothing Then
+            existing = False
+            For i = 1 To map.CustomProperties.Count
+                If map.CustomProperties(i).Name = "ASCFailMap" Then existing = True
+            Next i
+            If Not existing Then Err.Raise vbObjectError + 453, , "Map sheet name collides with an existing non-Map sheet: " & sheetName
+            map.UsedRange.UnMerge: map.UsedRange.Clear
+        Else
+            Set map = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+            map.Name = sheetName: map.CustomProperties.Add Name:="ASCFailMap", Value:="1"
+        End If
+        With map.Cells(1, 1).Resize(maxY - minY + 6, (width + 2) * 3)
+            .Font.Name = "Calibri": .Font.Size = 10: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+            .ColumnWidth = 11: .RowHeight = 42
+        End With
+        map.Cells(1, 1).Resize(1, (width + 2) * 3).Merge
+        map.Cells(1, 1).Value2 = CStr(name) & " Fail Map | Stop TNO=" & detail(0) & " | " & detail(1) & " | Voltage=" & detail(2)
+        With map.Cells(1, 1): .Font.Size = 14: .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77): End With
+        map.Cells(2, 1).Resize(1, (width + 2) * 3).Merge
+        map.Cells(2, 1).Value2 = "Green: Pass(0) | Red: Fail BLK count | Gray: no selected Stop-TNO data | Yellow: data error | X right, Y down"
+        ReDim output(1 To ordered.Count * 3, 1 To 9): n = 0
+        For phase = 1 To 3
+            origin = 1 + (phase - 1) * (width + 2)
+            map.Cells(3, origin + 1).Resize(1, width).Merge
+            map.Cells(3, origin + 1).Value2 = "WT" & phase
+            map.Cells(3, origin + 1).Font.Bold = True
+            For col = minX To maxX: map.Cells(4, origin + 1 + col - minX).Value2 = "X=" & col: Next col
+            For row = minY To maxY: map.Cells(5 + row - minY, origin).Value2 = "Y=" & row: Next row
+        Next phase
+        For Each item In ordered
+            xy = Split(CStr(item), "|")
+            For phase = 1 To 3
+                result = MapResult(counts, errors, "WT" & phase, CStr(detail(0)), CStr(item))
+                n = n + 1: output(n, 1) = name: output(n, 2) = CLng(detail(0)): output(n, 3) = detail(1): output(n, 4) = detail(2)
+                output(n, 5) = "WT" & phase: output(n, 6) = CLng(xy(0)): output(n, 7) = CLng(xy(1)): output(n, 9) = MapStatus(result)
+                If VarType(result) <> vbString Then output(n, 8) = result
+                origin = 1 + (phase - 1) * (width + 2)
+                With map.Cells(5 + CLng(xy(1)) - minY, origin + 1 + CLng(xy(0)) - minX)
+                    .Value2 = "(" & xy(0) & "," & xy(1) & ")" & vbLf & CStr(result)
+                    .WrapText = True: .Interior.Color = MapColor(result)
+                    .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(150, 150, 150)
+                End With
+            Next phase
+        Next item
+        last = summary.Cells(summary.Rows.Count, 1).End(xlUp).Row + 1
+        summary.Cells(last, 1).Resize(n, 9).Value2 = output
+        For i = 1 To n
+            If output(i, 9) = "Pass" Then
+                result = 0
+            ElseIf output(i, 9) = "Fail" Then
+                result = output(i, 8)
+            Else
+                result = output(i, 9)
+            End If
+            summary.Cells(last + i - 1, 1).Resize(1, 9).Interior.Color = MapColor(result)
+        Next i
+    Next name
+    With summary.Cells(1, 1).Resize(CLng(total) + 1, 9)
+        .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26
+    End With
+    summary.Columns("A:D").ColumnWidth = 20: summary.Columns("E:G").ColumnWidth = 10: summary.Columns("H:I").ColumnWidth = 18
+    summary.Columns("D").NumberFormat = "0.000"
+    With summary.Range("A1:I1")
+        .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: .RowHeight = 32
+    End With
+    summary.Cells(1, 1).Resize(CLng(total) + 1, 9).AutoFilter
+    PruneOldFailMaps wb, used
+    Exit Function
+Failed:
+    BLK_BuildFailMaps = "Map build failed (" & Err.Number & "): " & Err.Description
+End Function
+
+Private Sub PruneOldFailMaps(ByVal wb As Workbook, ByVal keep As Object)
+    Dim ws As Worksheet, i As Long, j As Long, managed As Boolean, oldAlerts As Boolean, description As String
+    oldAlerts = Application.DisplayAlerts
+    On Error GoTo Failed
+    Application.DisplayAlerts = False
+    For i = wb.Worksheets.Count To 1 Step -1
+        Set ws = wb.Worksheets(i): managed = False
+        For j = 1 To ws.CustomProperties.Count
+            If ws.CustomProperties(j).Name = "ASCFailMap" Then managed = True
+        Next j
+        If managed And Not keep.Exists(ws.Name) Then ws.Delete
+    Next i
+    Application.DisplayAlerts = oldAlerts
+    Exit Sub
+Failed:
+    description = Err.Description
+    Application.DisplayAlerts = oldAlerts
+    Err.Raise vbObjectError + 454, , "Old Map cleanup: " & description
+End Sub
+
+Private Function FailMapSheetName(ByVal pattern As String, ByVal used As Object) As String
+    Dim clean As String, bad As Variant, name As String, i As Long, suffix As String
+    clean = Trim$(pattern)
+    For Each bad In Array("[", "]", ":", "*", "?", "/", "\", "'"): clean = Replace(clean, CStr(bad), "_"): Next bad
+    For i = 0 To 31: clean = Replace(clean, Chr$(i), "_"): Next i
+    name = Left$(clean, 22) & " Fail Map": i = 1
+    Do While used.Exists(name)
+        i = i + 1: suffix = "~" & i
+        name = Left$(clean, 22 - Len(suffix)) & suffix & " Fail Map"
+    Loop
+    used.Add name, True: FailMapSheetName = name
 End Function

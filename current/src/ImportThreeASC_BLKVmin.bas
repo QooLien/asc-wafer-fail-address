@@ -7,6 +7,7 @@ Private Const MAX_RESULT_ROWS As Long = 1048575
 Private mTokenRegex As Object
 Private mHeaderRegex As Object
 Private mBitMasks As Variant
+Private busy As Boolean
 
 ' No logs. Keep one address index and one bit per selected TNO/address.
 Public Sub ImportASCFailAddresses()
@@ -17,8 +18,30 @@ Public Sub ImportASCFBC()
     RunThreeASC True
 End Sub
 
+Public Sub BuildFailMaps()
+    Dim text As String, started As Date, oldScreen As Boolean, oldEvents As Boolean
+    If busy Then MsgBox "An import or Map build is already running.", vbExclamation: Exit Sub
+    busy = True: started = Now
+    oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents
+    On Error GoTo FailedMap
+    Application.ScreenUpdating = False: Application.EnableEvents = False
+    text = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
+    ThisWorkbook.Worksheets("Config").Range("T2").Value2 = text
+    If Len(text) > 0 Then
+        MsgBox text, vbExclamation
+    Else
+        ThisWorkbook.Save
+        MsgBox "Fail Maps complete. Seconds: " & DateDiff("s", started, Now), vbInformation
+    End If
+DoneMap:
+    Application.ScreenUpdating = oldScreen: Application.EnableEvents = oldEvents: busy = False
+    Exit Sub
+FailedMap:
+    MsgBox "Map failed (" & Err.Number & "): " & Err.Description, vbExclamation
+    Resume DoneMap
+End Sub
+
 Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
-    Static busy As Boolean
     Dim paths(1 To 3) As String, meta(1 To 3) As Object, steps(1 To 3) As Long
     Dim phase As Long, other As Long, swapPath As String, swapStep As Long, swapMeta As Object
     Dim localTNOs As Object, allAccepted As Long, allSkipped As Long, sourceStats(1 To 3, 1 To 6) As Variant
@@ -119,6 +142,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         raw = ReadASCChunk(fileNo, encoding)
         bytePosition = Seek(fileNo) - 1
         If fbcOnly Then
+            BLKVminEngine.BLK_ObserveLocations raw, False
             BLKVminEngine.BLK_Feed raw, False
         Else
             buffer = buffer & raw
@@ -144,6 +168,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         sourceStats(phase, 5) = accepted: sourceStats(phase, 6) = skipped
         If fbcOnly Then
             stage = "FBC by BLK WT" & phase
+            BLKVminEngine.BLK_ObserveLocations "", True
             BLKVminEngine.BLK_Feed "", True
             accepted = BLKVminEngine.BLK_RecordCount()
             sourceStats(phase, 5) = accepted
@@ -241,7 +266,12 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         cfg.Range("I2").Value2 = "FBC only: 3 ASC files"
         cfg.Range("I3").Value2 = Now
         blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
-        If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & blkMessage
+        If Len(blkMessage) > 0 Then
+            blkWarnings = blkWarnings & vbCrLf & blkMessage & "; Maps were not updated."
+        Else
+            blkMessage = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
+            If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & blkMessage
+        End If
         cfg.Range("T2").Value2 = blkWarnings
     End If
     stage = "Save result workbook"

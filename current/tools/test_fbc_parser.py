@@ -9,10 +9,10 @@ feed=feed.replace('On Error GoTo Failed','On Error Resume Next')
 lines=[]
 for line in feed.splitlines():
  lines.append(line)
- if 'ParseLine ' in line or 'FinishRecord:' in line:
+ if 'ParseLine ' in line or 'Call FinishRecord' in line:
   lines.append('If Err.Number <> 0 Then\n'+handler+'\nErr.Clear:Exit Sub\nEnd If')
 helpers='\n'.join(lines)+'\n'+s[s.index('Private Sub ResetParser'):s.index('Private Function SortedDUTs')]
-helpers+=s[s.index('Private Function UnsignedValue'):]
+helpers+=s[s.index('Private Function UnsignedValue'):s.index('Public Sub BLK_ObserveLocations')]
 helpers+=s[s.index('Private Function NormalizeASCWhitespace'):s.index('Private Sub SortXY')]
 for kind in ('Public','Private'):helpers=helpers.replace(kind+' Sub','Sub').replace(kind+' Function','Function')
 helpers=re.sub(r' As (String|Long|Double|Boolean|Object|Variant)\b','',helpers)

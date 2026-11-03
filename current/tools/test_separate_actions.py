@@ -25,5 +25,7 @@ assert not stack
 assert address_lines>0 and fbc_lines>0
 engine=(r/'src/BLKVminEngine.bas').read_text()
 assert 'Worksheets("Fail Address")' not in engine and 'ParseASCBuffer' not in engine
-assert 'Static busy As Boolean' in body
+assert 'Private busy As Boolean' in s and 'If busy Then' in body
+map_entry=s[s.index('Public Sub BuildFailMaps'):s.index('Private Sub RunThreeASC')]
+assert 'If busy Then' in map_entry and 'BLK_BuildFailMaps(ThisWorkbook)' in map_entry
 print('PASS separate actions: independent public entry points; every address parse/write/allocation is Address-only; every FBC feed/write is FBC-only; shared busy guard; FBC engine has no Address worksheet access.')

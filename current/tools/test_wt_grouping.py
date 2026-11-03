@@ -47,4 +47,4 @@ for i in range(0,len(rows),3):
  assert len({a[1:4] for a in group})==1
  assert all(a[4]==a[0]*1000000+a[1]*1000 and a[-1]==a[0]*1000000+a[1]*1000+255 for a in group)
 assert rows[0][1]==370
-print('PASS sort configuration: Chip X/Y, Config TNO rank, WT1/2/3; entire256-FBC rows preserved; temporary helper removed; native Excel sort execution remains untested.')
+print('PASS sort configuration: Chip X/Y, Config TNO rank, WT1/2/3; entire256-FBC rows preserved; temporary helper removed. Native sort is covered by test_native_maps.ps1.')
