@@ -103,6 +103,7 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
         .Font.Name = "Calibri": .Font.Size = 11: .NumberFormat = "0"
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26: .Interior.Color = color
     End With
+    ws.Cells(startRow, 5).Resize(mNextRow - startRow, 256).NumberFormat = "0;-0;;@"
     Exit Function
 Failed:
     BLK_WritePhase = "FBC output error (" & Err.Number & "): " & Err.Description
@@ -438,12 +439,21 @@ Private Sub WriteMapLocations(ByVal wb As Workbook)
     End With
 End Sub
 
-Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object) As Object
+Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object, ByRef hard As Object) As Object
     Dim result As Object, data As Variant, i As Long, name As String, tno As String, func As String, voltage As Variant
     Set result = CreateObject("Scripting.Dictionary"): result.CompareMode = vbTextCompare
     Set wanted = CreateObject("Scripting.Dictionary")
+    Set hard = CreateObject("Scripting.Dictionary")
     data = cfg.Range("D2:G901").Value2
     For i = LBound(data, 1) To UBound(data, 1)
+        If IsError(data(i, 1)) Then Err.Raise vbObjectError + 451, , "Function TNO cell error at row " & i + 1
+        tno = Trim$(CStr(data(i, 1)))
+        If Len(tno) > 0 Then
+            If Len(tno) <> 3 Then Err.Raise vbObjectError + 451, , "Function TNO must be 100-999; row=" & i + 1
+            tno = CStr(CLng(UnsignedValue(tno, 999)))
+            If CLng(tno) < 100 Then Err.Raise vbObjectError + 451, , "Function TNO must be 100-999."
+            If Not wanted.Exists(tno) Then wanted.Add tno, True
+        End If
         If IsError(data(i, 4)) Then Err.Raise vbObjectError + 451, , "Stop Sign cell error at Config G" & i + 1
         name = Trim$(CStr(data(i, 4)))
         If Len(name) > 0 Then
@@ -452,11 +462,15 @@ Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object
             If Len(tno) <> 3 Then Err.Raise vbObjectError + 451, , "Stop Sign requires Function TNO in column D; row=" & i + 1
             tno = CStr(CLng(UnsignedValue(tno, 999)))
             If CLng(tno) < 100 Then Err.Raise vbObjectError + 451, , "Stop Function TNO must be 100-999."
+            If StrComp(name, "Hard Fail", vbTextCompare) <> 0 Then
             If result.Exists(name) Then Err.Raise vbObjectError + 451, , "Duplicate Stop Sign Pattern Name: " & name
             func = "": voltage = Empty
             If Not IsError(data(i, 2)) Then func = Trim$(CStr(data(i, 2)))
             If Not IsError(data(i, 3)) Then voltage = data(i, 3)
             result.Add name, Array(tno, func, voltage)
+            Else
+                If Not hard.Exists(tno) Then hard.Add tno, True
+            End If
             If Not wanted.Exists(tno) Then wanted.Add tno, True
         End If
     Next i
@@ -480,7 +494,7 @@ Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object) As
                 key = wt & "|" & tno & "|" & Coordinate(CStr(data(i, 3))) & "|" & Coordinate(CStr(data(i, 4)))
                 If result.Exists(key) Then Err.Raise vbObjectError + 452, , "Duplicate FBC WT/TNO/XY: " & key
                 count = CountFBCRow(data, i)
-                result.Add key, count
+                result.Add key, FBCRowMask(data, i)
             End If
         Next i
     Next start
@@ -498,11 +512,50 @@ Private Function CountFBCRow(ByRef data As Variant, ByVal row As Long) As Long
     CountFBCRow = count
 End Function
 
-Private Function MapResult(ByVal counts As Object, ByVal errors As Object, ByVal wt As String, ByVal tno As String, ByVal dut As String) As Variant
-    Dim key As String
-    If errors.Exists(wt) Then MapResult = "Data Error": Exit Function
+Private Function FBCRowMask(ByRef data As Variant, ByVal row As Long) As String
+    Dim b As Long, mask As String
+    mask = String$(256, "0")
+    For b = 0 To 255
+        If CDbl(data(row, b + 5)) > 0 Then Mid$(mask, b + 1, 1) = "1"
+    Next b
+    FBCRowMask = mask
+End Function
+
+Private Function MapResult(ByVal counts As Object, ByVal errors As Object, ByVal wt As String, ByVal tno As String, ByVal dut As String, ByVal hard As Object, ByVal functionTnos As Object) As Variant
+    Dim key As String, target As String, blocked As String, mask As String
+    Dim phase As Long, currentPhase As Long, b As Long, n As Long, h As Variant, f As Variant
+    currentPhase = CLng(Right$(wt, 1))
     key = wt & "|" & tno & "|" & dut
-    If counts.Exists(key) Then MapResult = CLng(counts(key)) Else MapResult = "No Data"
+    If errors.Exists(wt) Then MapResult = "Data Error": Exit Function
+    If Not counts.Exists(key) Then MapResult = "No Data": Exit Function
+    target = CStr(counts(key)): blocked = String$(256, "0")
+    'Hard Fail is permanent for this BLK: include current and all preceding WTs.
+    For phase = 1 To currentPhase
+        If errors.Exists("WT" & phase) Then MapResult = "Data Error": Exit Function
+        For Each h In hard
+            key = "WT" & phase & "|" & CStr(h) & "|" & dut
+            If Not counts.Exists(key) Then MapResult = "No Data": Exit Function
+            mask = CStr(counts(key))
+            For b = 1 To 256
+                If Mid$(mask, b, 1) = "1" Then Mid$(blocked, b, 1) = "1"
+            Next b
+        Next h
+        'Every configured Function TNO in every earlier WT must Pass at this Chip/BLK.
+        If phase < currentPhase Then
+            For Each f In functionTnos
+            key = "WT" & phase & "|" & CStr(f) & "|" & dut
+            If Not counts.Exists(key) Then MapResult = "No Data": Exit Function
+            mask = CStr(counts(key))
+            For b = 1 To 256
+                If Mid$(mask, b, 1) = "1" Then Mid$(blocked, b, 1) = "1"
+            Next b
+            Next f
+        End If
+    Next phase
+    For b = 1 To 256
+        If Mid$(blocked, b, 1) = "0" And Mid$(target, b, 1) = "1" Then n = n + 1
+    Next b
+    MapResult = n
 End Function
 
 Private Function MapStatus(ByVal result As Variant) As String
@@ -521,13 +574,14 @@ End Function
 
 Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     Dim patterns As Object, wanted As Object, counts As Object, coords As Object, errors As Object, used As Object
+    Dim hard As Object
     Dim locations As Worksheet, summary As Worksheet, map As Worksheet, ws As Worksheet
     Dim data As Variant, item As Variant, name As Variant, detail As Variant, xy As Variant, ordered As Collection
     Dim i As Long, phase As Long, last As Long, minX As Long, maxX As Long, minY As Long, maxY As Long
     Dim width As Long, col As Long, row As Long, origin As Long, sheetName As String, result As Variant
     Dim output() As Variant, n As Long, total As Double, text As String, existing As Boolean
     On Error GoTo Failed
-    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted)
+    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
     If patterns.Count = 0 Then
         Set used = CreateObject("Scripting.Dictionary")
         PruneOldFailMaps wb, used
@@ -590,33 +644,37 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
         End If
         With map.Cells(1, 1).Resize(maxY - minY + 6, (width + 2) * 3)
             .Font.Name = "Calibri": .Font.Size = 10: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-            .ColumnWidth = 11: .RowHeight = 42
+            .ColumnWidth = 9: .RowHeight = 32
         End With
         map.Cells(1, 1).Resize(1, (width + 2) * 3).Merge
-        map.Cells(1, 1).Value2 = CStr(name) & " Fail Map | Stop TNO=" & detail(0) & " | " & detail(1) & " | Voltage=" & detail(2)
+        map.Cells(1, 1).Value2 = CStr(name) & " Fail Map"
         With map.Cells(1, 1): .Font.Size = 14: .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77): End With
         map.Cells(2, 1).Resize(1, (width + 2) * 3).Merge
-        map.Cells(2, 1).Value2 = "Green: Pass(0) | Red: Fail BLK count | Gray: no selected Stop-TNO data | Yellow: data error | X right, Y down"
+        map.Rows(2).RowHeight = 12
         ReDim output(1 To ordered.Count * 3, 1 To 9): n = 0
         For phase = 1 To 3
             origin = 1 + (phase - 1) * (width + 2)
             map.Cells(3, origin + 1).Resize(1, width).Merge
             map.Cells(3, origin + 1).Value2 = "WT" & phase
             map.Cells(3, origin + 1).Font.Bold = True
-            For col = minX To maxX: map.Cells(4, origin + 1 + col - minX).Value2 = "X=" & col: Next col
-            For row = minY To maxY: map.Cells(5 + row - minY, origin).Value2 = "Y=" & row: Next row
+            map.Cells(3, origin + 1).Resize(1, width).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+            map.Cells(4, origin + 1).Resize(1, width).Borders.LineStyle = xlContinuous
+            map.Cells(5, origin).Resize(maxY - minY + 1, 1).Borders.LineStyle = xlContinuous
+            map.Cells(3, origin).Resize(maxY - minY + 3, width + 1).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+            For col = minX To maxX: map.Cells(4, origin + 1 + col - minX).Value2 = col: Next col
+            For row = minY To maxY: map.Cells(5 + row - minY, origin).Value2 = row: Next row
         Next phase
         For Each item In ordered
             xy = Split(CStr(item), "|")
             For phase = 1 To 3
-                result = MapResult(counts, errors, "WT" & phase, CStr(detail(0)), CStr(item))
+                result = MapResult(counts, errors, "WT" & phase, CStr(detail(0)), CStr(item), hard, wanted)
                 n = n + 1: output(n, 1) = name: output(n, 2) = CLng(detail(0)): output(n, 3) = detail(1): output(n, 4) = detail(2)
                 output(n, 5) = "WT" & phase: output(n, 6) = CLng(xy(0)): output(n, 7) = CLng(xy(1)): output(n, 9) = MapStatus(result)
                 If VarType(result) <> vbString Then output(n, 8) = result
                 origin = 1 + (phase - 1) * (width + 2)
                 With map.Cells(5 + CLng(xy(1)) - minY, origin + 1 + CLng(xy(0)) - minX)
-                    .Value2 = "(" & xy(0) & "," & xy(1) & ")" & vbLf & CStr(result)
-                    .WrapText = True: .Interior.Color = MapColor(result)
+                    If VarType(result) = vbString Then .ClearContents Else .Value2 = CLng(result)
+                    .Font.Size = 12: .NumberFormat = "0": .Interior.Color = MapColor(result)
                     .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(150, 150, 150)
                 End With
             Next phase
@@ -644,9 +702,53 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     End With
     summary.Cells(1, 1).Resize(CLng(total) + 1, 9).AutoFilter
     PruneOldFailMaps wb, used
+    BLK_ApplyPresentation wb
     Exit Function
 Failed:
     BLK_BuildFailMaps = "Map build failed (" & Err.Number & "): " & Err.Description
+End Function
+
+Public Sub BLK_ApplyPresentation(ByVal wb As Workbook)
+    Dim previousWindow As Window, previousSheet As Object, window As Window, ws As Worksheet, lastRow As Long, lastCol As Long
+    On Error GoTo Restore
+    Set previousWindow = Application.ActiveWindow: Set previousSheet = Application.ActiveSheet
+    Set ws = wb.Worksheets("FBC by BLK")
+    lastRow = PresentationLastRow(ws, 2)
+    If lastRow > 1 Then ws.Cells(2, 5).Resize(lastRow - 1, 256).NumberFormat = "0;-0;;@"
+    For Each window In wb.Windows
+        window.Activate
+        For Each ws In wb.Worksheets
+            If ws.Visible = xlSheetVisible Then
+                ws.Activate: window.DisplayGridlines = False
+                lastRow = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+                lastCol = ws.UsedRange.Column + ws.UsedRange.Columns.Count - 1
+                If ws.Name = "FBC by BLK" Then lastRow = PresentationLastRow(ws, 2): lastCol = 260
+                If ws.Name = "Fail Address" Then lastRow = PresentationLastRow(ws, 1)
+                If lastRow < 1 Then lastRow = 1
+                ws.Cells(1, 1).Resize(1, lastCol).Borders.LineStyle = xlContinuous
+                ws.Cells(1, 1).Resize(lastRow, lastCol).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+            End If
+        Next ws
+    Next window
+Restore:
+    On Error Resume Next
+    If Not previousWindow Is Nothing Then previousWindow.Activate
+    If Not previousSheet Is Nothing Then previousSheet.Activate
+End Sub
+
+Private Function PresentationLastRow(ByVal ws As Worksheet, ByVal column As Long) As Long
+    Dim last As Long, first As Long, take As Long, i As Long, data As Variant, value As Variant
+    last = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+    Do While last >= 1
+        first = last - 8191: If first < 1 Then first = 1
+        take = last - first + 1: data = ws.Cells(first, column).Resize(take, 1).Value2
+        For i = take To 1 Step -1
+            If take = 1 Then value = data Else value = data(i, 1)
+            If IsError(value) Then PresentationLastRow = first + i - 1: Exit Function
+            If Len(CStr(value)) > 0 Then PresentationLastRow = first + i - 1: Exit Function
+        Next i
+        last = first - 1
+    Loop
 End Function
 
 Private Sub PruneOldFailMaps(ByVal wb As Workbook, ByVal keep As Object)

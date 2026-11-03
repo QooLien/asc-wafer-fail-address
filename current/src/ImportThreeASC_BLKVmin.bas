@@ -26,6 +26,7 @@ Public Sub BuildFailMaps()
     On Error GoTo FailedMap
     Application.ScreenUpdating = False: Application.EnableEvents = False
     text = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
+    BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
     ThisWorkbook.Worksheets("Config").Range("T2").Value2 = text
     If Len(text) > 0 Then
         MsgBox text, vbExclamation
@@ -128,6 +129,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     Application.Calculation = xlCalculationManual
+    ThisWorkbook.Worksheets("Import Index").Cells(IIf(fbcOnly, 5, 2), 8).Value2 = IIf(fbcOnly, "FBC Pending", "Address Pending")
     For phase = 1 To 3
         path = paths(phase): buffer = "": headerTNO = ""
         selectedSections = 0: accepted = 0: skipped = 0: bytePosition = 0
@@ -274,6 +276,8 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         End If
         cfg.Range("T2").Value2 = blkWarnings
     End If
+    RecordImportIndex ThisWorkbook, IIf(fbcOnly, "FBC", "Address"), meta, paths, tnos
+    BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
     stage = "Save result workbook"
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
@@ -336,6 +340,406 @@ Private Function AddressVoltageLabel(ByVal voltage As Double) As String
     If voltage < 0 Then prefix = "-"
     AddressVoltageLabel = prefix & CStr(whole) & "." & fraction & "v"
 End Function
+
+Public Sub FindMissingBLKAddresses()
+    Dim result As String, oldScreen As Boolean, oldEvents As Boolean, oldCalc As XlCalculation, oldStatus As Variant, started As Date
+    Dim source As Workbook, candidate As Workbook, fd As Object, path As String, opened As Boolean, oldSecurity As Long
+    If busy Then MsgBox "An import, Map or audit is already running.", vbExclamation: Exit Sub
+    busy = True: started = Now
+    oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents: oldCalc = Application.Calculation: oldStatus = Application.StatusBar: oldSecurity = Application.AutomationSecurity
+    On Error GoTo FailedAudit
+    Application.ScreenUpdating = False: Application.EnableEvents = False: Application.Calculation = xlCalculationManual
+    Set source = ThisWorkbook
+    If AuditLastRow(source.Worksheets("Fail Address"), 1) < 2 Or AuditLastRow(source.Worksheets("FBC by BLK"), 2) < 2 Then
+        Set fd = Application.FileDialog(3)
+        With fd
+            .Title = "Select an existing Excel result containing Config, Fail Address and FBC by BLK"
+            .AllowMultiSelect = False: .Filters.Clear: .Filters.Add "Excel results", "*.xlsm;*.xlsx"
+            If .Show <> -1 Then GoTo DoneAudit
+            path = .SelectedItems(1)
+        End With
+        Set source = Nothing
+        For Each candidate In Application.Workbooks
+            If StrComp(candidate.FullName, path, vbTextCompare) = 0 Then Set source = candidate: Exit For
+        Next candidate
+        If source Is Nothing Then
+            Application.AutomationSecurity = 3
+            Set source = Application.Workbooks.Open(Filename:=path, UpdateLinks:=0, ReadOnly:=True)
+            Application.AutomationSecurity = oldSecurity: opened = True
+        End If
+    End If
+    result = AuditFunctionBlocks(source, ThisWorkbook)
+    If Left$(result, 12) = "Audit failed" Then
+        MsgBox result, vbExclamation
+    Else
+        ThisWorkbook.Save
+        MsgBox result & vbCrLf & "Seconds: " & DateDiff("s", started, Now), vbInformation
+    End If
+DoneAudit:
+    On Error Resume Next
+    If opened Then source.Close SaveChanges:=False
+    Application.AutomationSecurity = oldSecurity
+    Application.ScreenUpdating = oldScreen: Application.EnableEvents = oldEvents: Application.Calculation = oldCalc: Application.StatusBar = oldStatus
+    busy = False: Exit Sub
+FailedAudit:
+    MsgBox "Audit failed (" & Err.Number & "): " & Err.Description, vbExclamation
+    Resume DoneAudit
+End Sub
+
+Private Function AuditFunctions(ByVal cfg As Worksheet, Optional ByVal scopeOverride As String = "") As Object
+    Dim result As Object, data As Variant, i As Long, tno As String, stopOnly As Boolean, scope As String, func As String, voltage As Variant, pattern As String
+    Set result = CreateObject("Scripting.Dictionary")
+    If Len(scopeOverride) > 0 Then scope = UCase$(Trim$(scopeOverride)) Else scope = UCase$(Trim$(CStr(cfg.Range("Q2").Value2)))
+    If scope <> "" And scope <> "ALL FUNCTION" And scope <> "STOP SIGN" Then Err.Raise vbObjectError + 480, , "Audit scope Q2 must be All Function or Stop Sign."
+    stopOnly = (scope = "STOP SIGN")
+    data = cfg.Range("D2:G901").Value2
+    For i = LBound(data, 1) To UBound(data, 1)
+        If IsError(data(i, 1)) Or IsError(data(i, 4)) Then Err.Raise vbObjectError + 480, , "Function configuration error at row " & i + 1
+        tno = Trim$(CStr(data(i, 1))): pattern = Trim$(CStr(data(i, 4)))
+        If Len(tno) > 0 And (Not stopOnly Or Len(pattern) > 0) Then
+            If Len(tno) <> 3 Then Err.Raise vbObjectError + 480, , "Function TNO must be100-999."
+            tno = CStr(AuditInteger(tno, 100, 999))
+            If result.Exists(tno) Then Err.Raise vbObjectError + 480, , "Duplicate Function TNO: " & tno
+            func = "": voltage = Empty
+            If Not IsError(data(i, 2)) Then func = CStr(data(i, 2))
+            If Not IsError(data(i, 3)) Then voltage = data(i, 3)
+            result.Add tno, Array(func, voltage, pattern)
+        End If
+    Next i
+    If result.Count = 0 Then Err.Raise vbObjectError + 480, , "No Function TNOs in audit scope. Enter TNOs in Config D."
+    Set AuditFunctions = result
+End Function
+
+Private Function AuditInteger(ByVal value As Variant, ByVal minimum As Double, ByVal maximum As Double) As Long
+    If IsError(value) Then Err.Raise vbObjectError + 481, , "Cell error in comparison input."
+    If Len(Trim$(CStr(value))) = 0 Or Not IsNumeric(value) Then Err.Raise vbObjectError + 481, , "Missing/non-numeric comparison coordinate or TNO."
+    If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < minimum Or CDbl(value) > maximum Then Err.Raise vbObjectError + 481, , "Comparison integer out of range: " & CStr(value)
+    AuditInteger = CLng(value)
+End Function
+
+Private Function AuditLastRow(ByVal ws As Worksheet, ByVal column As Long) As Long
+    Dim last As Long, first As Long, take As Long, i As Long, data As Variant, value As Variant
+    last = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+    Do While last >= 1
+        first = last - 8191: If first < 1 Then first = 1
+        take = last - first + 1
+        data = ws.Cells(first, column).Resize(take, 1).Value2
+        For i = take To 1 Step -1
+            If take = 1 Then value = data Else value = data(i, 1)
+            If IsError(value) Then AuditLastRow = first + i - 1: Exit Function
+            If Len(CStr(value)) > 0 Then AuditLastRow = first + i - 1: Exit Function
+        Next i
+        last = first - 1
+    Loop
+End Function
+
+Private Function AuditFBCValue(ByVal value As Variant) As Double
+    If IsError(value) Then Err.Raise vbObjectError + 481, , "FBC cell error."
+    If Len(Trim$(CStr(value))) = 0 Or Not IsNumeric(value) Then Err.Raise vbObjectError + 481, , "Missing/non-numeric FBC."
+    If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < 0 Or CDbl(value) > 9007199254740991# Then Err.Raise vbObjectError + 481, , "Invalid FBC integer."
+    AuditFBCValue = CDbl(value)
+End Function
+
+Private Function AuditHeaderWT(ByVal text As String, ByRef label As String) As String
+    Dim p As Long, wt As String
+    text = Replace(text, vbCr, ""): p = InStr(text, vbLf)
+    If p = 0 Then Exit Function
+    wt = UCase$(Trim$(Left$(text, p - 1)))
+    If wt <> "WT1" And wt <> "WT2" And wt <> "WT3" Then Exit Function
+    label = Trim$(Mid$(text, p + 1)): AuditHeaderWT = wt
+End Function
+
+Private Function ResolveAuditColumns(ByVal wb As Workbook, ByVal wanted As Object, ByRef note As String) As Object
+    Dim result As Object, coverage As Object, labels As Object, labelCounts As Object, index As Worksheet, ws As Worksheet
+    Dim headers As Variant, data As Variant, last As Long, i As Long, col As Long, phase As Long, wt As String, tno As Variant, label As String, key As String, v As Variant
+    Set result = CreateObject("Scripting.Dictionary"): Set coverage = CreateObject("Scripting.Dictionary")
+    Set ws = wb.Worksheets("Fail Address")
+    last = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    If last < 7 Then Err.Raise vbObjectError + 482, , "Fail Address has no imported TNO columns."
+    headers = ws.Cells(1, 1).Resize(1, last).Value2
+    On Error Resume Next
+    Set index = wb.Worksheets("Import Index")
+    On Error GoTo 0
+    If Not index Is Nothing Then
+        i = index.Cells(index.Rows.Count, 1).End(xlUp).Row
+        If i >= 2 Then
+            data = index.Range("A2:D" & i).Value2
+            For i = 1 To UBound(data, 1)
+                If wanted.Exists(CStr(data(i, 2))) Then
+                    wt = CStr(data(i, 1)): col = AuditInteger(data(i, 3), 7, last)
+                    If wt <> "WT1" And wt <> "WT2" And wt <> "WT3" Then Err.Raise vbObjectError + 482, , "Invalid WT in numeric Address index."
+                    If CStr(headers(1, col)) <> CStr(data(i, 4)) Then Err.Raise vbObjectError + 482, , "Address header changed since numeric TNO index was recorded; reimport Address."
+                    key = wt & "|" & CStr(data(i, 2))
+                    If coverage.Exists(key) Or result.Exists(CStr(col)) Then Err.Raise vbObjectError + 482, , "Duplicate Address TNO/column mapping."
+                    coverage.Add key, True: result.Add CStr(col), Array(wt, CStr(data(i, 2)))
+                End If
+            Next i
+            note = "Numeric TNO import index verified."
+        End If
+    End If
+    If Len(note) = 0 Then
+        Set labels = BuildAddressLabels(wb.Worksheets("Config"))
+        Set labelCounts = CreateObject("Scripting.Dictionary"): labelCounts.CompareMode = vbTextCompare
+        For Each v In labels
+            label = CStr(labels(v))
+            If labelCounts.Exists(label) Then labelCounts(label) = CLng(labelCounts(label)) + 1 Else labelCounts.Add label, 1
+        Next v
+        For col = 7 To last
+            If IsError(headers(1, col)) Then Err.Raise vbObjectError + 482, , "Address header cell error."
+            wt = AuditHeaderWT(CStr(headers(1, col)), label)
+            If Len(wt) > 0 Then
+                For Each tno In wanted
+                    If label = CStr(tno) Or StrComp(label, CStr(labels(tno)), vbTextCompare) = 0 Then
+                        If label <> CStr(tno) And CLng(labelCounts(CStr(labels(tno)))) > 1 Then Err.Raise vbObjectError + 482, , "Legacy Address has ambiguous Func/Voltage headers. Import Address once with this version to store numeric TNO mapping."
+                        key = wt & "|" & CStr(tno)
+                        If coverage.Exists(key) Or result.Exists(CStr(col)) Then Err.Raise vbObjectError + 482, , "Ambiguous Address column mapping."
+                        coverage.Add key, True: result.Add CStr(col), Array(wt, CStr(tno))
+                    End If
+                Next tno
+            End If
+        Next col
+        note = "Legacy Address: unique header labels resolved against Config."
+    End If
+    For Each tno In wanted
+        For phase = 1 To 3
+            If Not coverage.Exists("WT" & phase & "|" & tno) Then Err.Raise vbObjectError + 482, , "Address has no verified column for WT" & phase & "/TNO=" & tno
+        Next phase
+    Next tno
+    Set ResolveAuditColumns = result
+End Function
+
+Private Function AuditSourceNote(ByVal wb As Workbook) As String
+    Dim index As Worksheet, r As Long, c As Long, a As Long, f As Long, identity As Boolean
+    On Error Resume Next
+    Set index = wb.Worksheets("Import Index")
+    On Error GoTo 0
+    If index Is Nothing Then AuditSourceNote = "Legacy source identity not recorded; verify both outputs belong to the same Raw files.": Exit Function
+    For r = 2 To 7
+        If InStr(1, CStr(index.Cells(r, 8).Value2), "Pending", vbTextCompare) > 0 Then Err.Raise vbObjectError + 483, , "An Address/FBC import is incomplete; finish the import before comparison."
+    Next r
+    identity = (CStr(index.Range("H2").Value2) = "Address" And CStr(index.Range("H5").Value2) = "FBC")
+    If Not identity Then AuditSourceNote = "Legacy source identity not recorded; verify both outputs belong to the same Raw files.": Exit Function
+    For r = 0 To 2
+        a = 2 + r: f = 5 + r
+        For c = 9 To 13
+            If CStr(index.Cells(a, c).Value2) <> CStr(index.Cells(f, c).Value2) Then Err.Raise vbObjectError + 483, , "Address/FBC source LOT/WNO/STEP/version mismatch for WT" & r + 1
+        Next c
+    Next r
+    AuditSourceNote = "Address/FBC source LOT, WNO, STEP and identity verified."
+End Function
+
+Private Sub BuildDetailedBLKIndex(ByVal ws As Worksheet, ByVal columns As Object, ByVal blocks As Object, ByVal totals As Object)
+    Dim groups As New Collection, lastCol As Long, lastRow As Long, col As Long, first As Long, width As Long, maxWidth As Long
+    Dim g As Variant, info As Variant, coords As Variant, flags As Variant, suffix() As String, chips() As String
+    Dim start As Long, take As Long, batch As Long, r As Long, j As Long, flag As Variant, key As String, chip As String, x As Long, y As Long, b As Long
+    Dim blockNos() As Long, bits As Variant, activeChip As String, activeTotal As Long, emptyBits(0 To 31) As Byte
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    col = 7
+    Do While col <= lastCol
+        If columns.Exists(CStr(col)) Then
+            first = col
+            Do While col <= lastCol
+                If Not columns.Exists(CStr(col)) Then Exit Do
+                col = col + 1
+            Loop
+            width = col - first: groups.Add Array(first, width)
+            If width > maxWidth Then maxWidth = width
+        Else
+            col = col + 1
+        End If
+    Loop
+    batch = 4096: If batch * maxWidth > 131072 Then batch = 131072 \ maxWidth
+    lastRow = AuditLastRow(ws, 1)
+    For start = 2 To lastRow Step batch
+        take = lastRow - start + 1: If take > batch Then take = batch
+        coords = ws.Cells(start, 1).Resize(take, 3).Value2
+        ReDim suffix(1 To take): ReDim chips(1 To take): ReDim blockNos(1 To take)
+        For r = 1 To take
+            x = AuditInteger(coords(r, 1), -2147483648#, 2147483647#): y = AuditInteger(coords(r, 2), -2147483648#, 2147483647#)
+            b = AuditInteger(coords(r, 3), 0, 255)
+            chips(r) = x & "|" & y: blockNos(r) = b
+        Next r
+        For Each g In groups
+            flags = ws.Cells(start, CLng(g(0))).Resize(take, CLng(g(1))).Value2
+            For j = 1 To CLng(g(1))
+                info = columns(CStr(CLng(g(0)) + j - 1))
+                activeChip = "": activeTotal = 0
+                For r = 1 To take
+                    If take = 1 And CLng(g(1)) = 1 Then flag = flags Else flag = flags(r, j)
+                    If IsError(flag) Then Err.Raise vbObjectError + 484, , "Address flag cell error."
+                    If Len(Trim$(CStr(flag))) > 0 Then
+                        If Not IsNumeric(flag) Then Err.Raise vbObjectError + 484, , "Address flag must be0/1 or blank."
+                        If CDbl(flag) <> 0 And CDbl(flag) <> 1 Then Err.Raise vbObjectError + 484, , "Address flag must be0/1 or blank."
+                        If CDbl(flag) = 1 Then
+                            chip = info(0) & "|" & info(1) & "|" & chips(r)
+                            If chip <> activeChip Then
+                                If Len(activeChip) > 0 Then blocks(activeChip) = bits: totals(activeChip) = activeTotal
+                                activeChip = chip: activeTotal = 0
+                                If blocks.Exists(chip) Then bits = blocks(chip) Else bits = emptyBits
+                                If totals.Exists(chip) Then activeTotal = CLng(totals(chip))
+                            End If
+                            b = blockNos(r)
+                            bits(b \ 8) = CByte(CLng(bits(b \ 8)) Or CLng(2 ^ (b Mod 8)))
+                            activeTotal = activeTotal + 1
+                        End If
+                    End If
+                Next r
+                If Len(activeChip) > 0 Then blocks(activeChip) = bits: totals(activeChip) = activeTotal
+            Next j
+        Next g
+        Application.StatusBar = "Index Function Address: " & start + take - 1 & "/" & lastRow
+    Next start
+End Sub
+
+Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputWorkbook As Workbook = Nothing) As String
+    Dim wanted As Object, columns As Object, blocks As Object, totals As Object, seen As Object
+    Dim source As Worksheet, stage As Worksheet, old As Worksheet, status As Worksheet, data As Variant, packet() As Variant, rowValues As Variant, info As Variant
+    Dim last As Long, start As Long, take As Long, r As Long, b As Long, phase As Long, used As Long, dest As Long, missing As Long, tested As Long
+    Dim wt As String, tno As String, chip As String, key As String, prefix As String, x As Long, y As Long, fbc As Double, total As Long, errorNumber As Long
+    Dim mappingNote As String, sourceNote As String, description As String, oldAlerts As Boolean, success As Boolean, addressBits As Variant, hasAddress As Boolean, scopeText As String
+    oldAlerts = Application.DisplayAlerts
+    On Error GoTo Failed
+    If outputWorkbook Is Nothing Then Set outputWorkbook = wb
+    scopeText = Trim$(CStr(outputWorkbook.Worksheets("Config").Range("Q2").Value2))
+    If Len(scopeText) = 0 Then scopeText = "All Function"
+    Set wanted = AuditFunctions(wb.Worksheets("Config"), CStr(outputWorkbook.Worksheets("Config").Range("Q2").Value2))
+    Set columns = ResolveAuditColumns(wb, wanted, mappingNote)
+    sourceNote = AuditSourceNote(wb)
+    On Error Resume Next
+    Set status = wb.Worksheets("Chip Locations")
+    On Error GoTo Failed
+    If Not status Is Nothing Then
+        For phase = 1 To 3
+            If CStr(status.Cells(phase + 1, 5).Value2) = "Data Error" Then Err.Raise vbObjectError + 485, , "FBC WT" & phase & " has a parse/output error; fix it before comparison."
+        Next phase
+    End If
+    Set blocks = CreateObject("Scripting.Dictionary"): Set totals = CreateObject("Scripting.Dictionary"): Set seen = CreateObject("Scripting.Dictionary")
+    BuildDetailedBLKIndex wb.Worksheets("Fail Address"), columns, blocks, totals
+    Set source = wb.Worksheets("FBC by BLK")
+    last = AuditLastRow(source, 2)
+    If last < 2 Then Err.Raise vbObjectError + 485, , "Import FBC before running comparison."
+    Set stage = outputWorkbook.Worksheets.Add(After:=outputWorkbook.Worksheets(outputWorkbook.Worksheets.Count))
+    stage.Visible = xlSheetVeryHidden
+    stage.Range("A4:L4").Value2 = Array("WT", "TNO", "Func.", "Test Voltage", "Pattern", "X", "Y", "BLK", "FBC", "Recorded Chip Addresses", ">=1000 recorded", "Finding")
+    dest = 5: ReDim packet(1 To 512, 1 To 12)
+    For start = 2 To last Step 512
+        take = last - start + 1: If take > 512 Then take = 512
+        data = source.Cells(start, 1).Resize(take, 260).Value2
+        For r = 1 To take
+            If IsError(data(r, 2)) Then Err.Raise vbObjectError + 485, , "Invalid FBC TNO."
+            tno = Trim$(CStr(data(r, 2)))
+            If wanted.Exists(tno) Then
+                wt = UCase$(Trim$(CStr(data(r, 1))))
+                If wt <> "WT1" And wt <> "WT2" And wt <> "WT3" Then Err.Raise vbObjectError + 485, , "Invalid FBC WT."
+                x = AuditInteger(data(r, 3), -2147483648#, 2147483647#): y = AuditInteger(data(r, 4), -2147483648#, 2147483647#)
+                prefix = wt & "|" & tno & "|" & x & "|" & y
+                If seen.Exists(prefix) Then Err.Raise vbObjectError + 485, , "Duplicate FBC WT/TNO/Chip record."
+                seen.Add prefix, True: info = wanted(tno): tested = tested + 1
+                total = 0: If totals.Exists(prefix) Then total = CLng(totals(prefix))
+                addressBits = Empty
+                If blocks.Exists(prefix) Then addressBits = blocks(prefix)
+                For b = 0 To 255
+                    fbc = AuditFBCValue(data(r, b + 5))
+                    hasAddress = False
+                    If IsArray(addressBits) Then hasAddress = ((CLng(addressBits(b \ 8)) And CLng(2 ^ (b Mod 8))) <> 0)
+                    If fbc > 0 And Not hasAddress Then
+                        missing = missing + 1: used = used + 1
+                        If dest + used - 1 > stage.Rows.Count Then Err.Raise vbObjectError + 485, , "Missing BLK output exceeds Excel row limit."
+                        packet(used, 1) = wt: packet(used, 2) = CLng(tno): packet(used, 3) = info(0): packet(used, 4) = info(1): packet(used, 5) = info(2)
+                        packet(used, 6) = x: packet(used, 7) = y: packet(used, 8) = b: packet(used, 9) = fbc: packet(used, 10) = total
+                        packet(used, 11) = IIf(total >= 1000, "Yes", "Not confirmed")
+                        packet(used, 12) = "FBC>0; no matching WT/TNO/Chip/BLK Address"
+                        If used = 512 Then
+                            stage.Cells(dest, 1).Resize(512, 12).Value2 = packet
+                            dest = dest + 512: used = 0: ReDim packet(1 To 512, 1 To 12)
+                        End If
+                    End If
+                Next b
+            End If
+        Next r
+        Application.StatusBar = "Compare Function FBC: " & start + take - 1 & "/" & last
+    Next start
+    If tested = 0 Then Err.Raise vbObjectError + 485, , "FBC contains no Function TNOs in the selected scope."
+    If used > 0 Then
+        ReDim rowValues(1 To used, 1 To 12)
+        For r = 1 To used: For b = 1 To 12: rowValues(r, b) = packet(r, b): Next b: Next r
+        stage.Cells(dest, 1).Resize(used, 12).Value2 = rowValues
+    End If
+    With stage.Cells(1, 1).Resize(missing + 4, 12)
+        .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26
+    End With
+    stage.Columns("A:B").ColumnWidth = 10: stage.Columns("C:E").ColumnWidth = 20: stage.Columns("F:H").ColumnWidth = 10
+    stage.Columns("I:K").ColumnWidth = 22: stage.Columns("L").ColumnWidth = 56: stage.Columns("D").NumberFormat = "0.000": stage.Columns("I").NumberFormat = "0"
+    stage.Range("A1:L1").Merge: stage.Range("A1").Value2 = "Missing Function BLK Address | Scope=" & scopeText & " | TNOs=" & wanted.Count & " | rows=" & missing & " | FBC records=" & tested
+    stage.Range("A2:L2").Merge: stage.Range("A2").Value2 = mappingNote & " " & sourceNote
+    stage.Range("A2:L2").WrapText = True: stage.Range("A2:L2").RowHeight = 42
+    stage.Range("A3:L3").Merge: stage.Range("A3").Value2 = "Source: " & wb.Name & " | Exact WT/TNO/X/Y/BLK match. >=1000 supports a possible cap; missing data alone does not prove the cause."
+    With stage.Range("A1:L1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    With stage.Range("A4:L4"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    stage.Range("A4:L4").Borders.LineStyle = xlContinuous
+    stage.Cells(1, 1).Resize(missing + 4, 12).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+    If missing > 0 Then stage.Range("A5:L" & missing + 4).Interior.Color = RGB(255, 237, 213)
+    stage.Range("A4:L" & missing + 4).AutoFilter
+    On Error Resume Next
+    Set old = outputWorkbook.Worksheets("Missing BLK Address")
+    On Error GoTo Failed
+    Application.DisplayAlerts = False
+    If Not old Is Nothing Then old.Delete
+    stage.Name = "Missing BLK Address": stage.Visible = xlSheetVisible: success = True
+    stage.Activate: Application.ActiveWindow.DisplayGridlines = False
+    Application.DisplayAlerts = oldAlerts
+    AuditFunctionBlocks = "Audit complete. Missing Function WT/TNO/Chip/BLK rows: " & missing
+    Exit Function
+Failed:
+    description = Err.Description: errorNumber = Err.Number
+    Resume AuditFailureCleanup
+AuditFailureCleanup:
+    On Error Resume Next
+    Application.DisplayAlerts = False
+    If Not stage Is Nothing And Not success Then
+        stage.Visible = xlSheetVisible
+        stage.Delete
+    End If
+    Application.DisplayAlerts = oldAlerts
+    AuditFunctionBlocks = "Audit failed (" & errorNumber & "): " & description
+End Function
+
+Private Sub RecordImportIndex(ByVal wb As Workbook, ByVal mode As String, ByRef meta() As Object, ByRef paths() As String, ByVal tnos As Object)
+    Dim ws As Worksheet, mapping() As Variant, manifest(1 To 3, 1 To 8) As Variant, headers As Variant, phase As Long, tno As Variant, i As Long, col As Long, start As Long
+    Set ws = wb.Worksheets("Import Index")
+    If mode = "Address" Then
+        ws.Range("A:D").ClearContents
+        ws.Range("A1:D1").Value2 = Array("WT", "TNO", "Column", "Header")
+        ReDim mapping(1 To tnos.Count * 3, 1 To 4)
+        headers = wb.Worksheets("Fail Address").Cells(1, 1).Resize(1, 6 + tnos.Count * 3).Value2
+        For phase = 1 To 3
+            For Each tno In tnos
+                i = i + 1: col = 7 + (phase - 1) * tnos.Count + CLng(tnos(tno))
+                mapping(i, 1) = "WT" & phase: mapping(i, 2) = CStr(tno): mapping(i, 3) = col: mapping(i, 4) = headers(1, col)
+            Next tno
+        Next phase
+        ws.Range("A2").Resize(i, 4).Value2 = mapping
+    End If
+    For phase = 1 To 3
+        manifest(phase, 1) = mode: manifest(phase, 2) = "WT" & phase: manifest(phase, 3) = CStr(meta(phase)("LOT"))
+        manifest(phase, 4) = NormalWafer(CStr(meta(phase)("WNO"))): manifest(phase, 5) = CStr(meta(phase)("STEP"))
+        manifest(phase, 6) = BuildResultBaseName(meta(phase)): manifest(phase, 7) = paths(phase): manifest(phase, 8) = Now
+    Next phase
+    ws.Range("H1:O1").Value2 = Array("Mode", "WT", "Full LOT", "WNO", "STEP", "Identity", "Source path", "Imported at")
+    start = IIf(mode = "Address", 2, 5)
+    ws.Cells(start, 8).Resize(3, 8).Value2 = manifest
+    ws.Visible = xlSheetVeryHidden
+    MarkAuditStale wb, mode
+End Sub
+
+Private Sub MarkAuditStale(ByVal wb As Workbook, ByVal mode As String)
+    On Error Resume Next
+    With wb.Worksheets("Missing BLK Address")
+        .Range("A2").Value2 = mode & " source import updated. Run Config J22 to refresh this comparison before using its rows."
+        .Range("A2:L2").Interior.Color = RGB(255, 217, 102)
+    End With
+End Sub
+
 
 ' Only orchestration helpers below are new. Original parser/reader helpers follow unchanged.
 Private Function PhaseTNOs(ByVal selected As Object, ByVal phase As Long) As Object

@@ -1,7 +1,8 @@
 from pathlib import Path
 import re,subprocess,tempfile
 r=Path(__file__).resolve().parents[1];s=(r/'src/ImportThreeASC_BLKVmin.bas').read_text()
-helper=s[s.index('Private Sub AddAddressLabels'):s.index("' Only orchestration helpers")]
+a=s.index('Private Sub AddAddressLabels');helper=s[a:s.index('End Sub',a)+len('End Sub')]
+a=s.index('Private Function AddressVoltageLabel');helper+='\n'+s[a:s.index('End Function',a)+len('End Function')]
 helper=helper.replace('Private Sub','Sub').replace('Private Function','Function')
 helper=re.sub(r' As (Variant|String|Long|Double|Object)\b','',helper)
 helper=re.sub(r'\b(\w+)\$',r'\1',helper);helper=re.sub(r'(\d)#',r'\1',helper)

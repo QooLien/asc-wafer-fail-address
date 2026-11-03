@@ -1,6 +1,6 @@
 # ThreeASC：Fail Address、FBC 與 Stop Sign Fail Map
 
-[下載完整 VBA Excel v0.18.0](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.18.0/ASC_ThreeASC_FBC.xlsm)
+[下載完整 VBA Excel v0.19.0](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.19.0/ASC_ThreeASC_FBC.xlsm)
 
 所有 VBA 都已內嵌；日常使用不需要 Python、BAT 或另外匯入程式碼。
 
@@ -12,30 +12,35 @@
 | D/E/F | Function TNO／Func.／Test Voltage |
 | G | Stop Sign：填入 Pattern Name，例如 Scan，代表同列 D 欄是此 Pattern 的最後測試點 |
 
-G1 使用紅底白字。G 欄空白表示該 TNO 不建立 Map，但仍正常匯入 FBC。Pattern Name 不可重複。
+G1 使用紅底白字。G 欄空白表示該 TNO 不建立 Map，但仍正常匯入 FBC。Pattern Name 不可重複；`Hard Fail` 為排除標記，可在多個 Function TNO 使用，不另產生 Map。
 
 - **J13：僅匯入 Fail Address**。保留原有地址／TNO 對應，不解析 FBC。
 - **J16：匯入 FBC 並建立 Map**。選取三份 ASC；不重算、不改寫 Address。
+- **J22：尋找缺少詳細 Address 的 Function BLK**。依相同 WT／TNO／Chip／BLK 比對 FBC>0 與 Address 的1標記；操作見 [核對說明](AUDIT_USAGE.md)。
 - **J19：只建立／更新 Map**。使用現有 FBC 與 Chip Locations，修改 G 欄名稱後可直接重建，不重讀 Raw。
 
 若新增 D 欄 TNO，而它未包含在先前的 FBC 匯入中，需按 J16 重新取得該 TNO 資料。A/D 兩組選定 TNO 合併匯入且不可重複。三份 ASC 的完整 LOT/WNO 必須相同，STEP 數字由小到大對應 WT1/WT2/WT3。
 
-## Map 判斷：只讀累積終點
+## Map 判斷：Soft Fail BLK Count
 
 例如 TNO500 的 Fail bit 已累積至501，而501同列 G 填 Scan：
 
 1. 只取 TNO501 的 FBC by BLK，不再加總或合併500。
-2. 對每個 Chip 的256個 BLK，統計 FBC>0 的個數；每個 BLK 只計一次，FBC大小不影響計數。
-3. 同一個 Stop TNO 分別取 WT1/WT2/WT3 的記錄，產生 **Scan Fail Map**，頁內並列三個 WT。
+2. 先排除當前及之前 WT 的 Hard Fail TNO 中 FBC>0 的 BLK，該 BLK 後續不再統計。
+3. WT2 只保留 WT1 **所有 Config D 欄 Function TNO 均 FBC=0** 的 BLK；WT3 要求 WT1、WT2 的所有 Function TNO 均為0。包含沒有 Stop Sign 的 Function TNO；Monitor 不參與。
+4. 對剩餘 BLK，統計當前 Pattern 終點 FBC>0 的個數；每個 BLK 只計一次，FBC大小不影響計數。缺少必要記錄不視為0或Pass。
+5. 同一個 Stop TNO 分別取 WT1/WT2/WT3 的記錄，產生 **Scan Fail Map**，頁內並列三個 WT。
 
 | 顯示 | 意義 |
 |---|---|
-| 綠底、0 | 指定最後測試點的256個FBC全為0，Pass |
-| 紅底、1～256 | 指定最後測試點中 FBC>0 的 BLK 數量 |
-| 灰底、No Data | 此 Chip/WT 缺少指定 Stop TNO 的 FBC，不視為 Pass |
-| 黃底、Data Error | 該 WT 發生解析／輸出錯誤，不與未測混淆 |
+| 綠底、0 | 過濾後剩餘 Fail BLK Count 為0；不代表原始 Chip 沒有 Hard Fail |
+| 紅底、1～256 | 通過排除條件後，指定終點 FBC>0 的 BLK 數量 |
+| 灰底、留白 | 缺少指定終點或必要的 Hard Fail／前 WT Function 記錄，不視為 Pass |
+| 黃底、留白 | 該 WT 發生解析／輸出錯誤，不與未測混淆 |
 
 Monitor 不參與 Pass/Fail 判斷。Map 也不做 Vmin 或額外 Cat Fail 推論。
+
+Map 格內只顯示 Count，座標軸只顯示數字；預設格線關閉，保留 Chip、標題及外框框線。FBC by BLK 的0顯示空白，底層數值仍為0。
 
 ## 座標及輸出
 
@@ -57,6 +62,8 @@ FBC by BLK 欄位為 WT／TNO／X／Y／BLK0～255，按同 Chip、Config TNO �
 ## 驗證
 
 已於本機原生 **Excel16.0** 執行合成64／128顆案例：實際解析、排序、兩個Pattern、三WT、Count0/3/256、DC-only Chip灰底、缺終點灰底、解析錯誤黃底、舊Map清理及Address資料保留均通過。原有Address1/3/9/900-TNO回歸、標題/欄位對應及Office2016 OpenXML格式驗證也通過。
+
+v0.19.0 另通過原生 Excel 的逐 BLK Hard Fail、多個排除 TNO、WT1/2 全 Function 過濾（含前面 TNO Fail 而最後 TNO=0）、缺少必要記錄、來源不變，以及詳細 Address 核對測試。規則見 [Soft Fail Map](SOFT_FAIL_MAP.md)。
 
 仍未使用公司實際 ASC 驗證，也不代表已在公司的特定 Excel2016 組態測試。iPad可查看輸出或遠端操作Windows Excel；iPad版Excel不執行VBA。
 

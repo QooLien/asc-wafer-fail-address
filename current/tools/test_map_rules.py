@@ -8,6 +8,7 @@ helpers=helpers.replace('Private Function','Function')
 helpers=re.sub(r' As (Variant|String|Long|Double|Object|Boolean|Worksheet)\b','',helpers)
 helpers=re.sub(r'\b(\w+)\$',r'\1',helpers);helpers=re.sub(r'(\d)#',r'\1',helpers)
 helpers=re.sub(r'\bNext \w+','Next',helpers)
+helpers=helpers.replace('Mid(blocked, b, 1) = "1"', 'blocked = Left(blocked, b - 1) & "1" & Mid(blocked, b + 1)')
 code='''
 Class ConfigRange
  Public data
@@ -22,31 +23,32 @@ Class FakeConfig
   Dim cell:Set cell=New ConfigRange:cell.data=data:Set Range=cell
  End Function
 End Class
-Dim cfg,settings(3,4),patterns,wanted,counts,errors,data(1,260),result,b,saved,mDigits,used,a,c
+Dim cfg,settings(3,4),patterns,wanted,counts,errors,data(1,260),result,b,saved,mDigits,used,a,c,hard,lastTno
 Set mDigits=Nothing:Set cfg=New FakeConfig
 settings(1,1)=500:settings(1,2)="Scan":settings(1,3)=1.2
 settings(2,1)=501:settings(2,2)="Scan":settings(2,3)=1.1:settings(2,4)="Scan"
 settings(3,1)=600:settings(3,2)="SRAM":settings(3,3)=1.2:settings(3,4)="SRAM"
-cfg.data=settings:Set patterns=ReadStopPatterns(cfg,wanted)
-If patterns.Count<>2 Or wanted.Exists("500") Or Not wanted.Exists("501") Then Die "Wrong Stop endpoint"
+cfg.data=settings:Set patterns=ReadStopPatterns(cfg,wanted,hard)
+If patterns.Count<>2 Or Not wanted.Exists("500") Or Not wanted.Exists("501") Then Die "Wrong Stop endpoint"
 a=patterns("Scan"):If a(0)<>"501" Then Die "500 selected instead of501"
 For b=5 To 260:data(1,b)=0:Next
 If CountFBCRow(data,1)<>0 Then Die "Zero must Pass"
 data(1,5)=1:data(1,22)=3:data(1,260)=999999
 If CountFBCRow(data,1)<>3 Then Die "FBC magnitude summed instead of BLK count"
 Set counts=CreateObject("Scripting.Dictionary"):Set errors=CreateObject("Scripting.Dictionary")
-counts.Add "WT1|500|10|17",256:counts.Add "WT1|501|10|17",0
-counts.Add "WT2|501|10|17",3
-result=MapResult(counts,errors,"WT1","501","10|17")
+counts.Add "WT1|500|10|17",String(256,"0"):counts.Add "WT1|501|10|17",String(256,"0")
+counts.Add "WT1|600|10|17",String(256,"0")
+counts.Add "WT2|501|10|17","111" & String(253,"0")
+result=MapResult(counts,errors,"WT1","501","10|17",hard,wanted)
 If result<>0 Or MapStatus(result)<>"Pass" Then Die "Prior500 fail incorrectly accumulated"
-result=MapResult(counts,errors,"WT2","501","10|17")
+result=MapResult(counts,errors,"WT2","501","10|17",hard,wanted)
 If result<>3 Or MapStatus(result)<>"Fail" Then Die "Endpoint count"
-result=MapResult(counts,errors,"WT3","501","10|17")
+result=MapResult(counts,errors,"WT3","501","10|17",hard,wanted)
 If result<>"No Data" Or MapColor(result)<>RGB(191,191,191) Then Die "Missing WT must be gray"
 counts.Add "WT3|500|10|17",100
-If MapResult(counts,errors,"WT3","501","10|17")<>"No Data" Then Die "Other TNO cannot supply Stop result"
+If MapResult(counts,errors,"WT3","501","10|17",hard,wanted)<>"No Data" Then Die "Other TNO cannot supply Stop result"
 errors.Add "WT2",True
-If MapResult(counts,errors,"WT2","501","10|17")<>"Data Error" Then Die "Parse failure mislabeled as untested"
+If MapResult(counts,errors,"WT2","501","10|17",hard,wanted)<>"Data Error" Then Die "Parse failure mislabeled as untested"
 data(1,5)=""
 On Error Resume Next
 result=CountFBCRow(data,1):saved=Err.Number:Err.Clear
@@ -54,7 +56,7 @@ On Error GoTo 0
 If saved=0 Then Die "Blank FBC treated as zero"
 settings(3,4)="scan":cfg.data=settings
 On Error Resume Next
-Set result=ReadStopPatterns(cfg,wanted):saved=Err.Number:Err.Clear
+Set result=ReadStopPatterns(cfg,wanted,hard):saved=Err.Number:Err.Clear
 On Error GoTo 0
 If saved=0 Then Die "Duplicate Pattern Name accepted"
 Set used=CreateObject("Scripting.Dictionary"):used.CompareMode=vbTextCompare

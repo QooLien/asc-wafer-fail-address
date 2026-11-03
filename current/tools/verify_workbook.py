@@ -5,7 +5,7 @@ from xml.etree import ElementTree as ET
 from oletools.olevba import VBA_Parser
 r=Path(__file__).resolve().parents[1];p=Path(sys.argv[1]) if len(sys.argv)>1 else r/'templates/ASC_ThreeASC_FBC.xlsm'
 v=VBA_Parser(str(p));modules={n:c for _,_,n,c in v.extract_macros()};v.close()
-assert len(modules)==8
+assert len(modules)==10
 for prefix,file in [('ImportFailAddresses.','ImportThreeASC_BLKVmin.bas'),('BLKVminEngine.','BLKVminEngine.bas')]:
  expected=(r/'src'/file).read_text().strip()
  actual=next(c for n,c in modules.items() if n.startswith(prefix)).replace('\r\n','\n').strip()
@@ -20,7 +20,11 @@ S='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 with ZipFile(p) as z:
  assert z.testzip() is None
  book=ET.fromstring(z.read('xl/workbook.xml'))
- assert [n.get('name') for n in book.find(S+'sheets')]==['Config','Fail Address','FBC by BLK','Chip Locations','BLK Fail Count']
+ assert [n.get('name') for n in book.find(S+'sheets')]==['Config','Fail Address','FBC by BLK','Chip Locations','BLK Fail Count','Missing BLK Address','Import Index']
+ assert list(book.find(S+'sheets'))[-1].get('state')=='veryHidden'
+ for i in range(1,8):
+  sh=ET.fromstring(z.read(f'xl/worksheets/sheet{i}.xml'))
+  for view in sh.find(S+'sheetViews'):assert view.get('showGridLines')=='0'
  strings=[]
  if 'xl/sharedStrings.xml' in z.namelist():strings=[''.join(n.itertext()) for n in ET.fromstring(z.read('xl/sharedStrings.xml'))]
  def value(c):
@@ -33,12 +37,19 @@ with ZipFile(p) as z:
   return text
  sheet=ET.fromstring(z.read('xl/worksheets/sheet3.xml'));cells={c.get('r'):value(c) for c in sheet.iter(S+'c')}
  assert [cells[c+'1'] for c in 'ABCD']==['WT','TNO','X','Y']
+ style_root=ET.fromstring(z.read('xl/styles.xml'))
+ zero_cell=next(c for c in sheet.iter(S+'c') if c.get('r')=='E2')
+ zero_xf=list(style_root.find(S+'cellXfs'))[int(zero_cell.get('s'))]
+ fmts={n.get('numFmtId'):n.get('formatCode') for n in style_root.find(S+'numFmts')}
+ assert fmts[zero_xf.get('numFmtId')]=='0;-0;;@'
  for b in range(256):assert cells[col(b+5)+'1']=='BLK '+str(b)
  cfg=ET.fromstring(z.read('xl/worksheets/sheet1.xml'));cells={c.get('r'):value(c) for c in cfg.iter(S+'c')}
  defaults=[350+i for i in range(11)]+[370+i for i in range(11)]
  assert [int(cells[f'A{i+2}']) for i in range(22)]==defaults
  assert 'VminFBCThreshold' not in cells.values()
  assert cells['G1']=='Stop Sign'
+ assert cells['Q2']=='All Function'
+ assert cfg.find(S+'dataValidations') is not None
  g1=next(c for c in cfg.iter(S+'c') if c.get('r')=='G1')
  styles=ET.fromstring(z.read('xl/styles.xml'))
  xf=list(styles.find(S+'cellXfs'))[int(g1.get('s'))]
@@ -58,8 +69,8 @@ with ZipFile(p) as z:
  X='{urn:schemas-microsoft-com:office:excel}'
  buttons=vml.findall('.//'+X+'ClientData')
  macros={b.find(X+'FmlaMacro').text:b for b in buttons}
- assert set(macros)=={'[0]!ImportASCFailAddresses','[0]!ImportASCFBC','[0]!BuildFailMaps'}
- for macro,row in [('[0]!ImportASCFailAddresses',12),('[0]!ImportASCFBC',15),('[0]!BuildFailMaps',18)]:
+ assert set(macros)=={'[0]!ImportASCFailAddresses','[0]!ImportASCFBC','[0]!BuildFailMaps','[0]!FindMissingBLKAddresses'}
+ for macro,row in [('[0]!ImportASCFailAddresses',12),('[0]!ImportASCFBC',15),('[0]!BuildFailMaps',18),('[0]!FindMissingBLKAddresses',21)]:
   anchor=[int(v.strip()) for v in macros[macro].find(X+'Anchor').text.split(',')]
   assert anchor[0]==9 and anchor[2]==row
-print('PASS XLSM: eight exact VBA modules, five initial sheets, Stop Sign red/white, three native macro buttons, unchanged address helpers/output, all256 BLK headers and22 defaults.')
+print('PASS XLSM: ten exact VBA modules, seven sheets with hidden import index, four macro buttons, Function audit scope selector, original address helpers/output and all256 FBC headers.')
