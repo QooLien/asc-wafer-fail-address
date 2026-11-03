@@ -1,103 +1,43 @@
-# ASC Wafer Fail Address
+# ThreeASC：Fail Address + FBC by BLK
 
-使用 Excel VBA 從 `.asc` Raw data 讀取指定測試項目（TNO）的 SRAM Fail Address，並保留 128-chip wafer map 與四象限計數範本。
+[下載最新版 Excel（內含全部 VBA）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.15.0/ASC_ThreeASC_FBC.xlsm)
 
-## ThreeASC Monitor / Function (v0.14.1)
+新版只有三個分頁：`Config`、`Fail Address`、`FBC by BLK`。
 
-[Download the all-in-one XLSM](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.14.1/ASC_ThreeASC_Monitor_Function.xlsm). Monitor items calculate Vmin; Function items import data without Cat Fail judgment. [Configuration and validation](threeasc-blk-vmin-testname/README.md).
+## 使用方式
 
-## 快速開始
+1. 使用 Windows 桌面版 Excel 開啟檔案並允許巨集，不需要安裝 Python 或額外匯入 VBA。
+2. Config 的 A2:A901 與 D2:D901 為兩組 TNO 清單，兩組合併處理，TNO 不可重複。保留 22 個預設 TNO。B/C/E/F 僅供備註，Func.、電壓可空白，暫不參與判斷。
+3. 按 Config!J13 的按鈕，選取三份 ASC。完整 LOT、WNO 必須相同；STEP 數字由小到大對應 WT1/WT2/WT3。
+4. 執行完成後另存輸出。BLK 錯誤或無資料訊息位於 Config!T2。
 
-1. [下載最新版 ASC_Fail_Address_Fast.xlsm](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.6.0/ASC_Fail_Address_Fast.xlsm)，使用 Windows 電腦版 Excel 開啟。此版已停用 Log，並顯示運行時間。
-2. 依公司政策允許該檔案的巨集執行；**不需要匯入 `.bas`，也不需要執行 `.bat`**。
-3. 在 `Config!A2:A901` 每列輸入一個 100–999 的整數 TNO，預設為 100。
-4. 在 Config 分頁按 **「選擇 ASC 並匯入」**，選擇一個 `.asc` 檔案。也保留 Alt+F8 執行 `ImportASCFailAddresses` 的方式。
+## 輸出
 
-`src/ImportFailAddresses.bas` 保留供版本管理與檢閱。日常請使用 **ASC_Fail_Address_Fast.xlsm**；目錄內原有的 `ASC_Fail_Address.xlsm` 與 `.xlsx` 僅保留作為舊版參考。
+`Fail Address` 保留既有六欄地址與 WT/TNO 的 1 標記邏輯。A 欄 TNO 清單先於 D 欄清單，兩組均參與輸出。
 
-VBA 必須在 Windows 電腦版 Excel 執行。iPad 可遠端操作該電腦或查看輸出；iPad 版 Excel 不執行 VBA。
+`FBC by BLK` 集中三個 WT，不依 Func. 分頁或分組，不做 Vmin 或 Cat Fail 判斷。
 
-**Excel 2016 請下載 v0.4.1 或更新版本。** v0.4.0 及較早的 `.xlsm` 有封裝內容類型與 OPC 命名空間問題，可能顯示「檔案格式或副檔名無效」。v0.4.1 已修正，並通過 Microsoft Open XML SDK 的 Office2016 格式驗證（0 錯誤）；尚未在 Excel 2016 實機開啟或執行測試。
-
-## ASC 格式與輸出
-
-v0.5.0 統一所有分頁的儲存格文字為 **Calibri、水平置中及垂直置中**。Fail Addresses 標題及資料列均固定 **26 pt** 列高，匯入新資料後維持一致。Config 的匯入按鈕使用 Excel 原生 Forms 控制項，已直接連結內嵌 VBA，不需手動指定巨集。按鈕需在 Windows 桌面版 Excel 允許巨集後操作。
-
-```text
-tno= 100 dbk= 1 > [2, 100, 10, 14, 0, 25, 3, 4,]
-```
-
-方括號欄位依序為：第一欄、TNO、X、Y、BLK、WL、BL、IO。`dbk` 與第一欄不參與地址判定；TNO 必須與目前 `tno=` 區段一致。以逗號為欄位分界，讀取各欄逗號前的完整整數；接受最後的逗號、一般空格、Tab、換行、不換行空格、全形空白、同一行多組地址及跨行方括號。小數及數字中間的空格不會被強行拼接成地址。
-
-| 欄位 | 有效範圍 |
+| 欄位 | 內容 |
 |---|---|
-| TNO | 100–999，由 Config 指定 |
-| X、Y | 原始整數座標，本版不依 wafer 外形篩除 |
-| BLK | 0–255 |
-| WL | 0–1023 |
-| BL | 0–15 |
-| IO | 0–15 |
+| A | WT1 / WT2 / WT3 |
+| B | TNO |
+| C / D | X / Y |
+| E:IZ | BLK 0～255 |
 
-超出範圍、缺欄及非整數記錄略過。原需求中的 WLK 按 WL 解讀。
+WT1、WT2、WT3 依序追加至同頁，以藍／橘／綠底色區分。各 WT 內按 X/Y 排序，同 Chip 依設定 TNO 順序輸出。只輸出實際存在的有效 FBC 記錄；找不到記錄不會補成 0。
 
-`Fail Addresses` 分頁 A1:F1 固定為 **X / Y / BLK / WL / BL / IO**。G1 起是指定的 TNO，按 Config 首次出現順序排列。同一組六欄地址只輸出一列；該 TNO 有有效 Fail 記錄填 **1**，其餘留白。重複 Fail 不累加，重複 TNO 不重複建欄。
+## Raw Data 讀取規則
 
-空白表示輸入檔中未找到對應的有效 Fail 記錄，不能據此推論已測試或 Pass。每次匯入取代舊結果；取消或解析失敗時保留舊結果。正式寫入開始後若失敗，可能只完成部分輸出。錯誤對話框顯示錯誤代碼、原因、處理階段及已讀位元組數。
+- 追蹤 `Tno=`、`X=`、`Y=`，遇到 `FBC BY BLK=` 後讀取恰好 256 個非負整數，允許跨行，支援空白、Tab、逗號、分號分隔。
+- 第 1 個數字直接對應 BLK0，最後一個數字對應 BLK255；沒有從 Fail Address 重新計算 Count。
+- TNO=0 或未選定 TNO 的 FBC 會略過，不再因此報 `TNO must be positive`。
+- 選定 TNO 的缺失座標、無效數字、數量不足／超過 256 仍會報錯，並將該 WT 的 FBC 視為無效，避免輸出部分資料。其他 WT 與 Fail Address 保持獨立處理。
+- 同一份 ASC 的同一 TNO/X/Y 重複出現時保留第一筆，不加總、不覆蓋。每份檔案使用獨立索引。
 
-## 無 Log 與運行時間
+## 驗證與限制
 
-v0.6.0 **完全停用 Log 輸出**，避免非地址方括號產生大量 WARN，導致 Import Log 超出 Excel 列數上限。不建立、累積或寫入逐筆紀錄；Import Log 分頁僅保留停用說明，不影響匯入。
+已測試原有 Fail Address 1/3/9/900 個 TNO 的對應、全部 256 個 Raw Index、三 WT 隔離、重複／零值／異常資料、TNO0、分塊讀取，以及 3,078 列 FBC 的實際批次輸出迴圈。XLSM 內嵌 VBA 與來源一致，Office 2016 OpenXML 驗證通過。
 
-完成視窗顯示 **Run time (hh:mm:ss)** 與總秒數。從選定 ASC 後開始計時，涵蓋讀檔、解析、合併、輸出與格式設定，不計入選檔等待時間，可跨午夜。
+尚未在 Excel 2016 實機執行，也未取得使用者實際 ASC 進行驗證。iPad 可查看輸出或遠端操作 Windows Excel，iPad Excel 不執行 VBA。
 
-## 128-chip wafer 參考
-
-| Y | X 範圍 | 每列 chips |
-|---|---|---|
-| 10–11 | 10–13 | 4 |
-| 12–13 | 8–15 | 8 |
-| 14–21 | 7–16 | 10 |
-| 22–23 | 8–15 | 8 |
-| 24–25 | 10–13 | 4 |
-
-共 128 chips；X 向右增加，Y 向下增加。完整座標見 `docs/coordinates.json`。
-
-| 左上：第二象限 | 右上：第一象限 |
-|---|---|
-| Read | Write |
-| **左下：第三象限 ReadWrite** | **右下：第四象限 No detected Fail address** |
-
-四格皆記錄 address count。空白表示未記錄，0 表示實際零值。四象限表位於 `templates/wafer128_SRAM_quadrants.xlsx`；目前尚未定義各 TNO 對應哪一分類，ASC 匯入不會自動回填 wafer map。
-
-![單顆 chip 四象限](docs/chip_quadrants.png)
-
-[查看完整 wafer map](docs/wafer128_quadrants.png)
-
-## 大型 ASC 與記憶體
-
-v0.6.0 每次以 **256 KB** 分段讀檔，不建立整份 ASC 字串，並快取共用的 token 正規表示式。保留跨段的 TNO、方括號地址及 UTF-8 字元。
-
-去重使用地址字典及 Byte 陣列，每個地址與 TNO 的 Fail 狀態只佔一個 bit（另有容量預留及位元組補齊）。解析過程不逐筆操作 Excel，也不建立暫存工作表。完成後批次輸出，每批最多 131,072 個 Variant 欄位、最多 4,096 列，依 TNO 數自動調整。執行期間暫停畫面更新、事件及自動計算，結束或可攔截錯誤時恢復。
-
-唯一地址索引、旗標及 Excel 結果仍需記憶體。單檔小於 2 GB；唯一地址最多 1,048,575 列。未閉合方括號累積超過 16,384 字元會略過。詳細最佳化與驗證範圍見 [最佳化說明](LOCAL_OPTIMIZATION.md)。
-
-## 狀態與限制
-
-- v0.6.0 已測試 20 種地址案例、1 / 7 / 262,144 字元分段邊界、900 個 TNO 的位元旗標、容量擴增、重複地址與滿批/不足一批的輸出，核對未 Fail 欄位保持空白。
-- 約 259 MB 合成檔解析通過，保留的未解析緩衝區最高 128 字元。此檔主要為填充內容及少量資料案例，不代表大量唯一地址的 Excel 寫入效能測試。
-- VBA 容器已經獨立的 `olevba` 讀回，核對內嵌原始碼與 `.bas` 完全一致；XML/ZIP、巨集關聯及文件代碼名稱已檢查。
-- v0.4.1 另加入實際生效的巨集內容類型及 OPC 命名空間檢查，並通過 Microsoft Open XML SDK 2.20.0 的 Office2016 規則驗證（0 錯誤）。前版僅檢查 XML/ZIP 與 VBA 內容，未能發現影響開啟的封裝錯誤。
-- v0.5.0 已檢查儲存檔中的字型、水平/垂直置中、Fail Addresses 固定列高及 Forms 按鈕的巨集連結，並通過 Office2016 格式驗證（0 錯誤）；按鈕實際點擊及巨集執行仍待 Excel 實機驗證。儲存格圖片預覽不包含原生 Forms 按鈕。
-- 開發環境未安裝 Excel；上述測試不代表已完成 Excel 原生編譯、檔案選擇及真實 ASC 匯入驗證。
-- 自動辨識帶 BOM 的 UTF-8 / UTF-16；無 BOM 時使用 Windows 系統文字編碼。位元組解碼與 Excel 工作表寫入尚待桌面版 Excel 實機驗證。
-- 尚未驗證 iPad 端下載、開啟及遠端執行流程。
-
-## 開發驗證
-
-Windows 上執行 `python tools/test_parser.py` 可使用 `cscript.exe` 測試同一份分段解析邏輯（測試程式僅轉換 VBA/VBScript 語法差異）。加上 `--large-kb 265646` 可建立約 259 MB 的暫存合成檔，透過 Windows FSO 分段讀取測試解析緩衝；此測試不會執行 VBA 二進位讀檔或 Excel 寫入。安裝開發用 `oletools` 後，執行 `python tools/verify_xlsm.py` 可獨立抽取並比對內嵌巨集。一般使用者不需要這些工具。
-
-可使用 NuGet 官方 `DocumentFormat.OpenXml` 2.20.0 套件的 `lib/net46/DocumentFormat.OpenXml.dll`，執行 `tools/validate_office2016.ps1 -SdkAssembly <DLL路徑>`，檢查 Office2016 格式。這是格式驗證，不代表已在 Excel 原生應用程式執行巨集。
-
-`python tools/verify_layout.py` 檢查儲存格排版、固定列高與按鈕連結。`add_import_button.py` 只使用 XlsxWriter 產生 Forms 控制項，不建立或替換原有儲存格資料。
-
-VBA 二進位容器以 [ovba-writer](https://github.com/kay-ws/ovba-writer)（MIT）建置，使用其測試容器的專案參考資料；範例程式與事件已全部移除，僅保留必要文件屬性及本專案模組。建置工具與授權來源見 `tools/THIRD_PARTY_NOTICES.md`。
+來源與測試放在 `current/src`、`current/tools`；`current/reference` 僅保存地址回歸測試所需的舊版基準，不是另一份可執行工具。`docs/coordinates.json` 與 wafer 示意圖保留原座標資訊。舊程式仍可從 Git 歷史取得，主分支只保留新版工具。
