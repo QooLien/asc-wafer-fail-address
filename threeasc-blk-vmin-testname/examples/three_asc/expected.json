@@ -1,0 +1,41 @@
+{
+  "WT1": {
+    "STEP": 2,
+    "Legacy": {
+      "BLK0": 0.65,
+      "BLK1": "Fail",
+      "BLK255": "Fail"
+    },
+    "Threshold5": {
+      "BLK0": 0.7,
+      "BLK1": "Pass",
+      "BLK255": "Pass"
+    }
+  },
+  "WT2": {
+    "STEP": 30,
+    "Legacy": {
+      "BLK0": 0.65,
+      "BLK1": 0.6,
+      "BLK255": "Fail"
+    },
+    "Threshold5": {
+      "BLK0": 0.7,
+      "BLK1": "Pass",
+      "BLK255": 0.65
+    }
+  },
+  "WT3": {
+    "STEP": 100,
+    "Legacy": {
+      "BLK0": 0.65,
+      "BLK1": 0.65,
+      "BLK255": "Fail"
+    },
+    "Threshold5": {
+      "BLK0": 0.7,
+      "BLK1": "Pass",
+      "BLK255": 0.6
+    }
+  }
+}

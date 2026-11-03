@@ -2,6 +2,10 @@
 
 使用 Excel VBA 從 `.asc` Raw data 讀取指定測試項目（TNO）的 SRAM Fail Address，並保留 128-chip wafer map 與四象限計數範本。
 
+## ThreeASC Monitor / Function (v0.14.0)
+
+[Download the all-in-one XLSM](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.14.0/ASC_ThreeASC_Monitor_Function.xlsm). Monitor items calculate Vmin; Function items import data without Cat Fail judgment. [Configuration and validation](threeasc-blk-vmin-testname/README.md).
+
 ## 快速開始
 
 1. [下載最新版 ASC_Fail_Address_Fast.xlsm](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.6.0/ASC_Fail_Address_Fast.xlsm)，使用 Windows 電腦版 Excel 開啟。此版已停用 Log，並顯示運行時間。
