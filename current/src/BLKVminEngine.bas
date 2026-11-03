@@ -4,7 +4,7 @@ Option Private Module
 Private Const READ_BYTES As Long = 262144
 Private Const MAX_EXACT As Double = 9007199254740991#
 Private Const MAX_LINE As Long = 1048576
-Private mTags As Object, mTagHeads As Object, mBlockTag As Object, mSpaces As Object, mDigits As Object
+Private mTags As Object, mBlockTag As Object, mSpaces As Object, mDigits As Object
 Private mData As Object, mWanted As Object, mDUTs As Object
 Private mTno As String, mX As String, mY As String, mPath As String
 Private mActive As Boolean, mRecordKey As String, mRecordDUT As String
@@ -161,8 +161,6 @@ Private Sub ResetParser(ByVal path As String)
     If mTags Is Nothing Then
         Set mTags = CreateObject("VBScript.RegExp"): mTags.Global = True: mTags.IgnoreCase = True
         mTags.Pattern = "\b(Tno|X|Y)\s*=\s*([+-]?[0-9]+)(?=\s|[,;]|$)"
-        Set mTagHeads = CreateObject("VBScript.RegExp"): mTagHeads.Global = True: mTagHeads.IgnoreCase = True
-        mTagHeads.Pattern = "\b(Tno|X|Y)\s*="
         Set mBlockTag = CreateObject("VBScript.RegExp"): mBlockTag.IgnoreCase = True
         mBlockTag.Pattern = "\bFBC\s+BY\s+BLK\s*=\s*"
         Set mSpaces = CreateObject("VBScript.RegExp"): mSpaces.Global = True: mSpaces.Pattern = "[\s,;]+"
@@ -171,44 +169,47 @@ Private Sub ResetParser(ByVal path As String)
 End Sub
 
 Private Sub ParseLine(ByVal line As String)
-    Dim blocks As Object, tags As Object, tag As Object, before As String, payload As String
-    Dim name As String, value As String, text As String
+    Dim blocks As Object, tags As Object, before As String, payload As String, text As String
+    Dim currentTNO As String, chipX As String, chipY As String
+    line = NormalizeASCWhitespace(line)
     Set blocks = mBlockTag.Execute(line)
-    before = line
-    If blocks.Count > 0 Then before = Left$(line, blocks(0).FirstIndex)
-    Set tags = mTags.Execute(before)
-    If mTagHeads.Execute(before).Count <> tags.Count Then Err.Raise vbObjectError + 318, , "Malformed TNO/X/Y header; refusing stale context."
-    If blocks.Count > 0 Or tags.Count > 0 Then
-        FinishRecord
-    ElseIf mActive Then
+    If blocks.Count = 0 Then
+        ' Ordinary metadata never establishes or changes a Chip/TNO context.
+        If Not mActive Then Exit Sub
         text = Trim$(line)
         If Len(text) = 0 Then Exit Sub
         If mCount = 256 And InStr(1, "0123456789,+-", Left$(text, 1), vbBinaryCompare) = 0 Then
             FinishRecord
         Else
-            AddValues line: Exit Sub
+            AddValues line
         End If
+        Exit Sub
     End If
-    For Each tag In tags
-        name = UCase$(tag.SubMatches(0)): value = CStr(tag.SubMatches(1))
-        Select Case name
-            Case "TNO": mTno = Coordinate(value)
-            Case "X": mX = Coordinate(value)
-            Case "Y": mY = Coordinate(value)
-        End Select
-    Next tag
-    If blocks.Count > 0 Then
-        If Len(mTno) > 0 Then
-            If Not mWanted.Exists(mTno) Then mIgnored = mIgnored + 1: Exit Sub
-        End If
-        If Len(mTno) = 0 Or Len(mX) = 0 Or Len(mY) = 0 Then Err.Raise vbObjectError + 312, , "FBC record has no complete TNO/X/Y context."
-        mRecordDUT = mX & "|" & mY: mRecordKey = mTno & "|" & mRecordDUT
-        mRecordLine = mLine: mActive = True: mCount = 0: ReDim mValues(0 To 255)
-        ' FirstIndex is zero based; Length includes '=', so +1 preserves the first value.
-        payload = Mid$(line, blocks(0).FirstIndex + blocks(0).Length + 1)
-        AddValues payload
-    End If
+    FinishRecord
+    before = Left$(line, blocks(0).FirstIndex)
+    Set tags = mTags.Execute(before)
+    currentTNO = RecordHeaderInteger(tags, "TNO")
+    If Not mWanted.Exists(currentTNO) Then mIgnored = mIgnored + 1: Exit Sub
+    chipX = RecordHeaderInteger(tags, "X")
+    chipY = RecordHeaderInteger(tags, "Y")
+    mRecordDUT = chipX & "|" & chipY
+    mRecordKey = currentTNO & "|" & mRecordDUT
+    mRecordLine = mLine: mActive = True: mCount = 0: ReDim mValues(0 To 255)
+    payload = Mid$(line, blocks(0).FirstIndex + blocks(0).Length + 1)
+    AddValues payload
 End Sub
+
+Private Function RecordHeaderInteger(ByVal tags As Object, ByVal field As String) As String
+    Dim tag As Object, count As Long, value As String
+    For Each tag In tags
+        If UCase$(tag.SubMatches(0)) = field Then
+            count = count + 1: value = CStr(tag.SubMatches(1))
+        End If
+    Next tag
+    If count = 0 Then Err.Raise vbObjectError + 318, , "FBC record requires integer " & field & " on the same header line; record line=" & mLine
+    If count > 1 Then Err.Raise vbObjectError + 318, , "FBC record has multiple " & field & " fields; record line=" & mLine
+    RecordHeaderInteger = Coordinate(value)
+End Function
 
 Private Sub AddValues(ByVal payload As String)
     Dim tokens As Variant, token As Variant
@@ -242,6 +243,19 @@ Private Function SortedDUTs(ByVal duts As Object) As Collection
         For Each key In keys: result.Add CStr(key): Next key
     End If
     Set SortedDUTs = result
+End Function
+
+Private Function NormalizeASCWhitespace(ByVal text As String) As String
+    Dim code As Long
+    text = Replace(text, ChrW(&HA0), " ")
+    text = Replace(text, ChrW(&H3000), " ")
+    For code = &H2000 To &H200A
+        text = Replace(text, ChrW(code), " ")
+    Next code
+    text = Replace(text, ChrW(&H202F), " ")
+    text = Replace(text, ChrW(&H205F), " ")
+    If Left$(text, 1) = ChrW(&HFEFF) Then text = Mid$(text, 2)
+    NormalizeASCWhitespace = text
 End Function
 
 Private Sub SortXY(ByRef keys As Variant, ByVal lo As Long, ByVal hi As Long)
@@ -287,3 +301,7 @@ Private Function Coordinate(ByVal text As String) As String
     Coordinate = CStr(CLng(value))
 End Function
 
+
+Public Function BLK_RecordCount() As Long
+    If Len(mBLKError) = 0 Then BLK_RecordCount = mData.Count
+End Function

@@ -1,6 +1,6 @@
 # ThreeASC：Fail Address + FBC by BLK
 
-[下載最新版 Excel（內含全部 VBA）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.15.0/ASC_ThreeASC_FBC.xlsm)
+[下載最新版 Excel（內含全部 VBA）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.16.0/ASC_ThreeASC_FBC.xlsm)
 
 新版只有三個分頁：`Config`、`Fail Address`、`FBC by BLK`。
 
@@ -8,7 +8,7 @@
 
 1. 使用 Windows 桌面版 Excel 開啟檔案並允許巨集，不需要安裝 Python 或額外匯入 VBA。
 2. Config 的 A2:A901 與 D2:D901 為兩組 TNO 清單，兩組合併處理，TNO 不可重複。保留 22 個預設 TNO。B/C/E/F 僅供備註，Func.、電壓可空白，暫不參與判斷。
-3. 按 Config!J13 的按鈕，選取三份 ASC。完整 LOT、WNO 必須相同；STEP 數字由小到大對應 WT1/WT2/WT3。
+3. Config!J13 為「僅匯入 Fail Address」；Config!J16 為「僅匯入 FBC by BLK」。兩個按鈕各自選取三份 ASC。完整 LOT、WNO 必須相同；STEP 數字由小到大對應 WT1/WT2/WT3。單獨重跑 FBC 不會解析或寫入 Fail Address，單獨匯入 Address 也不解析 FBC。
 4. 執行完成後另存輸出。BLK 錯誤或無資料訊息位於 Config!T2。
 
 ## 輸出
@@ -28,11 +28,15 @@ WT1、WT2、WT3 依序追加至同頁，以藍／橘／綠底色區分。各 WT 
 
 ## Raw Data 讀取規則
 
-- 追蹤 `Tno=`、`X=`、`Y=`，遇到 `FBC BY BLK=` 後讀取恰好 256 個非負整數，允許跨行，支援空白、Tab、逗號、分號分隔。
+- 只解析含 `FBC BY BLK=` 的記錄；同一標頭行必須包含該筆 `Tno=`、`X=`、`Y=`，`DUT=` 不參與索引。等號後依序讀取恰好 256 個非負整數，數值允許跨行，支援空白、Tab、逗號、分號分隔；全形與不換行等特殊空白先正規化。一般說明行的 TNO/X/Y 字樣不再觸發標頭檢查，也不沿用前筆 Chip 座標。
 - 第 1 個數字直接對應 BLK0，最後一個數字對應 BLK255；沒有從 Fail Address 重新計算 Count。
 - TNO=0 或未選定 TNO 的 FBC 會略過，不再因此報 `TNO must be positive`。
 - 選定 TNO 的缺失座標、無效數字、數量不足／超過 256 仍會報錯，並將該 WT 的 FBC 視為無效，避免輸出部分資料。其他 WT 與 Fail Address 保持獨立處理。
 - 同一份 ASC 的同一 TNO/X/Y 重複出現時保留第一筆，不加總、不覆蓋。每份檔案使用獨立索引。
+
+## v0.16.0：獨立按鈕與記錄式 Parser
+
+原有 Address 寫入迴圈與解析 helper 保持一致。FBC 按鈕只更新 FBC by BLK 與相關狀態，保留既有 Address 資料；輸出檔名附加 _ONLY。兩個按鈕共用防重入保護、LOT/WNO/STEP 檢查與讀檔工具。
 
 ## 驗證與限制
 

@@ -10,6 +10,14 @@ Private mBitMasks As Variant
 
 ' No logs. Keep one address index and one bit per selected TNO/address.
 Public Sub ImportASCFailAddresses()
+    RunThreeASC False
+End Sub
+
+Public Sub ImportASCFBC()
+    RunThreeASC True
+End Sub
+
+Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Static busy As Boolean
     Dim paths(1 To 3) As String, meta(1 To 3) As Object, steps(1 To 3) As Long
     Dim phase As Long, other As Long, swapPath As String, swapStep As Long, swapMeta As Object
@@ -43,7 +51,7 @@ Public Sub ImportASCFailAddresses()
     Set fso = CreateObject("Scripting.FileSystemObject")
     stage = "Validate Config"
     Set cfg = ThisWorkbook.Worksheets("Config")
-    Set dst = ThisWorkbook.Worksheets("Fail Address")
+    If Not fbcOnly Then Set dst = ThisWorkbook.Worksheets("Fail Address")
     stage = "Validate Monitor / Function settings"
     BLKVminEngine.BLK_Setup cfg
     Set tnos = BLKVminEngine.BLK_AddressTNOs()
@@ -81,11 +89,18 @@ Public Sub ImportASCFailAddresses()
         Next other
     Next phase
     outputBase = SafeFilePart(Left$(CleanSpace(CStr(meta(1)("LOT"))), 6)) & "#" & NormalWafer(CStr(meta(1)("WNO"))) & "_WT1-WT3_FBC"
+    If fbcOnly Then
+        outputBase = outputBase & "_ONLY"
+    Else
+        outputBase = Replace(outputBase, "_WT1-WT3_FBC", "_WT1-WT3_Address")
+    End If
     outputPath = UniqueResultPath(fso, fso.GetParentFolderName(paths(1)), outputBase)
     totalTNOs = 3 * tnos.Count
-    flagBytes = (totalTNOs + 7) \ 8
-    capacity = 4096
-    ReDim bits(0 To flagBytes - 1, 0 To capacity - 1)
+    If Not fbcOnly Then
+        flagBytes = (totalTNOs + 7) \ 8
+        capacity = 4096
+        ReDim bits(0 To flagBytes - 1, 0 To capacity - 1)
+    End If
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     Application.Calculation = xlCalculationManual
@@ -97,38 +112,46 @@ Public Sub ImportASCFailAddresses()
         fileNo = FreeFile: Open path For Binary Access Read As #fileNo
         fileOpen = True: fileSize = LOF(fileNo)
         DetectEncoding fileNo, encoding
-        BLKVminEngine.BLK_BeginFile path
+        If fbcOnly Then BLKVminEngine.BLK_BeginFile path
     Do While Seek(fileNo) <= fileSize
         stage = "Read ASC chunk"
         raw = ReadASCChunk(fileNo, encoding)
         bytePosition = Seek(fileNo) - 1
-        buffer = buffer & raw
-        BLKVminEngine.BLK_Feed raw, False
+        If fbcOnly Then
+            BLKVminEngine.BLK_Feed raw, False
+        Else
+            buffer = buffer & raw
+        End If
         raw = ""
-        stage = "Parse and merge addresses"
-        ParseASCBuffer buffer, False, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
+        If fbcOnly Then stage = "FBC stream WT" & phase Else stage = "Parse and merge addresses"
+        If Not fbcOnly Then ParseASCBuffer buffer, False, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
         chunkCount = chunkCount + 1
         If chunkCount Mod 8 = 0 Then
-            Application.StatusBar = "ASC: " & Format$(bytePosition / 1024, "#,##0") & " / " & Format$(fileSize / 1024, "#,##0") & " KB; unique=" & addresses.Count
+            Application.StatusBar = "ASC: " & Format$(bytePosition / 1024, "#,##0") & " / " & Format$(fileSize / 1024, "#,##0") & " KB"
             DoEvents
         End If
     Loop
         Close #fileNo: fileOpen = False
         stage = "Parse final buffer WT" & phase
-        ParseASCBuffer buffer, True, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
-        If selectedSections = 0 Then Err.Raise vbObjectError + 5, , "WT" & phase & ": no selected tno= section. File: " & path
-        If accepted = 0 And skipped > 0 Then Err.Raise vbObjectError + 6, , "WT" & phase & ": no valid selected addresses. Previous results retained."
+        If Not fbcOnly Then ParseASCBuffer buffer, True, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
+        If Not fbcOnly And selectedSections = 0 Then Err.Raise vbObjectError + 5, , "WT" & phase & ": no selected tno= section. File: " & path
+        If Not fbcOnly And accepted = 0 And skipped > 0 Then Err.Raise vbObjectError + 6, , "WT" & phase & ": no valid selected addresses. Previous results retained."
         sourceStats(phase, 1) = "WT" & phase
         sourceStats(phase, 2) = path
         sourceStats(phase, 3) = CStr(meta(phase)("STEP"))
         sourceStats(phase, 4) = BuildResultBaseName(meta(phase))
         sourceStats(phase, 5) = accepted: sourceStats(phase, 6) = skipped
-        stage = "FBC by BLK WT" & phase
-        BLKVminEngine.BLK_Feed "", True
-        blkMessage = BLKVminEngine.BLK_WritePhase(ThisWorkbook, phase)
-        If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & "WT" & phase & ": " & blkMessage
+        If fbcOnly Then
+            stage = "FBC by BLK WT" & phase
+            BLKVminEngine.BLK_Feed "", True
+            accepted = BLKVminEngine.BLK_RecordCount()
+            sourceStats(phase, 5) = accepted
+            blkMessage = BLKVminEngine.BLK_WritePhase(ThisWorkbook, phase)
+            If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & "WT" & phase & ": " & blkMessage
+        End If
         allAccepted = allAccepted + accepted: allSkipped = allSkipped + skipped
     Next phase
+    If Not fbcOnly Then
     uniqueCount = addresses.Count
     columnCount = 6 + totalTNOs
     ReDim headers(1 To 1, 1 To columnCount)
@@ -212,15 +235,24 @@ Public Sub ImportASCFailAddresses()
     cfg.Range("I4").Value2 = uniqueCount
     cfg.Range("I5").Value2 = allAccepted
     cfg.Range("I6").Value2 = allSkipped
-    blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
-    If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & blkMessage
-    cfg.Range("T2").Value2 = blkWarnings
+    Else
+        cfg.Range("J2:O4").Value2 = sourceStats
+        cfg.Range("I2").Value2 = "FBC only: 3 ASC files"
+        cfg.Range("I3").Value2 = Now
+        blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
+        If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & blkMessage
+        cfg.Range("T2").Value2 = blkWarnings
+    End If
     stage = "Save result workbook"
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
     n = DateDiff("s", startedAt, Now)
     elapsedText = Format$(Fix(n / 3600), "00") & ":" & Format$(Fix(n / 60) Mod 60, "00") & ":" & Format$(n Mod 60, "00")
+    If fbcOnly Then
+        MsgBox "FBC import complete. Records: " & allAccepted & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Fail Address was not changed." & blkWarnings, vbInformation
+    Else
     MsgBox "Import complete. Unique addresses: " & uniqueCount & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "No log output." & blkWarnings, vbInformation
+    End If
 Done:
     On Error Resume Next
     If fileOpen Then Close #fileNo

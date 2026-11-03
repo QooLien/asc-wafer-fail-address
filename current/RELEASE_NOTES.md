@@ -1,10 +1,10 @@
-# v0.15.0 - Single-sheet WT1/2/3 FBC
+# v0.16.0 - Independent Address / FBC buttons
 
-- Keep the original validated Fail Address output.
-- Consolidate WT1/WT2/WT3 into one FBC by BLK worksheet: WT, TNO, X, Y, BLK0..255.
-- Remove Func. grouping and Vmin/Cat Fail judgment. Only Config A/D TNO columns are required.
-- Skip TNO0/unselected FBC records, correcting the reported TNO must be positive failure.
-- Preserve exact256-value validation and first-record-wins duplicate handling for selected TNOs.
-- Remove obsolete workbooks and tools from main; retain wafer coordinates and necessary address regression baselines.
+- Config J13: Address-only import. Config J16: FBC-only import.
+- FBC-only mode neither parses addresses nor allocates address flags nor writes the Fail Address worksheet. Address-only mode does not parse or write FBC.
+- Rebuild FBC parsing around each actual FBC BY BLK record, taking TNO/X/Y from the same header line. General metadata cannot trigger the old global Malformed header check or supply stale coordinates.
+- Support normal, tab, full-width and non-breaking whitespace; preserve exact256 values and raw BLK0..255 order.
+- Keep WT1/WT2/WT3 in one FBC sheet, with no Func. grouping or Vmin/Cat Fail judgment.
+- All VBA is embedded in the single XLSM. Existing address parsing helpers and output loop are preserved.
 
-Tests passed: original address mapping for1/3/9/900 selected TNOs, all256 raw FBC positions, TNO0 skip, three-file isolation, malformed selected FBC diagnostics, and the actual batch output loop over3078 rows. Embedded-source checks and Office2016 OpenXML validation passed. Native Excel2016 execution and user ASC validation are not available.
+Validation passed: separate action branches, both Forms button macro targets/anchors, supplied TNO350/DUT9/X10/Y17 header under five separator types and three chunk sizes, all256 raw indices, metadata/missing-context/malformed-record cases,3078 actual batch output rows and original address1/3/9/900-TNO regression. Embedded-source and Office2016 OpenXML checks passed. Native Excel2016 execution and the user's actual ASC remain untested.

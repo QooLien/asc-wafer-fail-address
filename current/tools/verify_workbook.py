@@ -1,8 +1,9 @@
 from pathlib import Path
+import sys
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
 from oletools.olevba import VBA_Parser
-r=Path(__file__).resolve().parents[1];p=r/'templates/ASC_ThreeASC_FBC.xlsm'
+r=Path(__file__).resolve().parents[1];p=Path(sys.argv[1]) if len(sys.argv)>1 else r/'templates/ASC_ThreeASC_FBC.xlsm'
 v=VBA_Parser(str(p));modules={n:c for _,_,n,c in v.extract_macros()};v.close()
 assert len(modules)==6
 for prefix,file in [('ImportFailAddresses.','ImportThreeASC_BLKVmin.bas'),('BLKVminEngine.','BLKVminEngine.bas')]:
@@ -36,4 +37,12 @@ with ZipFile(p) as z:
  defaults=[350+i for i in range(11)]+[370+i for i in range(11)]
  assert [int(cells[f'A{i+2}']) for i in range(22)]==defaults
  assert 'VminFBCThreshold' not in cells.values()
+ vml=ET.fromstring(z.read('xl/drawings/vmlDrawing1.vml'))
+ X='{urn:schemas-microsoft-com:office:excel}'
+ buttons=vml.findall('.//'+X+'ClientData')
+ macros={b.find(X+'FmlaMacro').text:b for b in buttons}
+ assert set(macros)=={'[0]!ImportASCFailAddresses','[0]!ImportASCFBC'}
+ for macro,row in [('[0]!ImportASCFailAddresses',12),('[0]!ImportASCFBC',15)]:
+  anchor=[int(v.strip()) for v in macros[macro].find(X+'Anchor').text.split(',')]
+  assert anchor[0]==9 and anchor[2]==row
 print('PASS XLSM: six exact VBA modules, only three sheets, unchanged address helpers/output, all256 E:IZ BLK headers and22 default TNOs, no Vmin configuration.')
