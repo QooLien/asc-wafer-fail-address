@@ -13,6 +13,7 @@ Private mValues() As Double, mCount As Long, mLine As Long, mRecordLine As Long
 Private mSequence() As String, mCarry As String, mBLKError As String, mNextRow As Long
 Private mIgnored As Long
 Private mAvailablePhases As Long
+Private mCats As Object, mCatTag As Object
 Private mLocations As Object, mPhaseErrors As Object, mLocationCarry As String, mLocationError As String
 
 Public Sub BLK_Setup(ByVal cfg As Worksheet)
@@ -54,6 +55,7 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
     Dim duts As Collection, dut As Variant, xy As Variant, values As Variant, key As String
     Dim i As Long, b As Long, count As Long, take As Long, remaining As Long, color As Long, startRow As Long
     On Error GoTo Failed
+    SaveCategories wb, phase
     If phase > mAvailablePhases Then mAvailablePhases = phase
     mPhaseErrors("WT" & phase) = mBLKError
     Set ws = wb.Worksheets("FBC by BLK")
@@ -351,6 +353,7 @@ Public Sub BLK_BeginFile(ByVal path As String)
     Dim i As Long
     Set mWanted = CreateObject("Scripting.Dictionary")
     For i = LBound(mSequence) To UBound(mSequence): mWanted.Add mSequence(i), True: Next i
+    Set mCats = CreateObject("Scripting.Dictionary")
     ResetParser path
     mCarry = "": mBLKError = "": mIgnored = 0: mLocationCarry = ""
 End Sub
@@ -401,6 +404,7 @@ Private Sub ParseLine(ByVal line As String)
     Dim blocks As Object, tags As Object, before As String, payload As String, text As String
     Dim currentTNO As String, chipX As String, chipY As String
     line = NormalizeASCWhitespace(line)
+    ParseCategory line
     Set blocks = mBlockTag.Execute(line)
     If blocks.Count = 0 Then
         ' Ordinary metadata never establishes or changes a Chip/TNO context.
@@ -427,6 +431,58 @@ Private Sub ParseLine(ByVal line As String)
     payload = Mid$(line, blocks(0).FirstIndex + blocks(0).Length + 1)
     AddValues payload
 End Sub
+
+Private Sub ParseCategory(ByVal line As String)
+    Dim hits As Object, tags As Object, bits As String, pos As Long, key As String, cat As Long
+    If InStr(1, line, "CATLST", vbTextCompare) = 0 Then Exit Sub
+    If mCatTag Is Nothing Then
+        Set mCatTag = CreateObject("VBScript.RegExp")
+        mCatTag.IgnoreCase = True: mCatTag.Pattern = "\bCATLST\s*:\s*([01]+)(?=\s|$)"
+    End If
+    Set hits = mCatTag.Execute(line)
+    If hits.Count <> 1 Then Err.Raise vbObjectError + 319, , "Invalid CATLST; line=" & mLine
+    Set tags = mTags.Execute(Left$(line, hits(0).FirstIndex))
+    If RecordHeaderInteger(tags, "TNO") <> "1000" Then Exit Sub
+    key = RecordHeaderInteger(tags, "X") & "|" & RecordHeaderInteger(tags, "Y")
+    bits = hits(0).SubMatches(0): cat = InStr(1, bits, "1", vbBinaryCompare)
+    If cat = 0 Then Exit Sub
+    If mCats.Exists(key) Then
+        If CLng(mCats(key)) <> cat Then Err.Raise vbObjectError + 319, , "Conflicting CATLST for Chip " & key
+    Else
+        mCats.Add key, cat
+    End If
+End Sub
+
+Private Sub SaveCategories(ByVal wb As Workbook, ByVal phase As Long)
+    Dim ws As Worksheet, data() As Variant, key As Variant, xy As Variant, i As Long, start As Long
+    Set ws = wb.Worksheets("Import Index")
+    If phase = 1 Then ws.Range("AA:AD").ClearContents
+    ws.Range("AA1:AD1").Value2 = Array("WT", "X", "Y", "Cat.")
+    If mCats.Count = 0 Then Exit Sub
+    ReDim data(1 To mCats.Count, 1 To 4)
+    For Each key In mCats
+        i = i + 1: xy = Split(CStr(key), "|")
+        data(i, 1) = "WT" & phase: data(i, 2) = CLng(xy(0)): data(i, 3) = CLng(xy(1)): data(i, 4) = mCats(key)
+    Next key
+    start = ws.Cells(ws.Rows.Count, 27).End(xlUp).Row + 1
+    ws.Cells(start, 27).Resize(i, 4).Value2 = data
+End Sub
+
+Public Function BLK_Categories(ByVal wb As Workbook, Optional ByVal wt As String = "") As Object
+    Dim result As Object, ws As Worksheet, last As Long, data As Variant, i As Long, key As String
+    Set result = CreateObject("Scripting.Dictionary")
+    Set ws = wb.Worksheets("Import Index"): last = ws.Cells(ws.Rows.Count, 27).End(xlUp).Row
+    If last >= 2 Then
+        data = ws.Range("AA2:AD" & last).Value2
+        For i = 1 To UBound(data, 1)
+            If wt = "" Or CStr(data(i, 1)) = wt Then
+                key = CStr(data(i, 2)) & "|" & CStr(data(i, 3))
+                result(key) = CLng(data(i, 4))
+            End If
+        Next i
+    End If
+    Set BLK_Categories = result
+End Function
 
 Private Function RecordHeaderInteger(ByVal tags As Object, ByVal field As String) As String
     Dim tag As Object, count As Long, value As String
@@ -862,7 +918,7 @@ End Sub
 Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     Dim patterns As Object, wanted As Object, counts As Object, coords As Object, errors As Object, used As Object
     Dim phaseCount As Long, includedMask As Variant, maximumCount As Long
-    Dim priorPatterns As Object
+    Dim priorPatterns As Object, categoryByWT(1 To 3) As Object, chipCat As Long
     Dim hard As Object
     Dim locations As Worksheet, summary As Worksheet, map As Worksheet, ws As Worksheet
     Dim data As Variant, item As Variant, name As Variant, detail As Variant, xy As Variant, ordered As Collection
@@ -870,6 +926,7 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     Dim width As Long, col As Long, row As Long, origin As Long, sheetName As String, result As Variant
     Dim output() As Variant, n As Long, total As Double, text As String, existing As Boolean
     On Error GoTo Failed
+    BLK_InvalidateCoverageMap wb
     BLK_InvalidateDetails wb, "Map inputs updated. Double-click a Fail Chip to refresh this detail view."
     phaseCount = BLK_PhaseCount(wb)
     Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
@@ -907,6 +964,7 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     For phase = 1 To phaseCount
         If CStr(locations.Cells(phase + 1, 5).Value2) = "Data Error" Then errors.Add "WT" & phase, True
     Next phase
+    For phase = 1 To phaseCount: Set categoryByWT(phase) = BLK_Categories(wb, "WT" & phase): Next phase
     Set priorPatterns = PatternPredecessors(patterns)
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
     total = CDbl(patterns.Count) * coords.Count * phaseCount
@@ -938,12 +996,12 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
         SetMapDrillProperty map, "ASCPattern", CStr(name)
         SetMapDrillProperty map, "ASCStopTNO", CStr(detail(0))
         With map.Cells(1, 1).Resize(maxY - minY + 6, (width + 2) * phaseCount)
-            .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-            .ColumnWidth = 9: .RowHeight = 32
+            .Font.Name = "Calibri": .Font.Size = 24: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+            .ColumnWidth = 12: .RowHeight = 40
         End With
         map.Cells(1, 1).Resize(1, (width + 2) * phaseCount).Merge
         map.Cells(1, 1).Value2 = CStr(name) & " Fail Map"
-        With map.Cells(1, 1): .Font.Size = 11: .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77): End With
+        With map.Cells(1, 1): .Font.Size = 24: .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77): End With
         map.Cells(2, 1).Resize(1, (width + 2) * phaseCount).Merge
         map.Rows(2).RowHeight = 12
         ReDim output(1 To ordered.Count * phaseCount, 1 To 9): n = 0
@@ -956,6 +1014,8 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
             map.Cells(4, origin + 1).Resize(1, width).Borders.LineStyle = xlContinuous
             map.Cells(5, origin).Resize(maxY - minY + 1, 1).Borders.LineStyle = xlContinuous
             map.Cells(3, origin).Resize(maxY - minY + 3, width + 1).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+            map.Cells(4, origin + 1).Resize(1, width).Font.Size = 20
+            map.Cells(5, origin).Resize(maxY - minY + 1, 1).Font.Size = 20
             For col = minX To maxX: map.Cells(4, origin + 1 + col - minX).Value2 = col: Next col
             For row = minY To maxY: map.Cells(5 + row - minY, origin).Value2 = row: Next row
         Next phase
@@ -963,6 +1023,9 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
             xy = Split(CStr(item), "|")
             For phase = 1 To phaseCount
                 result = MapResult(counts, errors, "WT" & phase, CStr(detail(0)), CStr(item), hard, wanted, includedMask, priorPatterns)
+                chipCat = 0
+                If categoryByWT(phase).Exists(CStr(item)) Then chipCat = CLng(categoryByWT(phase)(CStr(item)))
+                If chipCat = 1 Or chipCat = 2 Then result = 0
                 n = n + 1: output(n, 1) = name: output(n, 2) = CLng(detail(0)): output(n, 3) = detail(1): output(n, 4) = detail(2)
                 output(n, 5) = "WT" & phase: output(n, 6) = CLng(xy(0)): output(n, 7) = CLng(xy(1)): output(n, 9) = MapStatus(result)
                 If VarType(result) <> vbString Then
@@ -972,7 +1035,7 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
                 origin = 1 + (phase - 1) * (width + 2)
                 With map.Cells(5 + CLng(xy(1)) - minY, origin + 1 + CLng(xy(0)) - minX)
                     If VarType(result) = vbString Then .ClearContents Else .Value2 = CLng(result)
-                    .Font.Size = 11: .Font.Color = vbBlack: .NumberFormat = "0;-0;;@"
+                    .Font.Size = 24: .Font.Color = vbBlack: .NumberFormat = "0;-0;;@"
                     If VarType(result) = vbString Then .Interior.Color = MapColor(result) Else .Interior.Color = vbWhite
                     .Borders.LineStyle = xlContinuous: .Borders.Color = RGB(150, 150, 150)
                 End With
@@ -1008,22 +1071,160 @@ Failed:
     BLK_BuildFailMaps = "Map build failed (" & Err.Number & "): " & Err.Description
 End Function
 
+Public Sub BLK_InvalidateCoverageMap(ByVal wb As Workbook)
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = wb.Worksheets("Fail BLK Address Map")
+    On Error GoTo 0
+    If Not ws Is Nothing Then ws.UsedRange.UnMerge: ws.UsedRange.Clear
+End Sub
+
+Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
+    'Right cell counts distinct BLKs with Missing Count > 0 (not the missing-bit sum).
+    Dim ws As Worksheet, source As Worksheet, report As Worksheet
+    Dim summaries As Variant, data As Variant, names As Object, coords As Object, losses As Object, seen As Object
+    Dim cats(1 To 3) As Object, ordered As Collection, item As Variant, name As Variant, xy As Variant
+    Dim i As Long, j As Long, phase As Long, phaseCount As Long, last As Long, first As Long, take As Long
+    Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
+    Dim top As Long, height As Long, panelWidth As Long, origin As Long, row As Long, col As Long
+    Dim key As String, blockKey As String, chip As String, status As String, cat As Long, loss As Long
+    Dim fail As Long, maximum As Long, cells As Range, colorRule As Object
+    Set source = wb.Worksheets("BLK Fail Count"): last = source.Cells(source.Rows.Count, 1).End(xlUp).Row
+    If last < 2 Then Err.Raise vbObjectError + 492, , "Build Fail Maps before the Address Map."
+    summaries = source.Range("A2:I" & last).Value2
+    Set names = CreateObject("Scripting.Dictionary"): Set coords = CreateObject("Scripting.Dictionary")
+    Set losses = CreateObject("Scripting.Dictionary"): Set seen = CreateObject("Scripting.Dictionary")
+    phaseCount = BLK_PhaseCount(wb)
+    For phase = 1 To phaseCount: Set cats(phase) = BLK_Categories(wb, "WT" & phase): Next phase
+    For i = 1 To UBound(summaries, 1)
+        names(CStr(summaries(i, 1))) = True
+        coords(CStr(summaries(i, 6)) & "|" & CStr(summaries(i, 7))) = True
+    Next i
+    Set ordered = SortedDUTs(coords)
+    xy = Split(CStr(ordered(1)), "|"): minX = CLng(xy(0)): maxX = minX: minY = CLng(xy(1)): maxY = minY
+    For Each item In ordered
+        xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+        If x < minX Then minX = x
+        If x > maxX Then maxX = x
+        If y < minY Then minY = y
+        If y > maxY Then maxY = y
+    Next item
+    Set report = wb.Worksheets("Missing BLK Address"): last = report.Cells(report.Rows.Count, 1).End(xlUp).Row
+    For first = 5 To last Step 2048
+        take = last - first + 1: If take > 2048 Then take = 2048
+        data = report.Cells(first, 1).Resize(take, 12).Value2
+        For i = 1 To UBound(data, 1)
+            If CDbl(data(i, 11)) > 0 Then
+                key = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
+                blockKey = key & "|" & CStr(data(i, 8))
+                If Not seen.Exists(blockKey) Then
+                    seen.Add blockKey, True
+                    If Not losses.Exists(key) Then losses.Add key, 0
+                    losses(key) = CLng(losses(key)) + 1
+                End If
+            End If
+        Next i
+    Next first
+    On Error Resume Next
+    Set ws = wb.Worksheets("Fail BLK Address Map")
+    On Error GoTo 0
+    If ws Is Nothing Then
+        Set ws = wb.Worksheets.Add(After:=source): ws.Name = "Fail BLK Address Map"
+        ws.CustomProperties.Add Name:="ASCCoverageMap", Value:="1"
+    End If
+    ws.UsedRange.UnMerge: ws.UsedRange.Clear
+    panelWidth = (maxX - minX + 1) * 2 + 2: height = maxY - minY + 7: top = 1
+    If CDbl(height) * names.Count > ws.Rows.Count Then Err.Raise vbObjectError + 492, , "Address Map exceeds Excel row limit."
+    With ws.Cells(1, 1).Resize(height * names.Count, panelWidth * phaseCount)
+        .Font.Name = "Calibri": .Font.Size = 24: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .ColumnWidth = 13: .RowHeight = 40: .NumberFormat = "0;-0;;@"
+    End With
+    For Each name In names
+        ws.Cells(top, 1).Resize(1, panelWidth * phaseCount).Merge
+        With ws.Cells(top, 1)
+            .Value2 = CStr(name) & " | Left: Fail BLK / Right: Loss BLK"
+            .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77)
+        End With
+        maximum = 2
+        For phase = 1 To phaseCount
+            origin = 1 + (phase - 1) * panelWidth
+            ws.Cells(top + 1, origin + 1).Resize(1, panelWidth - 2).Merge
+            ws.Cells(top + 1, origin + 1).Value2 = "WT" & phase
+            ws.Cells(top + 1, origin + 1).Font.Bold = True
+            For x = minX To maxX
+                col = origin + 1 + (x - minX) * 2
+                ws.Cells(top + 2, col).Resize(1, 2).Merge
+                ws.Cells(top + 2, col).Value2 = x: ws.Cells(top + 2, col).Font.Size = 20
+                ws.Cells(top + 3, col).Value2 = "Fail": ws.Cells(top + 3, col + 1).Value2 = "Loss"
+                ws.Cells(top + 2, col).Resize(2, 2).Borders.LineStyle = xlContinuous
+            Next x
+            For y = minY To maxY
+                ws.Cells(top + 4 + y - minY, origin).Value2 = y
+                ws.Cells(top + 4 + y - minY, origin).Font.Size = 20
+                ws.Cells(top + 4 + y - minY, origin).Borders.LineStyle = xlContinuous
+            Next y
+            ws.Cells(top + 1, origin).Resize(maxY - minY + 5, panelWidth - 1).BorderAround LineStyle:=xlContinuous, Weight:=xlThin
+        Next phase
+        For i = 1 To UBound(summaries, 1)
+            If CStr(summaries(i, 1)) = CStr(name) Then
+                phase = CLng(Mid$(CStr(summaries(i, 5)), 3))
+                x = CLng(summaries(i, 6)): y = CLng(summaries(i, 7)): chip = x & "|" & y
+                origin = 1 + (phase - 1) * panelWidth
+                row = top + 4 + y - minY: col = origin + 1 + (x - minX) * 2
+                Set cells = ws.Cells(row, col).Resize(1, 2)
+                cells.Borders.LineStyle = xlContinuous: cells.Borders.Color = RGB(150, 150, 150)
+                cat = 0: If cats(phase).Exists(chip) Then cat = CLng(cats(phase)(chip))
+                If cat <> 1 And cat <> 2 Then
+                    status = CStr(summaries(i, 9))
+                    If status = "Pass" Or status = "Fail" Then
+                        fail = CLng(summaries(i, 8)): key = "WT" & phase & "|" & CStr(name) & "|" & chip
+                        loss = 0: If losses.Exists(key) Then loss = CLng(losses(key))
+                        If loss > fail Then Err.Raise vbObjectError + 492, , "Loss BLKs exceed Map Fail BLKs: " & key
+                        ws.Cells(row, col).Value2 = fail: ws.Cells(row, col + 1).Value2 = loss
+                        If fail > maximum Then maximum = fail
+                    Else
+                        cells.Interior.Color = MapColor(status)
+                    End If
+                End If
+            End If
+        Next i
+        For phase = 1 To phaseCount
+            origin = 1 + (phase - 1) * panelWidth
+            Set cells = ws.Cells(top + 4, origin + 1).Resize(maxY - minY + 1, panelWidth - 2)
+            Set colorRule = cells.FormatConditions.AddColorScale(ColorScaleType:=2)
+            With colorRule.ColorScaleCriteria(1)
+                .Type = xlConditionValueNumber: .Value = 1: .FormatColor.Color = RGB(255, 235, 132)
+            End With
+            With colorRule.ColorScaleCriteria(2)
+                .Type = xlConditionValueNumber: .Value = maximum: .FormatColor.Color = RGB(248, 105, 107)
+            End With
+            Set colorRule = cells.FormatConditions.Add(Type:=xlExpression, Formula1:="=AND(ISNUMBER(" & cells.Cells(1, 1).Address(False, False) & ")," & cells.Cells(1, 1).Address(False, False) & "=0)")
+            colorRule.SetFirstPriority: colorRule.StopIfTrue = True
+            colorRule.Interior.Color = vbWhite: colorRule.Font.Color = vbWhite
+        Next phase
+        top = top + height
+    Next name
+    ws.Activate: Application.ActiveWindow.DisplayGridlines = False
+    BLK_OrderSheets wb
+End Sub
+
 Public Sub BLK_PrepareEmptyTemplate(ByVal wb As Workbook)
     Dim ws As Worksheet, cfg As Worksheet, locations As Worksheet, index As Worksheet
     Dim tnos As Object, labels As Object, tno As Variant, header() As Variant, i As Long, width As Long, message As String
     If PresentationLastRow(wb.Worksheets("Fail Address"), 1) > 1 Or PresentationLastRow(wb.Worksheets("FBC by BLK"), 2) > 1 Then Err.Raise vbObjectError + 491, , "Template preparation requires an empty workbook."
     Set cfg = wb.Worksheets("Config"): BLK_Setup cfg
     Set tnos = BLK_AddressTNOs(): Set labels = ImportFailAddresses.BuildAddressLabels(cfg)
-    Set ws = wb.Worksheets("Fail Address"): width = 6 + tnos.Count
+    Set ws = wb.Worksheets("Fail Address"): width = 7 + tnos.Count
     If ws.AutoFilterMode Then ws.AutoFilterMode = False
     ws.UsedRange.Clear
     If ws.UsedRange.Column + ws.UsedRange.Columns.Count - 1 > width Then ws.Range(ws.Columns(width + 1), ws.Columns(ws.UsedRange.Column + ws.UsedRange.Columns.Count - 1)).Delete
     ReDim header(1 To 1, 1 To width)
     header(1, 1) = "X": header(1, 2) = "Y": header(1, 3) = "BLK": header(1, 4) = "WL": header(1, 5) = "BL": header(1, 6) = "IO"
-    For Each tno In tnos: header(1, 7 + CLng(tnos(tno))) = "WT1" & vbLf & labels(tno): Next tno
+    header(1, 7) = "Cat."
+    For Each tno In tnos: header(1, 8 + CLng(tnos(tno))) = "WT1" & vbLf & labels(tno): Next tno
     ws.Cells(1, 1).Resize(1, width).Value2 = header
-    With ws.Range("A1:F1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
-    With ws.Cells(1, 7).Resize(1, tnos.Count): .Interior.Color = RGB(219, 234, 254): .Font.Bold = True: .Orientation = 90: .WrapText = True: End With
+    With ws.Range("A1:G1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    With ws.Cells(1, 8).Resize(1, tnos.Count): .Interior.Color = RGB(219, 234, 254): .Font.Bold = True: .Orientation = 90: .WrapText = True: End With
     Set locations = wb.Worksheets("Chip Locations"): locations.Range("A2:F" & locations.UsedRange.Rows.Count + 1).ClearContents
     Set ws = wb.Worksheets("FBC by BLK"): If ws.AutoFilterMode Then ws.AutoFilterMode = False
     If ws.UsedRange.Rows.Count > 1 Then ws.Range("A2:IZ" & ws.UsedRange.Rows.Count).ClearContents
@@ -1106,11 +1307,11 @@ End Sub
 Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
     Dim lastRow As Long, lastCol As Long, c As Long, firstData As Long, height As Double, maximum As Double
     If ws.Name = "Config" Or ws.Name = "Import Index" Or ws.Name = "FBC by BLK" Then Exit Sub
-    If Right$(ws.Name, 8) = "Fail Map" Then Exit Sub
+    If Right$(ws.Name, 8) = "Fail Map" Or ws.Name = "Fail BLK Address Map" Then Exit Sub
     lastRow = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
     lastCol = ws.UsedRange.Column + ws.UsedRange.Columns.Count - 1
     If ws.Name = "BLK_FBC_Comparison" And lastCol > 3 Then ws.Cells(2, 4).Resize(1, lastCol - 3).Orientation = 90
-    If ws.Name = "Fail Address" And lastCol > 6 Then ws.Cells(1, 7).Resize(1, lastCol - 6).Orientation = 90
+    If ws.Name = "Fail Address" And lastCol > 7 Then ws.Cells(1, 8).Resize(1, lastCol - 7).Orientation = 90
     With ws.UsedRange
         .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
         .Columns.AutoFit

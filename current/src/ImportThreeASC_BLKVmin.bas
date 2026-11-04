@@ -26,6 +26,10 @@ Public Sub BuildFailMaps()
     On Error GoTo FailedMap
     Application.ScreenUpdating = False: Application.EnableEvents = False
     text = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
+    If Len(text) = 0 Then
+        text = AuditFunctionBlocks(ThisWorkbook)
+        If Left$(text, 15) = "Audit complete." Then text = ""
+    End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
     WriteOperationLog ThisWorkbook, "Map", IIf(Len(text) = 0, "Fail Maps complete.", text), (Len(text) > 0)
     If Len(text) > 0 Then
@@ -50,7 +54,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Dim phase As Long, other As Long, swapPath As String, swapStep As Long, swapMeta As Object
     Dim localTNOs As Object, allAccepted As Long, allSkipped As Long, sourceStats(1 To 3, 1 To 6) As Variant
     Dim baseNames(1 To 3) As String, totalTNOs As Long, color As Long
-    Dim blkWarnings As String, blkMessage As String, addressLabels As Object
+    Dim blkWarnings As String, blkMessage As String, addressLabels As Object, chipCats As Object
     Dim cfg As Worksheet, dst As Worksheet, tnos As Object, addresses As Object
     Dim fd As Object, settings As Variant, headers() As Variant, data() As Variant
     Dim bits() As Byte, fields As Variant, v As Variant
@@ -178,13 +182,15 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Next phase
     If Not fbcOnly Then
     uniqueCount = addresses.Count
-    columnCount = 6 + totalTNOs
+    columnCount = 7 + totalTNOs
+    Set chipCats = BLKVminEngine.BLK_Categories(ThisWorkbook)
     ReDim headers(1 To 1, 1 To columnCount)
     fields = Array("X", "Y", "BLK", "WL", "BL", "IO")
     For j = 0 To 5: headers(1, j + 1) = fields(j): Next j
+    headers(1, 7) = "Cat."
     For phase = 1 To fileCount
         Set localTNOs = PhaseTNOs(tnos, phase)
-        For Each v In localTNOs: headers(1, 7 + CLng(localTNOs(v))) = "WT" & phase & vbLf & CStr(addressLabels(CStr(v))): Next v
+        For Each v In localTNOs: headers(1, 8 + CLng(localTNOs(v))) = "WT" & phase & vbLf & CStr(addressLabels(CStr(v))): Next v
     Next phase
     stage = "Write output batches"
     If dst.AutoFilterMode Then dst.AutoFilterMode = False
@@ -204,11 +210,13 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
             batchRow = batchRow + 1
             fields = Split(CStr(v), ",")
             For j = 0 To 5: data(batchRow, j + 1) = CLng(fields(j)): Next j
+            s = fields(0) & "|" & fields(1)
+            If chipCats.Exists(s) Then data(batchRow, 7) = chipCats(s)
             For b = 0 To flagBytes - 1
                 bitValue = bits(b, rowIndex)
                 If bitValue <> 0 Then
                     For k = 0 To 7
-                        If (bitValue And mBitMasks(k)) <> 0 Then data(batchRow, 7 + b * 8 + k) = 1
+                        If (bitValue And mBitMasks(k)) <> 0 Then data(batchRow, 8 + b * 8 + k) = 1
                     Next k
                 End If
             Next b
@@ -242,12 +250,12 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
             Case 2: color = RGB(255, 237, 213)
             Case 3: color = RGB(220, 252, 231)
         End Select
-        With dst.Cells(1, 7 + (phase - 1) * tnos.Count).Resize(1, tnos.Count)
+        With dst.Cells(1, 8 + (phase - 1) * tnos.Count).Resize(1, tnos.Count)
             .Interior.Color = color: .Font.Color = RGB(23, 50, 77)
             .Orientation = 90: .WrapText = True: .Columns.ColumnWidth = 6
         End With
         If uniqueCount > 0 Then
-            With dst.Cells(2, 7 + (phase - 1) * tnos.Count).Resize(uniqueCount, tnos.Count)
+            With dst.Cells(2, 8 + (phase - 1) * tnos.Count).Resize(uniqueCount, tnos.Count)
                 .Interior.Pattern = xlNone
                 With .FormatConditions.Add(Type:=xlCellValue, Operator:=xlEqual, Formula1:="=1")
                     .Interior.Color = color
@@ -604,6 +612,7 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     oldAlerts = Application.DisplayAlerts
     On Error GoTo Failed
     If outputWorkbook Is Nothing Then Set outputWorkbook = wb
+    If outputWorkbook Is wb Then BLKVminEngine.BLK_InvalidateCoverageMap wb
     scopeText = "Fail Map included BLKs"
     Set wanted = AuditFunctions(wb.Worksheets("Config"), "FAIL MAP")
     Set columns = ResolveAuditColumns(wb, wanted, mappingNote)
@@ -716,6 +725,7 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     BLKVminEngine.BLK_SizeOutput stage
     stage.Activate: Application.ActiveWindow.DisplayGridlines = False
     Application.DisplayAlerts = oldAlerts
+    If outputWorkbook Is wb Then BLKVminEngine.BLK_BuildCoverageMap wb
     AuditFunctionBlocks = "Audit complete. Map BLKs=" & missing & "; Complete=" & completeCount & "; Partial=" & partialCount & "; No Address=" & absentCount & "; Excess=" & excessCount
     WriteOperationLog outputWorkbook, "Address Coverage", AuditFunctionBlocks
     BLKVminEngine.BLK_OrderSheets outputWorkbook
@@ -725,6 +735,7 @@ Failed:
     Resume AuditFailureCleanup
 AuditFailureCleanup:
     On Error Resume Next
+    If outputWorkbook Is wb Then BLKVminEngine.BLK_InvalidateCoverageMap wb
     Application.DisplayAlerts = False
     If Not stage Is Nothing And Not success Then
         stage.Visible = xlSheetVisible
@@ -1070,10 +1081,10 @@ Private Sub RecordImportIndex(ByVal wb As Workbook, ByVal mode As String, ByRef 
         ws.Range("A:D").ClearContents
         ws.Range("A1:D1").Value2 = Array("WT", "TNO", "Column", "Header")
         ReDim mapping(1 To tnos.Count * BLKVminEngine.BLK_PhaseCount(wb), 1 To 4)
-        headers = wb.Worksheets("Fail Address").Cells(1, 1).Resize(1, 6 + tnos.Count * BLKVminEngine.BLK_PhaseCount(wb)).Value2
+        headers = wb.Worksheets("Fail Address").Cells(1, 1).Resize(1, 7 + tnos.Count * BLKVminEngine.BLK_PhaseCount(wb)).Value2
         For phase = 1 To BLKVminEngine.BLK_PhaseCount(wb)
             For Each tno In tnos
-                i = i + 1: col = 7 + (phase - 1) * tnos.Count + CLng(tnos(tno))
+                i = i + 1: col = 8 + (phase - 1) * tnos.Count + CLng(tnos(tno))
                 mapping(i, 1) = "WT" & phase: mapping(i, 2) = CStr(tno): mapping(i, 3) = col: mapping(i, 4) = headers(1, col)
             Next tno
         Next phase

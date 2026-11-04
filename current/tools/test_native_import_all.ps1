@@ -12,7 +12,7 @@ try{
   Check ($address.Cells.Item(1048576,1).End(-4162).Row -eq ($expectedAddress+1)) "Address count wrong for$n files"
   Check ($fbc.Cells.Item(1048576,2).End(-4162).Row -eq ($expectedFbc+1)) "FBC count wrong for$n files"
   Check ($book.Worksheets.Item('BLK_FBC_Comparison').UsedRange.Columns.Count -eq (3+59*$n)) 'Comparison contains unselected WT columns'
-  Check ($address.Cells.Item(1,16384).End(-4159).Column -eq (6+59*$n)) 'Address contains unselected WT columns'
+  Check ($address.Cells.Item(1,16384).End(-4159).Column -eq (7+59*$n)) 'Address contains unselected WT columns'
   $matrix=$address.UsedRange.Value2;$index=$book.Worksheets.Item('Import Index').Range("A2:D$($n*59+1)").Value2
   for($r=2;$r -le $matrix.GetLength(0);$r++){
    $blk=[int]$matrix.GetValue($r,3);$wl=[int]$matrix.GetValue($r,4)
@@ -48,7 +48,7 @@ try{
  $book=$app.Workbooks.Open((Join-Path $Project 'wafer128/Native_Import_All_3WT.xlsm'),0,$false)
  $result=$app.Run("'"+$book.Name+"'!ImportFailAddresses.FixtureImportAll",1)
  Check ($result -like 'Import and analysis complete.*') $result
- Check ($book.Worksheets.Item('Fail Address').Cells.Item(1,16384).End(-4159).Column -eq 65) 'Rerun3-to1 retained Address WT2/3'
+ Check ($book.Worksheets.Item('Fail Address').Cells.Item(1,16384).End(-4159).Column -eq 66) 'Rerun3-to1 retained Address WT2/3'
  Check ($book.Worksheets.Item('BLK_FBC_Comparison').UsedRange.Columns.Count -eq 62) 'Rerun3-to1 retained comparison WT2/3'
  Check ($book.Worksheets.Item('Scan Fail Map').UsedRange.Columns.Count -eq 4) 'Rerun3-to1 retained Map panels'
  Write-Output 'PASS rerun3 WT to1 WT: stale Address/comparison/Map WT2/3 removed.'
