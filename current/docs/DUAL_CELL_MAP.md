@@ -3,8 +3,8 @@
 新增單一分頁；每個 Pattern 為一個區段，每區依已匯入 WT 水平排列。每個 Chip 佔左右兩格。
 
 - 左格 Fail：直接取 BLK Fail Count（原 Scan/March Map 相同判斷）。
-- 右格 Loss：Missing BLK Address 中，按 WT / Pattern / X / Y 精確分組，Missing Count > 0 的不同 BLK 數。來源核對已採 WT / TNO / X / Y / BLK 精確匹配。
-- No Address 與 Partial Address 都算短缺 BLK；Complete 不算；同一 BLK 不重複加總。不加總 Missing Count 的 Fail Bit 筆數。
+- 右格 Loss：Missing BLK Address 中，按 WT / Pattern / X / Y 精確分組，Finding=No Address（整個 Pattern 區間找不到記錄）的不同 BLK 數。終點精確差額另行保留。
+- 區間內任一 Function TNO 有同 BLK 的 Address 即 Complete，不計入 Loss；完全沒有才為 No Address。同一 BLK 不重複加總，不加總缺失 Fail Bit 筆數。
 - 例如：5 個 Fail BLK，BLK236 缺少 Address，顯示 5 | 1；即使該 BLK 缺少 100 筆仍算 1。
 - Cat. 統一取 WT1 第一份 Raw Data，套用 Fail Address G 欄及所有 WT Map；WT1 缺少分類時不以 WT2/WT3 補值。
 - C1/C2 僅在同 WT/Chip 沒有 Address 旗標及正值 FBC 時兩格空白、不填色；只要任一實際 Fail 證據存在，就保留原本 Map 結果（缺少 FBC 仍為 No Data，不以 Address 推估數字）；其他類別 No Data 延用灰底；數字零隱藏、正數黃色至紅色色階。

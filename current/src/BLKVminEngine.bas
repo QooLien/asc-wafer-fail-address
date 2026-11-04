@@ -1127,7 +1127,7 @@ Public Sub BLK_InvalidateCoverageMap(ByVal wb As Workbook)
 End Sub
 
 Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
-    'Right cell counts distinct BLKs with Missing Count > 0 (not the missing-bit sum).
+    'Right cell counts BLKs with no Address anywhere in the Pattern interval; legacy reports retain old shortfall behavior.
     Dim ws As Worksheet, source As Worksheet, report As Worksheet
     Dim summaries As Variant, data As Variant, names As Object, coords As Object, losses As Object, seen As Object
     Dim cats(1 To 3) As Object, ordered As Collection, item As Variant, name As Variant, xy As Variant, evidence As Object
@@ -1135,7 +1135,7 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
     Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
     Dim top As Long, height As Long, panelWidth As Long, origin As Long, row As Long, col As Long
     Dim key As String, blockKey As String, chip As String, status As String, cat As Long, loss As Long
-    Dim fail As Long, maximum As Long, cells As Range, colorRule As Object
+    Dim fail As Long, maximum As Long, cells As Range, colorRule As Object, relaxedCoverage As Boolean
     Set source = wb.Worksheets("BLK Fail Count"): last = source.Cells(source.Rows.Count, 1).End(xlUp).Row
     If last < 2 Then Err.Raise vbObjectError + 492, , "Build Fail Maps before the Address Map."
     summaries = source.Range("A2:I" & last).Value2
@@ -1158,11 +1158,12 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
         If y > maxY Then maxY = y
     Next item
     Set report = wb.Worksheets("Missing BLK Address"): last = report.Cells(report.Rows.Count, 1).End(xlUp).Row
+    relaxedCoverage = (CStr(report.Range("M4").Value2) = "Pattern Address Count")
     For first = 5 To last Step 2048
         take = last - first + 1: If take > 2048 Then take = 2048
         data = report.Cells(first, 1).Resize(take, 12).Value2
         For i = 1 To UBound(data, 1)
-            If CDbl(data(i, 11)) > 0 Then
+            If (relaxedCoverage And CStr(data(i, 12)) = "No Address") Or (Not relaxedCoverage And CDbl(data(i, 11)) > 0) Then
                 key = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
                 blockKey = key & "|" & CStr(data(i, 8))
                 If Not seen.Exists(blockKey) Then

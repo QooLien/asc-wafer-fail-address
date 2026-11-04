@@ -681,21 +681,82 @@ Private Sub BuildDetailedBLKIndex(ByVal ws As Worksheet, ByVal columns As Object
     Next start
 End Sub
 
+Private Function BuildPatternAddressIndex(ByVal wb As Workbook, ByVal endpoints As Object, ByVal columns As Object) As Object
+    Dim result As Object, lookup As Object, scope As Object, chosen As Collection, ws As Worksheet
+    Dim endpoint As Variant, entry As Variant, info As Variant, tno As Variant, key As Variant, flag As Variant
+    Dim col As Long, phase As Long, low As Long, high As Long, firstRow As Long, lastConfigRow As Long
+    Dim lastRow As Long, start As Long, take As Long, batch As Long, r As Long, matched As Boolean
+    Dim xy As Variant, flags As Variant, bits As Variant, emptyBits(0 To 255) As Long, chip As String, block As Long, activeChip As String
+    Set result = CreateObject("Scripting.Dictionary"): Set lookup = CreateObject("Scripting.Dictionary")
+    For Each key In columns
+        info = columns(key): lookup(CStr(info(0)) & "|" & CStr(info(1))) = CLng(key)
+    Next key
+    Set ws = wb.Worksheets("Fail Address"): lastRow = AuditLastRow(ws, 1)
+    For Each endpoint In endpoints
+        entry = endpoints(endpoint)
+        Set scope = DrillFunctionScope(wb.Worksheets("Config"), CStr(endpoint), CStr(entry(2)), firstRow, lastConfigRow)
+        For phase = 1 To BLKVminEngine.BLK_PhaseCount(wb)
+            Set chosen = New Collection: low = ws.Columns.Count: high = 0
+            For Each tno In scope
+                key = "WT" & phase & "|" & CStr(tno)
+                If Not lookup.Exists(key) Then Err.Raise vbObjectError + 494, , "Pattern interval Address column unavailable: " & key
+                col = CLng(lookup(key)): chosen.Add col
+                If col < low Then low = col
+                If col > high Then high = col
+            Next tno
+            If chosen.Count = 0 Then Err.Raise vbObjectError + 494, , "Empty Pattern interval."
+            batch = 131072 \ (high - low + 1): If batch > 4096 Then batch = 4096
+            For start = 2 To lastRow Step batch
+                take = lastRow - start + 1: If take > batch Then take = batch
+                xy = ws.Cells(start, 1).Resize(take, 3).Value2
+                flags = ws.Cells(start, low).Resize(take, high - low + 1).Value2
+                activeChip = ""
+                For r = 1 To take
+                    matched = False
+                    For Each tno In chosen
+                        If take = 1 And high = low Then flag = flags Else flag = flags(r, CLng(tno) - low + 1)
+                        If IsError(flag) Then Err.Raise vbObjectError + 494, , "Pattern interval Address flag cell error."
+                        If Len(Trim$(CStr(flag))) > 0 Then
+                            If Not IsNumeric(flag) Then Err.Raise vbObjectError + 494, , "Pattern interval flag must be 0/1 or blank."
+                            If CDbl(flag) <> 0 And CDbl(flag) <> 1 Then Err.Raise vbObjectError + 494, , "Pattern interval flag must be 0/1 or blank."
+                            If CDbl(flag) = 1 Then matched = True: Exit For
+                        End If
+                    Next tno
+                    If matched Then
+                        chip = "WT" & phase & "|" & CStr(endpoint) & "|" & CStr(xy(r, 1)) & "|" & CStr(xy(r, 2))
+                        block = AuditInteger(xy(r, 3), 0, 255)
+                        If chip <> activeChip Then
+                            If Len(activeChip) > 0 Then result(activeChip) = bits
+                            activeChip = chip
+                            If result.Exists(chip) Then bits = result(chip) Else bits = emptyBits
+                        End If
+                        bits(block) = CLng(bits(block)) + 1
+                    End If
+                Next r
+                If Len(activeChip) > 0 Then result(activeChip) = bits
+            Next start
+        Next phase
+    Next endpoint
+    Set BuildPatternAddressIndex = result
+End Function
+
 Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputWorkbook As Workbook = Nothing) As String
-    Dim wanted As Object, columns As Object, blocks As Object, totals As Object, seen As Object, mapMasks As Object
+    Dim wanted As Object, columns As Object, blocks As Object, totals As Object, seen As Object, mapMasks As Object, allFunctions As Object, patternBlocks As Object, patternBits As Variant, auditCol As Variant
     Dim source As Worksheet, stage As Worksheet, old As Worksheet, status As Worksheet, data As Variant, packet() As Variant, rowValues As Variant, info As Variant
     Dim last As Long, start As Long, take As Long, r As Long, b As Long, phase As Long, used As Long, dest As Long, missing As Long, tested As Long
     Dim wt As String, tno As String, chip As String, key As String, prefix As String, x As Long, y As Long, fbc As Double, total As Long, errorNumber As Long
     Dim mappingNote As String, sourceNote As String, description As String, oldAlerts As Boolean, success As Boolean, addressBits As Variant, hasAddress As Boolean, scopeText As String
     Dim recorded As Long, gap As Double, included As String, finding As String
     Dim completeCount As Long, partialCount As Long, absentCount As Long, excessCount As Long
+    Dim intervalCount As Long, endpointFinding As String, coverageBasis As String, intervalOnlyCount As Long
     oldAlerts = Application.DisplayAlerts
     On Error GoTo Failed
     If outputWorkbook Is Nothing Then Set outputWorkbook = wb
     If outputWorkbook Is wb Then BLKVminEngine.BLK_InvalidateCoverageMap wb
     scopeText = "Fail Map included BLKs"
     Set wanted = AuditFunctions(wb.Worksheets("Config"), "FAIL MAP")
-    Set columns = ResolveAuditColumns(wb, wanted, mappingNote)
+    Set allFunctions = AuditFunctions(wb.Worksheets("Config"), "ALL FUNCTION")
+    Set columns = ResolveAuditColumns(wb, allFunctions, mappingNote)
     sourceNote = AuditSourceNote(wb)
     On Error Resume Next
     Set status = wb.Worksheets("Chip Locations")
@@ -707,14 +768,19 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     End If
     Set mapMasks = BLKVminEngine.BLK_MapIncludedMasks(wb)
     Set blocks = CreateObject("Scripting.Dictionary"): Set totals = CreateObject("Scripting.Dictionary"): Set seen = CreateObject("Scripting.Dictionary")
+    Set patternBlocks = BuildPatternAddressIndex(wb, wanted, columns)
+    For Each auditCol In columns.Keys
+        rowValues = columns(auditCol)
+        If Not wanted.Exists(CStr(rowValues(1))) Then columns.Remove auditCol
+    Next auditCol
     BuildDetailedBLKIndex wb.Worksheets("Fail Address"), columns, blocks, totals
     Set source = wb.Worksheets("FBC by BLK")
     last = AuditLastRow(source, 2)
     If last < 2 Then Err.Raise vbObjectError + 485, , "Import FBC before running comparison."
     Set stage = outputWorkbook.Worksheets.Add(After:=outputWorkbook.Worksheets(outputWorkbook.Worksheets.Count))
     stage.Visible = xlSheetVeryHidden
-    stage.Range("A4:L4").Value2 = Array("WT", "TNO", "Func.", "Test Voltage", "Pattern", "X", "Y", "BLK", "FBC", "Address Count", "Missing Count", "Finding")
-    dest = 5: ReDim packet(1 To 512, 1 To 12)
+    stage.Range("A4:O4").Value2 = Array("WT", "TNO", "Func.", "Test Voltage", "Pattern", "X", "Y", "BLK", "FBC", "Endpoint Address Count", "Endpoint Missing Count", "Finding", "Pattern Address Count", "Coverage Basis", "Endpoint Finding")
+    dest = 5: ReDim packet(1 To 512, 1 To 15)
     For start = 2 To last Step 512
         take = last - start + 1: If take > 512 Then take = 512
         data = source.Cells(start, 1).Resize(take, 260).Value2
@@ -733,6 +799,8 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
                 If mapMasks.Exists(prefix) Then included = CStr(mapMasks(prefix))
                 addressBits = Empty
                 If blocks.Exists(prefix) Then addressBits = blocks(prefix)
+                patternBits = Empty
+                If patternBlocks.Exists(prefix) Then patternBits = patternBlocks(prefix)
                 For b = 0 To 255
                     fbc = AuditFBCValue(data(r, b + 5))
                     recorded = 0
@@ -740,13 +808,26 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
                     If fbc > 0 And Mid$(included, b + 1, 1) = "1" Then
                         gap = fbc - recorded: If gap < 0 Then gap = 0
                         If recorded = 0 Then
-                            finding = "No Address": absentCount = absentCount + 1
+                            endpointFinding = "No Address"
                         ElseIf recorded < fbc Then
-                            finding = "Partial Address": partialCount = partialCount + 1
+                            endpointFinding = "Partial Address": partialCount = partialCount + 1
                         ElseIf recorded = fbc Then
-                            finding = "Complete": completeCount = completeCount + 1
+                            endpointFinding = "Complete"
                         Else
-                            finding = "Address Count > FBC": excessCount = excessCount + 1
+                            endpointFinding = "Address Count > FBC": excessCount = excessCount + 1
+                        End If
+                        intervalCount = 0
+                        If IsArray(patternBits) Then intervalCount = CLng(patternBits(b))
+                        If intervalCount > 0 Then
+                            finding = "Complete": completeCount = completeCount + 1
+                            If recorded > 0 Then
+                                coverageBasis = "Endpoint Address present"
+                            Else
+                                coverageBasis = "Earlier TNO only": intervalOnlyCount = intervalOnlyCount + 1
+                            End If
+                        Else
+                            finding = "No Address": absentCount = absentCount + 1
+                            coverageBasis = "No Address in Pattern"
                         End If
                         missing = missing + 1: used = used + 1
                         If dest + used - 1 > stage.Rows.Count Then Err.Raise vbObjectError + 485, , "Missing BLK output exceeds Excel row limit."
@@ -754,9 +835,10 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
                         packet(used, 6) = x: packet(used, 7) = y: packet(used, 8) = b: packet(used, 9) = fbc: packet(used, 10) = recorded
                         packet(used, 11) = gap
                         packet(used, 12) = finding
+                        packet(used, 13) = intervalCount: packet(used, 14) = coverageBasis: packet(used, 15) = endpointFinding
                         If used = 512 Then
-                            stage.Cells(dest, 1).Resize(512, 12).Value2 = packet
-                            dest = dest + 512: used = 0: ReDim packet(1 To 512, 1 To 12)
+                            stage.Cells(dest, 1).Resize(512, 15).Value2 = packet
+                            dest = dest + 512: used = 0: ReDim packet(1 To 512, 1 To 15)
                         End If
                     End If
                 Next b
@@ -766,25 +848,25 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     Next start
     If tested = 0 Then Err.Raise vbObjectError + 485, , "FBC contains no Function TNOs in the selected scope."
     If used > 0 Then
-        ReDim rowValues(1 To used, 1 To 12)
-        For r = 1 To used: For b = 1 To 12: rowValues(r, b) = packet(r, b): Next b: Next r
-        stage.Cells(dest, 1).Resize(used, 12).Value2 = rowValues
+        ReDim rowValues(1 To used, 1 To 15)
+        For r = 1 To used: For b = 1 To 15: rowValues(r, b) = packet(r, b): Next b: Next r
+        stage.Cells(dest, 1).Resize(used, 15).Value2 = rowValues
     End If
-    With stage.Cells(1, 1).Resize(missing + 4, 12)
+    With stage.Cells(1, 1).Resize(missing + 4, 15)
         .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26
     End With
     stage.Columns("A:B").ColumnWidth = 10: stage.Columns("C:E").ColumnWidth = 20: stage.Columns("F:H").ColumnWidth = 10
-    stage.Columns("I:K").ColumnWidth = 22: stage.Columns("L").ColumnWidth = 56: stage.Columns("D").NumberFormat = "0.000": stage.Columns("I").NumberFormat = "0"
-    stage.Range("A1:L1").Merge: stage.Range("A1").Value2 = "Map BLK Address Coverage | Complete=" & completeCount & " | Partial=" & partialCount & " | No Address=" & absentCount & " | Excess=" & excessCount & " | rows=" & missing
-    stage.Range("A2:L2").Merge: stage.Range("A2").Value2 = mappingNote & " " & sourceNote
-    stage.Range("A2:L2").WrapText = True: stage.Range("A2:L2").RowHeight = 42
-    stage.Range("A3:L3").Merge: stage.Range("A3").Value2 = "Source: " & wb.Name & " | Only Map-counted BLKs; exact WT/TNO/X/Y/BLK counts. A shortfall alone does not prove the output cap."
-    With stage.Range("A1:L1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
-    With stage.Range("A4:L4"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
-    stage.Range("A4:L4").Borders.LineStyle = xlContinuous
-    stage.Cells(1, 1).Resize(missing + 4, 12).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
+    stage.Columns("I:K").ColumnWidth = 22: stage.Columns("L").ColumnWidth = 20: stage.Columns("M").ColumnWidth = 24: stage.Columns("N:O").ColumnWidth = 30: stage.Columns("D").NumberFormat = "0.000": stage.Columns("I").NumberFormat = "0"
+    stage.Range("A1:O1").Merge: stage.Range("A1").Value2 = "Map BLK Address Coverage | Complete=" & completeCount & " | Endpoint Partial=" & partialCount & " | No Address=" & absentCount & " | Endpoint Excess=" & excessCount & " | Earlier only=" & intervalOnlyCount & " | rows=" & missing
+    stage.Range("A2:O2").Merge: stage.Range("A2").Value2 = mappingNote & " " & sourceNote
+    stage.Range("A2:O2").WrapText = True: stage.Range("A2:O2").RowHeight = 42
+    stage.Range("A3:O3").Merge: stage.Range("A3").Value2 = "Source: " & wb.Name & " | Map-counted BLKs; Complete = any Address in same WT/Pattern/Chip/BLK. J/K/O retain exact endpoint diagnostics; earlier-only does not prove output cap."
+    With stage.Range("A1:O1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    With stage.Range("A4:O4"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    stage.Range("A4:O4").Borders.LineStyle = xlContinuous
+    stage.Cells(1, 1).Resize(missing + 4, 15).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
     If missing > 0 Then
-        With stage.Range("A5:L" & missing + 4)
+        With stage.Range("A5:O" & missing + 4)
             .FormatConditions.Add Type:=xlExpression, Formula1:="=$L5=""Complete"""
             .FormatConditions(.FormatConditions.Count).Interior.Color = RGB(220, 252, 231)
             .FormatConditions.Add Type:=xlExpression, Formula1:="=$L5=""Partial Address"""
@@ -795,7 +877,15 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
             .FormatConditions(.FormatConditions.Count).Interior.Color = RGB(255, 217, 102)
         End With
     End If
-    stage.Range("A4:L" & missing + 4).AutoFilter
+    If missing > 0 Then
+        With stage.Range("N5:N" & missing + 4)
+            .FormatConditions.Add Type:=xlExpression, Formula1:="=$N5=""Earlier TNO only"""
+            With .FormatConditions(.FormatConditions.Count)
+                .Interior.Color = RGB(219, 234, 254): .Font.Color = RGB(23, 50, 77): .SetFirstPriority
+            End With
+        End With
+    End If
+    stage.Range("A4:O" & missing + 4).AutoFilter
     On Error Resume Next
     Set old = outputWorkbook.Worksheets("Missing BLK Address")
     On Error GoTo Failed
@@ -806,7 +896,7 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     stage.Activate: Application.ActiveWindow.DisplayGridlines = False
     Application.DisplayAlerts = oldAlerts
     If outputWorkbook Is wb Then BLKVminEngine.BLK_BuildCoverageMap wb
-    AuditFunctionBlocks = "Audit complete. Map BLKs=" & missing & "; Complete=" & completeCount & "; Partial=" & partialCount & "; No Address=" & absentCount & "; Excess=" & excessCount
+    AuditFunctionBlocks = "Audit complete. Map BLKs=" & missing & "; Complete=" & completeCount & "; Endpoint Partial=" & partialCount & "; No Address=" & absentCount & "; Endpoint Excess=" & excessCount & "; Earlier only=" & intervalOnlyCount
     WriteOperationLog outputWorkbook, "Address Coverage", AuditFunctionBlocks
     BLKVminEngine.BLK_OrderSheets outputWorkbook
     Exit Function

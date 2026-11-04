@@ -1,3 +1,18 @@
+# Wafer ASC 分析 v0.24.0
+
+[下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.24.0/ASC_Wafer_Analysis_Pattern_Coverage.xlsm)
+
+- **Missing BLK Address 改為 Pattern 區間判定**：同 WT／Chip／BLK，在該 Pattern 區間任一 Function TNO 找到 Address，即為 Complete；整個區間都找不到才為 No Address。
+- 區間沿用 Map 明細：Config 列順序中，前一個 Stop Sign／Hard Fail 之後，到目前 Pattern 的 Stop Sign 終點為止。
+- 終點沒有、但前站有 Address，標示 **Earlier TNO only** 並以藍底區別。此標示可供追查，但不直接認定原因為輸出上限。
+- 保留終點精確的 Address Count、Missing Count、Endpoint Finding；新增去重後的 Pattern Address Count 與 Coverage Basis。Complete 代表區間內有該 BLK 記錄，不代表終點全部 Fail Bit 都已記錄。
+- **雙格 Map 右格只計算整個 Pattern 區間都沒有 Address 的不同 BLK**；左格仍依原有 FBC 與 BLK 篩選計算，維持 Cat. Fail 優先及 Address 專用按鈕。
+- Excel 原生驗證：1～3 份 ASC 的原有 Address flags 逐格回歸、3→1 重跑、前站有而終點無、終點部分記錄、跨 TNO 去重及區間外資料排除均通過；右格與新版 No Address 統計一致。
+
+所有 VBA 與事件均內嵌，Windows Excel 2016 可執行。詳見 [Pattern 區間核對說明](https://github.com/QooLien/asc-wafer-fail-address/blob/main/current/docs/PATTERN_ADDRESS_COVERAGE.md)。
+
+以下保留歷史版本說明；最新下載與規則請以上方 v0.24.0 為準。
+
 # Wafer ASC 分析 v0.23.0
 
 [下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.23.0/ASC_Wafer_Analysis_Fail_Priority.xlsm)
