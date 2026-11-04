@@ -6,6 +6,7 @@
 - 右格 Loss：Missing BLK Address 中，按 WT / Pattern / X / Y 精確分組，Missing Count > 0 的不同 BLK 數。來源核對已採 WT / TNO / X / Y / BLK 精確匹配。
 - No Address 與 Partial Address 都算短缺 BLK；Complete 不算；同一 BLK 不重複加總。不加總 Missing Count 的 Fail Bit 筆數。
 - 例如：5 個 Fail BLK，BLK236 缺少 Address，顯示 5 | 1；即使該 BLK 缺少 100 筆仍算 1。
+- Cat. 統一取 WT1 第一份 Raw Data，套用 Fail Address G 欄及所有 WT Map；WT1 缺少分類時不以 WT2/WT3 補值。
 - C1/C2 兩格空白、不填色；其他類別 No Data 延用灰底；數字零隱藏、正數黃色至紅色色階。
 - Calibri 24，X/Y 軸 20；隱藏分頁格線。
 - 主匯入及更新 Map 自動重新核對 Address 並建立新 Map。核對失敗清除新 Map，避免顯示過期數字。

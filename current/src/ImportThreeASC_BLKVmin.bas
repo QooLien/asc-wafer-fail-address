@@ -14,6 +14,10 @@ Public Sub ImportASCFailAddresses()
     RunThreeASC False
 End Sub
 
+Public Sub ImportASCAddressOnly()
+    RunThreeASC False, True
+End Sub
+
 Public Sub ImportASCFBC()
     RunThreeASC True
 End Sub
@@ -48,7 +52,7 @@ FailedMap:
     Resume DoneMap
 End Sub
 
-Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
+Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As Boolean = False)
     Dim paths(1 To 3) As String, meta(1 To 3) As Object, steps(1 To 3) As Long
     Dim fileCount As Long, fbcTotal As Long, auditMessage As String
     Dim phase As Long, other As Long, swapPath As String, swapStep As Long, swapMeta As Object
@@ -123,7 +127,13 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Next phase
     outputBase = SafeFilePart(Left$(CleanSpace(CStr(meta(1)("LOT"))), 6)) & "#" & NormalWafer(CStr(meta(1)("WNO"))) & "_WT1"
     If fileCount > 1 Then outputBase = outputBase & "-WT" & fileCount
-    If fbcOnly Then outputBase = outputBase & "_FBC" Else outputBase = outputBase & "_All"
+    If addressOnly Then
+        outputBase = outputBase & "_Address"
+    ElseIf fbcOnly Then
+        outputBase = outputBase & "_FBC"
+    Else
+        outputBase = outputBase & "_All"
+    End If
     outputPath = UniqueResultPath(fso, fso.GetParentFolderName(paths(1)), outputBase)
     totalTNOs = fileCount * tnos.Count
     If Not fbcOnly Then
@@ -135,7 +145,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
     Application.EnableEvents = False
     Application.Calculation = xlCalculationManual
     ThisWorkbook.Worksheets("Import Index").Cells(IIf(fbcOnly, 5, 2), 8).Value2 = IIf(fbcOnly, "FBC Pending", "Address Pending")
-    If Not fbcOnly Then ThisWorkbook.Worksheets("Import Index").Range("H5").Value2 = "FBC Pending"
+    If Not fbcOnly And Not addressOnly Then ThisWorkbook.Worksheets("Import Index").Range("H5").Value2 = "FBC Pending"
     For phase = 1 To fileCount
         path = paths(phase): buffer = "": headerTNO = ""
         selectedSections = 0: accepted = 0: skipped = 0: bytePosition = 0
@@ -149,8 +159,12 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         stage = "Read ASC chunk"
         raw = ReadASCChunk(fileNo, encoding)
         bytePosition = Seek(fileNo) - 1
-        BLKVminEngine.BLK_ObserveLocations raw, False
-        BLKVminEngine.BLK_Feed raw, False
+        If addressOnly Then
+            If phase = 1 Then BLKVminEngine.BLK_FeedCategories raw, False
+        Else
+            BLKVminEngine.BLK_ObserveLocations raw, False
+            BLKVminEngine.BLK_Feed raw, False
+        End If
         If Not fbcOnly Then buffer = buffer & raw
         raw = ""
         If fbcOnly Then stage = "FBC stream WT" & phase Else stage = "Parse and merge addresses"
@@ -171,6 +185,12 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         sourceStats(phase, 3) = CStr(meta(phase)("STEP"))
         sourceStats(phase, 4) = BuildResultBaseName(meta(phase))
         sourceStats(phase, 5) = accepted: sourceStats(phase, 6) = skipped
+        If addressOnly Then
+            If phase = 1 Then
+                BLKVminEngine.BLK_FeedCategories "", True
+                BLKVminEngine.BLK_SaveCategories ThisWorkbook, 1
+            End If
+        Else
         stage = "FBC by BLK WT" & phase
         BLKVminEngine.BLK_ObserveLocations "", True
         BLKVminEngine.BLK_Feed "", True
@@ -178,12 +198,13 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         If fbcOnly Then accepted = BLKVminEngine.BLK_RecordCount()
         blkMessage = BLKVminEngine.BLK_WritePhase(ThisWorkbook, phase)
         If Len(blkMessage) > 0 Then blkWarnings = blkWarnings & vbCrLf & "WT" & phase & ": " & blkMessage
+        End If
         allAccepted = allAccepted + accepted: allSkipped = allSkipped + skipped
     Next phase
     If Not fbcOnly Then
     uniqueCount = addresses.Count
     columnCount = 7 + totalTNOs
-    Set chipCats = BLKVminEngine.BLK_Categories(ThisWorkbook)
+    Set chipCats = BLKVminEngine.BLK_Categories(ThisWorkbook, "WT1")
     ReDim headers(1 To 1, 1 To columnCount)
     fields = Array("X", "Y", "BLK", "WL", "BL", "IO")
     For j = 0 To 5: headers(1, j + 1) = fields(j): Next j
@@ -266,6 +287,13 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
 
     dst.Cells(1, 1).Resize(uniqueCount + 1, columnCount).AutoFilter
     End If
+    If addressOnly Then
+        RecordImportIndex ThisWorkbook, "Address", meta, paths, tnos, fileCount
+        WriteOperationLog ThisWorkbook, "Address", "Address-only import complete. Unique addresses: " & uniqueCount
+        BLKVminEngine.BLK_SizeOutput dst
+        BLKVminEngine.BLK_SimplifyButtons ThisWorkbook
+        GoTo SaveResult
+    End If
     stage = "Build FBC comparison and Maps"
     blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
     If Len(blkMessage) > 0 Then
@@ -287,12 +315,15 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean)
         If Left$(auditMessage, 15) <> "Audit complete." Then blkWarnings = blkWarnings & vbCrLf & auditMessage
     End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
+SaveResult:
     stage = "Save result workbook"
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
     n = DateDiff("s", startedAt, Now)
     elapsedText = Format$(Fix(n / 3600), "00") & ":" & Format$(Fix(n / 60) Mod 60, "00") & ":" & Format$(n Mod 60, "00")
-    If fbcOnly Then
+    If addressOnly Then
+        MsgBox "Address import complete. Files: " & fileCount & vbCrLf & "Unique addresses: " & uniqueCount & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText, vbInformation
+    ElseIf fbcOnly Then
         MsgBox "FBC import complete. Records: " & fbcTotal & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Fail Address was not changed." & blkWarnings, vbInformation
     Else
     MsgBox "Import and analysis complete. Files: " & fileCount & vbCrLf & "Unique addresses: " & uniqueCount & vbCrLf & "FBC records: " & fbcTotal & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "See Log for the latest operation message." & blkWarnings, vbInformation
@@ -1074,15 +1105,16 @@ Failed:
 End Function
 
 
-Private Sub RecordImportIndex(ByVal wb As Workbook, ByVal mode As String, ByRef meta() As Object, ByRef paths() As String, ByVal tnos As Object)
+Private Sub RecordImportIndex(ByVal wb As Workbook, ByVal mode As String, ByRef meta() As Object, ByRef paths() As String, ByVal tnos As Object, Optional ByVal addressPhases As Long = 0)
     Dim ws As Worksheet, mapping() As Variant, manifest(1 To 3, 1 To 8) As Variant, headers As Variant, phase As Long, tno As Variant, i As Long, col As Long, start As Long
     Set ws = wb.Worksheets("Import Index")
+    If addressPhases = 0 Then addressPhases = BLKVminEngine.BLK_PhaseCount(wb)
     If mode = "Address" Then
         ws.Range("A:D").ClearContents
         ws.Range("A1:D1").Value2 = Array("WT", "TNO", "Column", "Header")
-        ReDim mapping(1 To tnos.Count * BLKVminEngine.BLK_PhaseCount(wb), 1 To 4)
-        headers = wb.Worksheets("Fail Address").Cells(1, 1).Resize(1, 7 + tnos.Count * BLKVminEngine.BLK_PhaseCount(wb)).Value2
-        For phase = 1 To BLKVminEngine.BLK_PhaseCount(wb)
+        ReDim mapping(1 To tnos.Count * addressPhases, 1 To 4)
+        headers = wb.Worksheets("Fail Address").Cells(1, 1).Resize(1, 7 + tnos.Count * addressPhases).Value2
+        For phase = 1 To addressPhases
             For Each tno In tnos
                 i = i + 1: col = 8 + (phase - 1) * tnos.Count + CLng(tnos(tno))
                 mapping(i, 1) = "WT" & phase: mapping(i, 2) = CStr(tno): mapping(i, 3) = col: mapping(i, 4) = headers(1, col)
@@ -1111,8 +1143,14 @@ End Sub
 Private Sub MarkAuditStale(ByVal wb As Workbook, ByVal mode As String)
     On Error Resume Next
     With wb.Worksheets("Missing BLK Address")
-        .Range("A2").Value2 = mode & " source import updated. Run Config J22 to refresh this comparison before using its rows."
+        .Range("A2").Value2 = mode & " source import updated. Refresh BLK Address comparison before using its rows."
         .Range("A2:L2").Interior.Color = RGB(255, 217, 102)
+    End With
+    With wb.Worksheets("Fail BLK Address Map")
+        If Len(CStr(.Range("A1").Value2)) > 0 Then
+            .Range("A1").Value2 = "Address/FBC updated - refresh Map"
+            .Range("A1").Interior.Color = RGB(255, 217, 102): .Range("A1").Font.Color = vbBlack
+        End If
     End With
 End Sub
 

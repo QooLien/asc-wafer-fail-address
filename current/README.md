@@ -1,10 +1,24 @@
+# Wafer ASC 分析 v0.22.0
+
+[下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.22.0/ASC_Wafer_Analysis_Address_Button.xlsm)
+
+- Config 新增 **僅匯入 Address** 按鈕，支援 1～3 份 ASC，只更新 Fail Address 與 WT1 Cat.，不解析 FBC 或重算 Map／核對明細。
+- 原有「匯入並分析」按鈕保留；獨立匯入另存 `*_Address.xlsm`，完成視窗顯示執行時間。
+- **Cat. 統一使用 WT1 第一份 Raw Data**，套用 Fail Address G 欄及所有 WT Map；WT1 缺少分類時不使用 WT2／WT3 補值。C1／C2 Map 維持空白、不填色。
+- 原有 FBC、Map 和核對明細保留；Address 更新後，既有核對與雙格 Map 會標示待更新，可按「更新 Map」重新計算。
+- Excel 原生驗證：1／2／3 份 ASC 的獨立 Address 與完整分析逐值一致；3→1 重跑索引正確；原有 FBC、Map 數值、核對明細和 FBC 來源保持不變。WT1 Cat. 與跳過無效 FBC 的測試亦通過。
+
+所有 VBA 及事件內嵌，Windows Excel 2016 可執行，不需 Python、BAT 或另外匯入程式碼。詳見 [Address 專用按鈕說明](https://github.com/QooLien/asc-wafer-fail-address/blob/main/current/docs/ADDRESS_ONLY.md)。
+
+以下保留歷史版本說明；最新下載請以上方 v0.22.0 為準。
+
 # Wafer ASC 分析 v0.21.0
 
 [下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.21.0/ASC_Wafer_Analysis_Coverage_Map.xlsm)
 
 - 新增 **Fail BLK Address Map**：每個 Chip 左格為原 Map 的 Fail BLK Count，右格為 Address 不足的不同 BLK 數；例如 5 個 Fail BLK，其中 1 個缺少 Address，顯示 **5｜1**。
 - 右格包含 No Address 與 Partial Address，每個 BLK 只算一次，不加總缺少的 Fail Bit 筆數。依 WT／Pattern／Chip 分開統計，原地址核對保持 WT／TNO／Chip／BLK 精確對應。
-- Fail Address G 欄新增 **Cat.**，TNO 從 H 欄開始；TNO=1000 的 CATLST 第一個 1 的位置即為 Cat.，例如 001000 → C3。G 欄採最後可取得 WT 的分類，各 WT Map 使用各自分類。
+- Fail Address G 欄新增 **Cat.**，TNO 從 H 欄開始；TNO=1000 的 CATLST 第一個 1 的位置即為 Cat.，例如 001000 → C3。G 欄與所有 WT Map 統一使用 WT1 第一份 Raw Data 的分類；WT1 缺少 Cat. 時不使用 WT2／WT3 補值。
 - **C1／C2 Chip Map 保持空白、不填色**。Map 字體 24，座標軸 20，Calibri。
 - 主匯入自動建立新 Map；核對失敗時清除新 Map，避免顯示過期結果。
 - Excel 原生驗證：1～3 份 ASC 的原有 Address 旗標逐格一致；新 Map 全部 24 組測試位置、5｜1、部分缺失、BLK 去重、C1／C2、字級及失敗清除均通過。

@@ -55,7 +55,7 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
     Dim duts As Collection, dut As Variant, xy As Variant, values As Variant, key As String
     Dim i As Long, b As Long, count As Long, take As Long, remaining As Long, color As Long, startRow As Long
     On Error GoTo Failed
-    SaveCategories wb, phase
+    BLK_SaveCategories wb, phase
     If phase > mAvailablePhases Then mAvailablePhases = phase
     mPhaseErrors("WT" & phase) = mBLKError
     Set ws = wb.Worksheets("FBC by BLK")
@@ -358,6 +358,26 @@ Public Sub BLK_BeginFile(ByVal path As String)
     mCarry = "": mBLKError = "": mIgnored = 0: mLocationCarry = ""
 End Sub
 
+Public Sub BLK_FeedCategories(ByVal raw As String, ByVal atEOF As Boolean)
+    Dim pos As Long, line As String
+    mCarry = mCarry & raw
+    Do
+        pos = InStr(mCarry, vbLf)
+        If pos = 0 Then Exit Do
+        line = Left$(mCarry, pos - 1): mCarry = Mid$(mCarry, pos + 1)
+        mLine = mLine + 1
+        If InStr(1, line, "CATLST", vbTextCompare) > 0 Then ParseCategory NormalizeASCWhitespace(Replace(line, vbCr, ""))
+    Loop
+    If Len(mCarry) > MAX_LINE Then Err.Raise vbObjectError + 310, , "ASC line exceeds 1 MB."
+    If atEOF Then
+        If Len(mCarry) > 0 Then
+            mLine = mLine + 1
+            If InStr(1, mCarry, "CATLST", vbTextCompare) > 0 Then ParseCategory NormalizeASCWhitespace(Replace(mCarry, vbCr, ""))
+        End If
+        mCarry = ""
+    End If
+End Sub
+
 Public Sub BLK_Feed(ByVal raw As String, ByVal atEOF As Boolean)
     Dim p As Long, line As String
     If Len(mBLKError) > 0 Then Exit Sub
@@ -453,7 +473,7 @@ Private Sub ParseCategory(ByVal line As String)
     End If
 End Sub
 
-Private Sub SaveCategories(ByVal wb As Workbook, ByVal phase As Long)
+Public Sub BLK_SaveCategories(ByVal wb As Workbook, ByVal phase As Long)
     Dim ws As Worksheet, data() As Variant, key As Variant, xy As Variant, i As Long, start As Long
     Set ws = wb.Worksheets("Import Index")
     If phase = 1 Then ws.Range("AA:AD").ClearContents
@@ -468,7 +488,7 @@ Private Sub SaveCategories(ByVal wb As Workbook, ByVal phase As Long)
     ws.Cells(start, 27).Resize(i, 4).Value2 = data
 End Sub
 
-Public Function BLK_Categories(ByVal wb As Workbook, Optional ByVal wt As String = "") As Object
+Public Function BLK_Categories(ByVal wb As Workbook, Optional ByVal wt As String = "WT1") As Object
     Dim result As Object, ws As Worksheet, last As Long, data As Variant, i As Long, key As String
     Set result = CreateObject("Scripting.Dictionary")
     Set ws = wb.Worksheets("Import Index"): last = ws.Cells(ws.Rows.Count, 27).End(xlUp).Row
@@ -964,7 +984,7 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     For phase = 1 To phaseCount
         If CStr(locations.Cells(phase + 1, 5).Value2) = "Data Error" Then errors.Add "WT" & phase, True
     Next phase
-    For phase = 1 To phaseCount: Set categoryByWT(phase) = BLK_Categories(wb, "WT" & phase): Next phase
+    For phase = 1 To phaseCount: Set categoryByWT(phase) = BLK_Categories(wb, "WT1"): Next phase
     Set priorPatterns = PatternPredecessors(patterns)
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
     total = CDbl(patterns.Count) * coords.Count * phaseCount
@@ -1095,7 +1115,7 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
     Set names = CreateObject("Scripting.Dictionary"): Set coords = CreateObject("Scripting.Dictionary")
     Set losses = CreateObject("Scripting.Dictionary"): Set seen = CreateObject("Scripting.Dictionary")
     phaseCount = BLK_PhaseCount(wb)
-    For phase = 1 To phaseCount: Set cats(phase) = BLK_Categories(wb, "WT" & phase): Next phase
+    For phase = 1 To phaseCount: Set cats(phase) = BLK_Categories(wb, "WT1"): Next phase
     For i = 1 To UBound(summaries, 1)
         names(CStr(summaries(i, 1))) = True
         coords(CStr(summaries(i, 6)) & "|" & CStr(summaries(i, 7))) = True
@@ -1379,14 +1399,28 @@ Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
 End Sub
 
 Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
-    Dim buttons As Object, button As Object, i As Long, action As String
+    Dim buttons As Object, button As Object, i As Long, action As String, found As Boolean
     Set buttons = wb.Worksheets("Config").Buttons
+    For i = 1 To buttons.Count
+        If InStr(1, CStr(buttons.Item(i).OnAction), "ImportASCAddressOnly", vbTextCompare) > 0 Then found = True
+    Next i
+    If Not found Then
+        With wb.Worksheets("Config")
+            Set button = buttons.Add(.Range("H14").Left, .Range("H14").Top, .Range("H14:K15").Width, .Range("H14:K15").Height)
+        End With
+        button.Name = "btnImportAddressOnly": button.OnAction = "ImportASCAddressOnly"
+        If buttons.Count > 0 Then
+            button.Left = buttons.Item(1).Left: button.Width = buttons.Item(1).Width: button.Height = buttons.Item(1).Height
+        End If
+        Set buttons = wb.Worksheets("Config").Buttons
+    End If
     For i = 1 To buttons.Count
         Set button = buttons.Item(i): action = CStr(button.OnAction)
         If InStr(1, action, "ImportASCFailAddresses", vbTextCompare) > 0 Then button.Caption = ChrW(&H532F) & ChrW(&H5165) & ChrW(&H4E26) & ChrW(&H5206) & ChrW(&H6790)
         If InStr(1, action, "ImportASCFBC", vbTextCompare) > 0 Then button.Caption = ChrW(&H532F) & ChrW(&H5165) & " FBC"
         If InStr(1, action, "BuildFailMaps", vbTextCompare) > 0 Then button.Caption = ChrW(&H66F4) & ChrW(&H65B0) & " Map"
         If InStr(1, action, "FindMissingBLKAddresses", vbTextCompare) > 0 Then button.Caption = ChrW(&H6838) & ChrW(&H5C0D) & " BLK Address"
+        If InStr(1, action, "ImportASCAddressOnly", vbTextCompare) > 0 Then button.Caption = ChrW(&H50C5) & ChrW(&H532F) & ChrW(&H5165) & " Address"
         button.Font.Name = "Calibri": button.Font.Size = 11
         button.HorizontalAlignment = xlCenter: button.VerticalAlignment = xlCenter
     Next i
