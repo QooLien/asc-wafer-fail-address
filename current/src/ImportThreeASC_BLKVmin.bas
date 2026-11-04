@@ -294,6 +294,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
         BLKVminEngine.BLK_SimplifyButtons ThisWorkbook
         GoTo SaveResult
     End If
+    If Not fbcOnly Then RecordImportIndex ThisWorkbook, "Address", meta, paths, tnos, fileCount
     stage = "Build FBC comparison and Maps"
     blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
     If Len(blkMessage) > 0 Then
@@ -306,7 +307,6 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     WriteOperationLog ThisWorkbook, "Map", IIf(Len(blkWarnings) = 0, "Fail Maps complete.", blkWarnings), (Len(blkWarnings) > 0)
     If Not fbcOnly Then
         WriteOperationLog ThisWorkbook, "Address", "Import complete. Unique addresses: " & uniqueCount
-        RecordImportIndex ThisWorkbook, "Address", meta, paths, tnos
     End If
     RecordImportIndex ThisWorkbook, "FBC", meta, paths, tnos
     If Not fbcOnly And Len(blkWarnings) = 0 Then
@@ -345,6 +345,55 @@ Failed:
     Resume Done
 End Sub
 
+
+Public Function MapChipAddressEvidence(ByVal wb As Workbook) As Object
+    Dim result As Object, ws As Worksheet, idx As Worksheet, data As Variant, headers As Variant
+    Dim xy As Variant, flags As Variant, phase As Long, i As Long, j As Long, r As Long
+    Dim firstCol(1 To 3) As Long, lastCol(1 To 3) As Long, last As Long, lastRow As Long
+    Dim start As Long, take As Long, batch As Long, col As Long, wt As String, key As String
+    Set result = CreateObject("Scripting.Dictionary")
+    Set MapChipAddressEvidence = result
+    Set ws = wb.Worksheets("Fail Address"): Set idx = wb.Worksheets("Import Index")
+    last = idx.Cells(idx.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    If last < 2 Or lastRow < 2 Then Exit Function
+    headers = ws.Range(ws.Cells(1, 1), ws.Cells(1, ws.Columns.Count).End(xlToLeft)).Value2
+    data = idx.Range("A2:D" & last).Value2
+    For i = 1 To UBound(data, 1)
+        wt = CStr(data(i, 1))
+        If wt = "WT1" Or wt = "WT2" Or wt = "WT3" Then
+            phase = CLng(Right$(wt, 1)): col = CLng(data(i, 3))
+            If col < 8 Or col > UBound(headers, 2) Then Err.Raise vbObjectError + 493, , "Address evidence index out of range."
+            If CStr(headers(1, col)) <> CStr(data(i, 4)) Then Err.Raise vbObjectError + 493, , "Address evidence header changed; reimport Address."
+            If firstCol(phase) = 0 Or col < firstCol(phase) Then firstCol(phase) = col
+            If col > lastCol(phase) Then lastCol(phase) = col
+        End If
+    Next i
+    For phase = 1 To 3
+        If firstCol(phase) > 0 Then
+            batch = 131072 \ (lastCol(phase) - firstCol(phase) + 1): If batch > 4096 Then batch = 4096
+            For start = 2 To lastRow Step batch
+                take = lastRow - start + 1: If take > batch Then take = batch
+                xy = ws.Cells(start, 1).Resize(take, 2).Value2
+                flags = ws.Cells(start, firstCol(phase)).Resize(take, lastCol(phase) - firstCol(phase) + 1).Value2
+                For r = 1 To take
+                    key = "WT" & phase & "|" & CStr(xy(r, 1)) & "|" & CStr(xy(r, 2))
+                    If Not result.Exists(key) Then
+                        If Not IsArray(flags) Then
+                            If flags = 1 Then result.Add key, True
+                        Else
+                            For j = 1 To UBound(flags, 2)
+                                If Not IsError(flags(r, j)) Then
+                                    If flags(r, j) = 1 Then result.Add key, True: Exit For
+                                End If
+                            Next j
+                        End If
+                    End If
+                Next r
+            Next start
+        End If
+    Next phase
+End Function
 
 Public Function BuildAddressLabels(ByVal cfg As Worksheet) As Object
     Dim labels As Object

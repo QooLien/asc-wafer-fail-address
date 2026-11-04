@@ -1,3 +1,18 @@
+# Wafer ASC 分析 v0.23.0
+
+[下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.23.0/ASC_Wafer_Analysis_Fail_Priority.xlsm)
+
+- **修正 C1／C2 不應遮蔽低電壓 Fail 的問題**：同 WT／Chip 只要有正值 FBC 或 Fail Address，就不套用 Cat. 淨空，保留原 Map 計算結果。
+- **Map 以 FBC by BLK 計數**。Fail Address 可能因輸出上限而缺失，即使完全沒有 Address，正值 FBC 仍保留 Fail BLK Count；右格依原規則顯示 Address 不足的 BLK 數。
+- 只有沒有實際 Fail 證據的 C1／C2 才保持空白。Hard Fail、前序 Pattern／WT 的原有 BLK 排除條件保留。
+- FBC 記錄缺失時維持 No Data，不使用 Address 推估 Map 數字。Cat. 仍統一取 WT1。
+- 保留「僅匯入 Address」及「匯入並分析」按鈕、雙格 Map 與內嵌 VBA；Windows Excel 2016 可執行，不需 Python 或另外匯入程式碼。
+- Excel 原生驗證：C1／C2 有 Fail、正值 FBC 但缺少 Address、只有 Address 而缺少 FBC、無 Fail 時淨空均通過；1～3 份 ASC 的原有 Address 旗標逐格回歸及 3→1 重跑通過。
+
+詳見 [Cat. Fail 優先規則](https://github.com/QooLien/asc-wafer-fail-address/blob/main/current/docs/CAT_FAIL_PRIORITY.md)。
+
+以下保留歷史版本說明；最新下載與規則請以上方 v0.23.0 為準。
+
 # Wafer ASC 分析 v0.22.0
 
 [下載最新版完整 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.22.0/ASC_Wafer_Analysis_Address_Button.xlsm)

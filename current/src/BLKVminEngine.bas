@@ -935,10 +935,34 @@ Private Sub ApplyMapColorScale(ByVal ws As Worksheet, ByVal minX As Long, ByVal 
 End Sub
 
 
+Private Function ChipFailEvidence(ByVal wb As Workbook) As Object
+    Dim result As Object, ws As Worksheet, last As Long, start As Long, take As Long
+    Dim data As Variant, i As Long, b As Long, key As String
+    Set result = ImportFailAddresses.MapChipAddressEvidence(wb)
+    Set ws = wb.Worksheets("FBC by BLK"): last = PresentationLastRow(ws, 2)
+    For start = 2 To last Step 512
+        take = last - start + 1: If take > 512 Then take = 512
+        data = ws.Cells(start, 1).Resize(take, 260).Value2
+        For i = 1 To take
+            key = CStr(data(i, 1)) & "|" & CStr(data(i, 3)) & "|" & CStr(data(i, 4))
+            If Not result.Exists(key) Then
+                For b = 5 To 260
+                    If Not IsError(data(i, b)) Then
+                        If IsNumeric(data(i, b)) Then
+                            If CDbl(data(i, b)) > 0 Then result.Add key, True: Exit For
+                        End If
+                    End If
+                Next b
+            End If
+        Next i
+    Next start
+    Set ChipFailEvidence = result
+End Function
+
 Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     Dim patterns As Object, wanted As Object, counts As Object, coords As Object, errors As Object, used As Object
     Dim phaseCount As Long, includedMask As Variant, maximumCount As Long
-    Dim priorPatterns As Object, categoryByWT(1 To 3) As Object, chipCat As Long
+    Dim priorPatterns As Object, categoryByWT(1 To 3) As Object, chipCat As Long, evidence As Object
     Dim hard As Object
     Dim locations As Worksheet, summary As Worksheet, map As Worksheet, ws As Worksheet
     Dim data As Variant, item As Variant, name As Variant, detail As Variant, xy As Variant, ordered As Collection
@@ -987,6 +1011,7 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
     For phase = 1 To phaseCount: Set categoryByWT(phase) = BLK_Categories(wb, "WT1"): Next phase
     Set priorPatterns = PatternPredecessors(patterns)
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
+    Set evidence = ChipFailEvidence(wb)
     total = CDbl(patterns.Count) * coords.Count * phaseCount
     Set summary = wb.Worksheets("BLK Fail Count")
     If total + 1 > summary.Rows.Count Then Err.Raise vbObjectError + 453, , "BLK Fail Count exceeds Excel row limit."
@@ -1045,7 +1070,9 @@ Public Function BLK_BuildFailMaps(ByVal wb As Workbook) As String
                 result = MapResult(counts, errors, "WT" & phase, CStr(detail(0)), CStr(item), hard, wanted, includedMask, priorPatterns)
                 chipCat = 0
                 If categoryByWT(phase).Exists(CStr(item)) Then chipCat = CLng(categoryByWT(phase)(CStr(item)))
-                If chipCat = 1 Or chipCat = 2 Then result = 0
+                If chipCat = 1 Or chipCat = 2 Then
+                    If Not evidence.Exists("WT" & phase & "|" & CStr(item)) Then result = 0
+                End If
                 n = n + 1: output(n, 1) = name: output(n, 2) = CLng(detail(0)): output(n, 3) = detail(1): output(n, 4) = detail(2)
                 output(n, 5) = "WT" & phase: output(n, 6) = CLng(xy(0)): output(n, 7) = CLng(xy(1)): output(n, 9) = MapStatus(result)
                 If VarType(result) <> vbString Then
@@ -1103,7 +1130,7 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
     'Right cell counts distinct BLKs with Missing Count > 0 (not the missing-bit sum).
     Dim ws As Worksheet, source As Worksheet, report As Worksheet
     Dim summaries As Variant, data As Variant, names As Object, coords As Object, losses As Object, seen As Object
-    Dim cats(1 To 3) As Object, ordered As Collection, item As Variant, name As Variant, xy As Variant
+    Dim cats(1 To 3) As Object, ordered As Collection, item As Variant, name As Variant, xy As Variant, evidence As Object
     Dim i As Long, j As Long, phase As Long, phaseCount As Long, last As Long, first As Long, take As Long
     Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
     Dim top As Long, height As Long, panelWidth As Long, origin As Long, row As Long, col As Long
@@ -1115,6 +1142,7 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
     Set names = CreateObject("Scripting.Dictionary"): Set coords = CreateObject("Scripting.Dictionary")
     Set losses = CreateObject("Scripting.Dictionary"): Set seen = CreateObject("Scripting.Dictionary")
     phaseCount = BLK_PhaseCount(wb)
+    Set evidence = ChipFailEvidence(wb)
     For phase = 1 To phaseCount: Set cats(phase) = BLK_Categories(wb, "WT1"): Next phase
     For i = 1 To UBound(summaries, 1)
         names(CStr(summaries(i, 1))) = True
@@ -1194,7 +1222,7 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
                 Set cells = ws.Cells(row, col).Resize(1, 2)
                 cells.Borders.LineStyle = xlContinuous: cells.Borders.Color = RGB(150, 150, 150)
                 cat = 0: If cats(phase).Exists(chip) Then cat = CLng(cats(phase)(chip))
-                If cat <> 1 And cat <> 2 Then
+                If (cat <> 1 And cat <> 2) Or evidence.Exists("WT" & phase & "|" & chip) Then
                     status = CStr(summaries(i, 9))
                     If status = "Pass" Or status = "Fail" Then
                         fail = CLng(summaries(i, 8)): key = "WT" & phase & "|" & CStr(name) & "|" & chip
