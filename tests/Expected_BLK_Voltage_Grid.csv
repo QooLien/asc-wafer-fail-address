@@ -1,0 +1,2305 @@
+WT,Pattern,X,Y,BLK,State,FirstTNO,FirstVoltage,Tendency,W,R,Equal,Unknown,Captured
+WT1,Scan,10,7,0,Fail,503,1.0349999999999999,Equal,0,0,1,4,5
+WT1,Scan,10,7,1,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,2,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,3,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,4,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,5,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,6,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,7,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,8,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,9,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,10,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,11,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,12,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,13,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,14,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,15,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,16,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,17,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,18,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,19,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,20,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,21,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,22,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,23,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,24,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,25,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,26,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,27,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,28,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,29,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,30,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,31,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,32,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,33,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,34,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,35,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,36,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,37,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,38,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,39,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,40,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,41,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,42,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,43,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,44,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,45,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,46,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,47,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,48,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,49,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,50,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,51,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,52,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,53,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,54,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,55,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,56,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,57,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,58,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,59,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,60,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,61,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,62,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,63,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,64,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,65,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,66,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,67,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,68,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,69,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,70,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,71,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,72,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,73,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,74,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,75,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,76,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,77,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,78,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,79,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,80,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,81,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,82,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,83,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,84,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,85,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,86,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,87,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,88,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,89,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,90,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,91,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,92,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,93,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,94,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,95,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,96,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,97,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,98,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,99,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,100,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,101,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,102,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,103,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,104,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,105,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,106,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,107,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,108,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,109,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,110,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,111,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,112,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,113,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,114,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,115,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,116,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,117,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,118,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,119,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,120,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,121,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,122,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,123,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,124,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,125,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,126,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,127,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,128,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,129,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,130,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,131,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,132,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,133,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,134,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,135,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,136,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,137,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,138,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,139,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,140,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,141,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,142,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,143,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,144,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,145,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,146,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,147,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,148,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,149,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,150,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,151,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,152,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,153,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,154,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,155,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,156,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,157,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,158,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,159,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,160,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,161,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,162,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,163,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,164,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,165,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,166,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,167,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,168,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,169,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,170,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,171,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,172,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,173,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,174,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,175,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,176,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,177,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,178,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,179,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,180,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,181,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,182,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,183,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,184,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,185,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,186,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,187,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,188,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,189,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,190,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,191,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,192,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,193,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,194,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,195,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,196,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,197,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,198,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,199,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,200,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,201,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,202,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,203,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,204,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,205,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,206,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,207,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,208,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,209,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,210,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,211,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,212,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,213,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,214,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,215,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,216,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,217,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,218,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,219,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,220,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,221,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,222,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,223,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,224,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,225,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,226,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,227,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,228,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,229,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,230,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,231,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,232,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,233,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,234,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,235,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,236,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,237,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,238,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,239,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,240,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,241,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,242,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,243,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,244,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,245,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,246,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,247,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,248,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,249,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,250,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,251,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,252,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,253,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,254,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,10,7,255,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,0,Excluded: earlier Pattern TNO530,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,1,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,2,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,3,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,4,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,5,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,6,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,7,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,8,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,9,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,10,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,11,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,12,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,13,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,14,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,15,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,16,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,17,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,18,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,19,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,20,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,21,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,22,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,23,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,24,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,25,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,26,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,27,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,28,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,29,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,30,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,31,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,32,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,33,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,34,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,35,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,36,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,37,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,38,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,39,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,40,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,41,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,42,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,43,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,44,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,45,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,46,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,47,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,48,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,49,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,50,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,51,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,52,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,53,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,54,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,55,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,56,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,57,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,58,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,59,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,60,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,61,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,62,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,63,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,64,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,65,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,66,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,67,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,68,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,69,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,70,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,71,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,72,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,73,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,74,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,75,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,76,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,77,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,78,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,79,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,80,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,81,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,82,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,83,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,84,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,85,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,86,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,87,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,88,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,89,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,90,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,91,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,92,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,93,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,94,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,95,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,96,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,97,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,98,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,99,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,100,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,101,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,102,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,103,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,104,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,105,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,106,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,107,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,108,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,109,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,110,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,111,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,112,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,113,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,114,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,115,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,116,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,117,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,118,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,119,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,120,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,121,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,122,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,123,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,124,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,125,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,126,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,127,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,128,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,129,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,130,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,131,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,132,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,133,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,134,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,135,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,136,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,137,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,138,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,139,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,140,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,141,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,142,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,143,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,144,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,145,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,146,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,147,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,148,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,149,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,150,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,151,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,152,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,153,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,154,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,155,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,156,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,157,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,158,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,159,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,160,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,161,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,162,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,163,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,164,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,165,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,166,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,167,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,168,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,169,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,170,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,171,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,172,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,173,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,174,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,175,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,176,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,177,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,178,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,179,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,180,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,181,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,182,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,183,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,184,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,185,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,186,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,187,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,188,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,189,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,190,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,191,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,192,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,193,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,194,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,195,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,196,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,197,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,198,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,199,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,200,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,201,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,202,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,203,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,204,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,205,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,206,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,207,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,208,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,209,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,210,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,211,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,212,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,213,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,214,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,215,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,216,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,217,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,218,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,219,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,220,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,221,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,222,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,223,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,224,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,225,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,226,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,227,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,228,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,229,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,230,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,231,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,232,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,233,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,234,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,235,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,236,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,237,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,238,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,239,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,240,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,241,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,242,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,243,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,244,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,245,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,246,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,247,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,248,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,249,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,250,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,251,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,252,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,253,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,254,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,10,7,255,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,0,Excluded: WT1 TNO503,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,1,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,2,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,3,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,4,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,5,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,6,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,7,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,8,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,9,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,10,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,11,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,12,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,13,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,14,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,15,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,16,Fail,503,1.0349999999999999,Insufficient,0,0,0,1,1
+WT2,Scan,10,7,17,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,18,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,19,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,20,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,21,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,22,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,23,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,24,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,25,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,26,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,27,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,28,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,29,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,30,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,31,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,32,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,33,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,34,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,35,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,36,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,37,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,38,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,39,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,40,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,41,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,42,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,43,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,44,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,45,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,46,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,47,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,48,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,49,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,50,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,51,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,52,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,53,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,54,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,55,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,56,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,57,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,58,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,59,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,60,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,61,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,62,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,63,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,64,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,65,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,66,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,67,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,68,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,69,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,70,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,71,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,72,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,73,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,74,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,75,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,76,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,77,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,78,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,79,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,80,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,81,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,82,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,83,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,84,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,85,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,86,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,87,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,88,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,89,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,90,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,91,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,92,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,93,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,94,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,95,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,96,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,97,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,98,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,99,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,100,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,101,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,102,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,103,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,104,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,105,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,106,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,107,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,108,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,109,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,110,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,111,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,112,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,113,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,114,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,115,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,116,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,117,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,118,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,119,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,120,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,121,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,122,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,123,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,124,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,125,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,126,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,127,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,128,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,129,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,130,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,131,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,132,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,133,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,134,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,135,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,136,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,137,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,138,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,139,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,140,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,141,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,142,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,143,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,144,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,145,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,146,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,147,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,148,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,149,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,150,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,151,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,152,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,153,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,154,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,155,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,156,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,157,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,158,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,159,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,160,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,161,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,162,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,163,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,164,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,165,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,166,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,167,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,168,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,169,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,170,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,171,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,172,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,173,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,174,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,175,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,176,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,177,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,178,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,179,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,180,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,181,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,182,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,183,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,184,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,185,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,186,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,187,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,188,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,189,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,190,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,191,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,192,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,193,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,194,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,195,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,196,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,197,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,198,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,199,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,200,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,201,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,202,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,203,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,204,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,205,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,206,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,207,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,208,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,209,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,210,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,211,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,212,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,213,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,214,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,215,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,216,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,217,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,218,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,219,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,220,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,221,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,222,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,223,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,224,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,225,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,226,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,227,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,228,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,229,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,230,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,231,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,232,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,233,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,234,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,235,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,236,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,237,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,238,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,239,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,240,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,241,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,242,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,243,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,244,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,245,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,246,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,247,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,248,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,249,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,250,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,251,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,252,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,253,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,254,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,10,7,255,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,0,Excluded: WT1 TNO503,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,1,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,2,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,3,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,4,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,5,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,6,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,7,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,8,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,9,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,10,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,11,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,12,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,13,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,14,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,15,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,16,Excluded: WT2 TNO503,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,17,Excluded: WT2 TNO700,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,18,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,19,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,20,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,21,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,22,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,23,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,24,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,25,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,26,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,27,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,28,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,29,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,30,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,31,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,32,Excluded: earlier Pattern TNO530,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,33,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,34,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,35,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,36,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,37,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,38,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,39,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,40,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,41,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,42,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,43,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,44,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,45,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,46,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,47,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,48,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,49,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,50,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,51,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,52,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,53,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,54,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,55,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,56,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,57,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,58,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,59,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,60,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,61,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,62,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,63,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,64,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,65,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,66,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,67,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,68,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,69,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,70,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,71,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,72,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,73,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,74,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,75,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,76,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,77,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,78,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,79,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,80,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,81,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,82,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,83,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,84,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,85,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,86,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,87,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,88,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,89,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,90,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,91,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,92,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,93,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,94,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,95,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,96,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,97,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,98,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,99,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,100,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,101,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,102,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,103,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,104,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,105,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,106,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,107,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,108,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,109,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,110,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,111,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,112,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,113,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,114,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,115,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,116,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,117,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,118,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,119,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,120,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,121,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,122,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,123,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,124,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,125,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,126,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,127,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,128,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,129,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,130,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,131,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,132,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,133,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,134,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,135,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,136,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,137,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,138,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,139,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,140,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,141,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,142,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,143,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,144,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,145,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,146,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,147,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,148,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,149,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,150,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,151,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,152,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,153,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,154,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,155,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,156,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,157,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,158,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,159,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,160,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,161,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,162,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,163,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,164,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,165,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,166,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,167,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,168,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,169,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,170,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,171,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,172,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,173,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,174,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,175,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,176,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,177,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,178,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,179,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,180,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,181,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,182,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,183,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,184,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,185,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,186,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,187,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,188,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,189,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,190,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,191,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,192,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,193,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,194,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,195,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,196,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,197,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,198,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,199,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,200,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,201,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,202,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,203,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,204,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,205,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,206,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,207,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,208,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,209,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,210,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,211,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,212,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,213,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,214,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,215,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,216,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,217,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,218,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,219,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,220,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,221,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,222,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,223,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,224,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,225,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,226,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,227,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,228,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,229,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,230,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,231,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,232,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,233,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,234,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,235,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,236,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,237,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,238,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,239,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,240,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,241,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,242,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,243,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,244,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,245,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,246,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,247,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,248,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,249,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,250,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,251,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,252,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,253,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,254,Pass,,,Insufficient,0,0,0,0,0
+WT3,March,10,7,255,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,0,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,1,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,2,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,3,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,4,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,5,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,6,Excluded: Hard Fail WT1,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,7,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,8,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,9,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,10,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,11,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,12,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,13,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,14,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,15,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,16,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,17,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,18,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,19,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,20,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,21,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,22,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,23,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,24,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,25,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,26,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,27,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,28,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,29,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,30,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,31,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,32,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,33,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,34,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,35,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,36,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,37,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,38,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,39,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,40,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,41,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,42,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,43,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,44,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,45,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,46,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,47,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,48,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,49,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,50,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,51,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,52,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,53,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,54,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,55,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,56,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,57,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,58,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,59,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,60,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,61,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,62,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,63,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,64,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,65,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,66,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,67,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,68,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,69,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,70,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,71,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,72,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,73,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,74,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,75,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,76,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,77,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,78,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,79,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,80,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,81,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,82,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,83,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,84,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,85,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,86,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,87,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,88,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,89,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,90,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,91,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,92,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,93,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,94,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,95,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,96,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,97,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,98,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,99,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,100,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,101,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,102,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,103,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,104,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,105,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,106,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,107,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,108,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,109,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,110,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,111,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,112,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,113,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,114,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,115,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,116,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,117,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,118,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,119,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,120,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,121,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,122,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,123,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,124,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,125,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,126,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,127,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,128,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,129,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,130,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,131,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,132,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,133,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,134,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,135,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,136,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,137,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,138,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,139,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,140,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,141,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,142,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,143,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,144,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,145,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,146,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,147,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,148,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,149,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,150,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,151,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,152,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,153,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,154,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,155,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,156,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,157,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,158,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,159,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,160,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,161,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,162,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,163,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,164,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,165,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,166,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,167,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,168,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,169,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,170,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,171,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,172,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,173,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,174,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,175,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,176,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,177,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,178,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,179,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,180,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,181,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,182,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,183,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,184,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,185,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,186,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,187,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,188,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,189,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,190,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,191,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,192,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,193,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,194,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,195,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,196,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,197,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,198,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,199,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,200,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,201,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,202,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,203,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,204,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,205,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,206,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,207,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,208,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,209,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,210,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,211,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,212,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,213,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,214,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,215,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,216,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,217,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,218,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,219,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,220,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,221,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,222,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,223,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,224,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,225,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,226,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,227,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,228,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,229,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,230,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,231,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,232,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,233,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,234,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,235,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,236,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,237,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,238,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,239,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,240,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,241,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,242,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,243,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,244,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,245,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,246,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,247,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,248,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,249,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,250,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,251,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,252,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,253,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,254,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,11,8,255,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,0,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,1,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,2,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,3,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,4,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,5,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,6,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,7,Excluded: WT1 TNO503,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,8,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,9,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,10,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,11,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,12,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,13,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,14,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,15,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,16,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,17,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,18,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,19,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,20,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,21,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,22,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,23,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,24,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,25,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,26,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,27,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,28,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,29,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,30,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,31,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,32,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,33,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,34,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,35,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,36,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,37,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,38,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,39,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,40,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,41,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,42,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,43,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,44,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,45,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,46,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,47,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,48,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,49,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,50,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,51,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,52,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,53,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,54,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,55,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,56,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,57,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,58,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,59,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,60,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,61,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,62,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,63,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,64,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,65,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,66,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,67,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,68,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,69,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,70,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,71,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,72,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,73,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,74,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,75,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,76,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,77,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,78,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,79,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,80,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,81,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,82,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,83,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,84,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,85,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,86,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,87,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,88,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,89,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,90,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,91,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,92,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,93,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,94,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,95,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,96,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,97,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,98,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,99,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,100,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,101,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,102,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,103,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,104,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,105,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,106,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,107,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,108,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,109,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,110,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,111,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,112,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,113,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,114,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,115,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,116,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,117,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,118,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,119,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,120,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,121,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,122,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,123,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,124,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,125,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,126,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,127,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,128,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,129,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,130,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,131,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,132,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,133,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,134,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,135,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,136,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,137,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,138,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,139,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,140,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,141,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,142,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,143,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,144,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,145,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,146,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,147,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,148,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,149,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,150,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,151,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,152,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,153,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,154,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,155,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,156,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,157,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,158,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,159,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,160,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,161,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,162,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,163,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,164,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,165,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,166,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,167,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,168,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,169,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,170,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,171,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,172,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,173,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,174,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,175,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,176,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,177,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,178,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,179,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,180,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,181,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,182,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,183,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,184,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,185,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,186,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,187,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,188,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,189,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,190,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,191,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,192,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,193,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,194,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,195,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,196,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,197,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,198,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,199,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,200,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,201,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,202,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,203,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,204,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,205,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,206,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,207,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,208,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,209,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,210,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,211,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,212,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,213,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,214,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,215,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,216,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,217,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,218,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,219,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,220,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,221,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,222,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,223,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,224,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,225,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,226,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,227,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,228,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,229,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,230,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,231,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,232,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,233,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,234,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,235,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,236,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,237,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,238,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,239,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,240,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,241,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,242,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,243,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,244,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,245,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,246,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,247,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,248,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,249,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,250,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,251,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,252,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,253,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,254,Pass,,,Insufficient,0,0,0,0,0
+WT2,Scan,12,8,255,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,0,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,1,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,2,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,3,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,4,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,5,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,6,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,7,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,8,Excluded: earlier Pattern TNO530,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,9,Fail,700,1.2,Insufficient,0,0,0,1,1
+WT1,March,13,8,10,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,11,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,12,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,13,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,14,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,15,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,16,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,17,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,18,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,19,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,20,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,21,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,22,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,23,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,24,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,25,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,26,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,27,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,28,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,29,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,30,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,31,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,32,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,33,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,34,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,35,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,36,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,37,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,38,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,39,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,40,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,41,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,42,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,43,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,44,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,45,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,46,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,47,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,48,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,49,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,50,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,51,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,52,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,53,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,54,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,55,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,56,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,57,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,58,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,59,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,60,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,61,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,62,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,63,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,64,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,65,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,66,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,67,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,68,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,69,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,70,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,71,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,72,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,73,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,74,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,75,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,76,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,77,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,78,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,79,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,80,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,81,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,82,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,83,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,84,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,85,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,86,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,87,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,88,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,89,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,90,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,91,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,92,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,93,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,94,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,95,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,96,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,97,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,98,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,99,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,100,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,101,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,102,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,103,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,104,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,105,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,106,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,107,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,108,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,109,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,110,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,111,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,112,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,113,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,114,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,115,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,116,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,117,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,118,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,119,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,120,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,121,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,122,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,123,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,124,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,125,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,126,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,127,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,128,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,129,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,130,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,131,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,132,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,133,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,134,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,135,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,136,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,137,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,138,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,139,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,140,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,141,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,142,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,143,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,144,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,145,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,146,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,147,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,148,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,149,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,150,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,151,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,152,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,153,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,154,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,155,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,156,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,157,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,158,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,159,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,160,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,161,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,162,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,163,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,164,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,165,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,166,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,167,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,168,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,169,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,170,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,171,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,172,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,173,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,174,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,175,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,176,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,177,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,178,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,179,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,180,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,181,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,182,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,183,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,184,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,185,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,186,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,187,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,188,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,189,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,190,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,191,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,192,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,193,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,194,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,195,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,196,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,197,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,198,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,199,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,200,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,201,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,202,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,203,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,204,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,205,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,206,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,207,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,208,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,209,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,210,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,211,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,212,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,213,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,214,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,215,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,216,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,217,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,218,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,219,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,220,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,221,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,222,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,223,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,224,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,225,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,226,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,227,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,228,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,229,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,230,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,231,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,232,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,233,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,234,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,235,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,236,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,237,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,238,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,239,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,240,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,241,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,242,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,243,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,244,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,245,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,246,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,247,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,248,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,249,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,250,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,251,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,252,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,253,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,254,Pass,,,Insufficient,0,0,0,0,0
+WT1,March,13,8,255,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,0,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,1,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,2,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,3,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,4,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,5,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,6,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,7,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,8,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,9,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,10,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,11,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,12,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,13,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,14,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,15,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,16,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,17,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,18,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,19,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,20,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,21,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,22,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,23,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,24,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,25,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,26,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,27,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,28,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,29,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,30,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,31,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,32,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,33,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,34,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,35,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,36,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,37,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,38,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,39,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,40,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,41,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,42,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,43,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,44,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,45,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,46,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,47,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,48,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,49,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,50,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,51,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,52,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,53,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,54,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,55,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,56,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,57,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,58,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,59,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,60,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,61,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,62,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,63,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,64,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,65,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,66,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,67,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,68,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,69,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,70,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,71,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,72,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,73,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,74,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,75,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,76,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,77,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,78,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,79,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,80,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,81,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,82,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,83,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,84,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,85,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,86,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,87,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,88,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,89,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,90,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,91,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,92,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,93,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,94,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,95,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,96,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,97,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,98,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,99,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,100,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,101,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,102,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,103,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,104,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,105,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,106,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,107,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,108,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,109,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,110,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,111,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,112,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,113,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,114,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,115,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,116,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,117,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,118,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,119,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,120,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,121,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,122,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,123,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,124,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,125,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,126,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,127,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,128,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,129,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,130,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,131,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,132,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,133,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,134,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,135,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,136,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,137,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,138,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,139,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,140,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,141,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,142,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,143,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,144,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,145,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,146,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,147,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,148,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,149,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,150,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,151,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,152,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,153,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,154,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,155,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,156,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,157,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,158,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,159,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,160,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,161,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,162,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,163,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,164,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,165,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,166,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,167,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,168,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,169,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,170,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,171,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,172,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,173,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,174,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,175,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,176,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,177,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,178,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,179,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,180,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,181,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,182,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,183,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,184,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,185,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,186,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,187,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,188,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,189,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,190,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,191,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,192,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,193,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,194,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,195,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,196,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,197,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,198,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,199,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,200,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,201,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,202,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,203,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,204,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,205,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,206,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,207,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,208,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,209,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,210,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,211,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,212,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,213,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,214,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,215,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,216,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,217,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,218,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,219,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,220,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,221,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,222,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,223,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,224,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,225,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,226,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,227,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,228,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,229,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,230,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,231,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,232,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,233,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,234,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,235,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,236,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,237,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,238,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,239,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,240,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,241,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,242,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,243,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,244,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,245,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,246,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,247,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,248,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,249,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,250,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,251,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,252,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,253,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,254,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,14,8,255,No Data,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,0,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,1,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,2,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,3,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,4,Fail,530,1.2,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,5,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,6,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,7,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,8,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,9,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,10,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,11,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,12,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,13,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,14,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,15,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,16,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,17,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,18,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,19,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,20,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,21,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,22,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,23,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,24,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,25,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,26,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,27,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,28,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,29,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,30,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,31,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,32,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,33,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,34,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,35,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,36,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,37,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,38,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,39,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,40,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,41,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,42,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,43,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,44,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,45,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,46,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,47,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,48,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,49,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,50,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,51,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,52,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,53,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,54,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,55,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,56,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,57,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,58,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,59,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,60,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,61,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,62,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,63,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,64,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,65,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,66,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,67,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,68,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,69,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,70,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,71,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,72,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,73,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,74,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,75,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,76,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,77,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,78,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,79,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,80,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,81,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,82,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,83,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,84,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,85,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,86,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,87,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,88,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,89,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,90,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,91,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,92,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,93,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,94,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,95,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,96,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,97,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,98,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,99,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,100,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,101,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,102,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,103,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,104,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,105,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,106,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,107,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,108,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,109,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,110,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,111,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,112,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,113,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,114,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,115,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,116,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,117,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,118,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,119,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,120,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,121,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,122,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,123,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,124,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,125,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,126,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,127,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,128,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,129,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,130,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,131,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,132,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,133,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,134,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,135,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,136,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,137,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,138,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,139,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,140,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,141,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,142,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,143,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,144,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,145,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,146,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,147,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,148,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,149,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,150,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,151,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,152,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,153,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,154,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,155,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,156,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,157,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,158,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,159,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,160,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,161,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,162,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,163,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,164,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,165,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,166,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,167,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,168,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,169,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,170,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,171,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,172,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,173,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,174,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,175,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,176,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,177,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,178,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,179,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,180,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,181,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,182,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,183,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,184,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,185,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,186,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,187,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,188,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,189,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,190,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,191,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,192,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,193,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,194,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,195,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,196,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,197,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,198,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,199,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,200,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,201,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,202,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,203,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,204,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,205,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,206,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,207,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,208,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,209,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,210,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,211,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,212,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,213,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,214,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,215,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,216,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,217,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,218,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,219,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,220,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,221,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,222,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,223,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,224,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,225,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,226,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,227,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,228,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,229,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,230,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,231,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,232,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,233,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,234,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,235,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,236,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,237,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,238,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,239,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,240,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,241,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,242,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,243,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,244,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,245,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,246,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,247,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,248,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,249,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,250,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,251,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,252,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,253,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,254,Pass,,,Insufficient,0,0,0,0,0
+WT1,Scan,9,8,255,Pass,,,Insufficient,0,0,0,0,0

@@ -29,6 +29,7 @@ Public Sub BuildFailMaps()
     oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents
     On Error GoTo FailedMap
     Application.ScreenUpdating = False: Application.EnableEvents = False
+    BLKVminEngine.BLK_MigrateReportNames ThisWorkbook
     text = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
     If Len(text) = 0 Then
         text = AuditFunctionBlocks(ThisWorkbook)
@@ -36,6 +37,7 @@ Public Sub BuildFailMaps()
     End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
     WriteOperationLog ThisWorkbook, "Map", IIf(Len(text) = 0, "Fail Maps complete.", text), (Len(text) > 0)
+    If Len(text) = 0 Then BLKVminEngine.BLK_PublishReports ThisWorkbook
     If Len(text) > 0 Then
         MsgBox text, vbExclamation
     Else
@@ -84,6 +86,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     Set addresses = CreateObject("Scripting.Dictionary")
     Set metadata = CreateObject("Scripting.Dictionary")
     Set fso = CreateObject("Scripting.FileSystemObject")
+    BLKVminEngine.BLK_MigrateReportNames ThisWorkbook
     stage = "Validate Config"
     Set cfg = ThisWorkbook.Worksheets("Config")
     If Not fbcOnly Then Set dst = ThisWorkbook.Worksheets("Fail Address")
@@ -316,6 +319,8 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
 SaveResult:
+    If Not addressOnly And Len(blkWarnings) = 0 Then BLKVminEngine.BLK_PublishReports ThisWorkbook
+    BLKVminEngine.BLK_BuildImportInfo ThisWorkbook
     stage = "Save result workbook"
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
@@ -326,7 +331,7 @@ SaveResult:
     ElseIf fbcOnly Then
         MsgBox "FBC import complete. Records: " & fbcTotal & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Fail Address was not changed." & blkWarnings, vbInformation
     Else
-    MsgBox "Import and analysis complete. Files: " & fileCount & vbCrLf & "Unique addresses: " & uniqueCount & vbCrLf & "FBC records: " & fbcTotal & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "See Log for the latest operation message." & blkWarnings, vbInformation
+    MsgBox "Import and analysis complete. Files: " & fileCount & vbCrLf & "Unique addresses: " & uniqueCount & vbCrLf & "FBC records: " & fbcTotal & vbCrLf & "Saved as: " & outputPath & vbCrLf & "Run time (hh:mm:ss): " & elapsedText & vbCrLf & "Total seconds: " & Format$(n, "#,##0") & vbCrLf & "See Import Info for the latest operation message." & blkWarnings, vbInformation
     End If
 Done:
     On Error Resume Next
@@ -346,13 +351,15 @@ Failed:
 End Sub
 
 
-Public Function MapChipAddressEvidence(ByVal wb As Workbook) As Object
+Public Function MapChipAddressEvidence(ByVal wb As Workbook, Optional ByVal functionOnly As Boolean = False) As Object
+    Dim wantedFunctions As Object, allowed As Boolean
     Dim result As Object, ws As Worksheet, idx As Worksheet, data As Variant, headers As Variant
     Dim xy As Variant, flags As Variant, phase As Long, i As Long, j As Long, r As Long
     Dim firstCol(1 To 3) As Long, lastCol(1 To 3) As Long, last As Long, lastRow As Long
     Dim start As Long, take As Long, batch As Long, col As Long, wt As String, key As String
     Set result = CreateObject("Scripting.Dictionary")
     Set MapChipAddressEvidence = result
+    If functionOnly Then Set wantedFunctions = AuditFunctions(wb.Worksheets("Config"), "ALL FUNCTION")
     Set ws = wb.Worksheets("Fail Address"): Set idx = wb.Worksheets("Import Index")
     last = idx.Cells(idx.Rows.Count, 1).End(xlUp).Row
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
@@ -361,7 +368,9 @@ Public Function MapChipAddressEvidence(ByVal wb As Workbook) As Object
     data = idx.Range("A2:D" & last).Value2
     For i = 1 To UBound(data, 1)
         wt = CStr(data(i, 1))
-        If wt = "WT1" Or wt = "WT2" Or wt = "WT3" Then
+        allowed = True
+        If functionOnly Then allowed = wantedFunctions.Exists(CStr(data(i, 2)))
+        If allowed And (wt = "WT1" Or wt = "WT2" Or wt = "WT3") Then
             phase = CLng(Right$(wt, 1)): col = CLng(data(i, 3))
             If col < 8 Or col > UBound(headers, 2) Then Err.Raise vbObjectError + 493, , "Address evidence index out of range."
             If CStr(headers(1, col)) <> CStr(data(i, 4)) Then Err.Raise vbObjectError + 493, , "Address evidence header changed; reimport Address."
@@ -748,7 +757,7 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     Dim mappingNote As String, sourceNote As String, description As String, oldAlerts As Boolean, success As Boolean, addressBits As Variant, hasAddress As Boolean, scopeText As String
     Dim recorded As Long, gap As Double, included As String, finding As String
     Dim completeCount As Long, partialCount As Long, absentCount As Long, excessCount As Long
-    Dim intervalCount As Long, endpointFinding As String, coverageBasis As String, intervalOnlyCount As Long
+    Dim intervalCount As Long, endpointFinding As String, coverageBasis As String, intervalOnlyCount As Long, monitorNote As String
     oldAlerts = Application.DisplayAlerts
     On Error GoTo Failed
     If outputWorkbook Is Nothing Then Set outputWorkbook = wb
@@ -896,7 +905,10 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     stage.Activate: Application.ActiveWindow.DisplayGridlines = False
     Application.DisplayAlerts = oldAlerts
     If outputWorkbook Is wb Then BLKVminEngine.BLK_BuildCoverageMap wb
+    monitorNote = BuildMonitorFailAnalysis(wb, outputWorkbook)
+    If Left$(monitorNote, 26) <> "Monitor analysis complete." Then Err.Raise vbObjectError + 495, , monitorNote
     AuditFunctionBlocks = "Audit complete. Map BLKs=" & missing & "; Complete=" & completeCount & "; Endpoint Partial=" & partialCount & "; No Address=" & absentCount & "; Endpoint Excess=" & excessCount & "; Earlier only=" & intervalOnlyCount
+    AuditFunctionBlocks = AuditFunctionBlocks & "; " & monitorNote
     WriteOperationLog outputWorkbook, "Address Coverage", AuditFunctionBlocks
     BLKVminEngine.BLK_OrderSheets outputWorkbook
     Exit Function
@@ -914,6 +926,264 @@ AuditFailureCleanup:
     Application.DisplayAlerts = oldAlerts
     AuditFunctionBlocks = "Audit failed (" & errorNumber & "): " & description
     If Not outputWorkbook Is Nothing Then WriteOperationLog outputWorkbook, "Address Coverage", AuditFunctionBlocks, True
+End Function
+
+Private Function MonitorKind(ByVal text As String) As String
+    text = UCase$(Replace(Replace(Replace(Trim$(text), " ", ""), "-", ""), "_", ""))
+    If text = "WLOWPBL" Then MonitorKind = "W"
+    If text = "RLOWPBL" Then MonitorKind = "R"
+End Function
+
+Private Function MonitorOutputSheet(ByVal wb As Workbook, ByVal name As String) As Worksheet
+    Dim ws As Worksheet, last As Long
+    On Error Resume Next
+    Set ws = wb.Worksheets(name)
+    On Error GoTo 0
+    If ws Is Nothing Then Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count)): ws.Name = name
+    ws.Visible = xlSheetVisible
+    If ws.AutoFilterMode Then ws.AutoFilterMode = False
+    last = ws.UsedRange.Row + ws.UsedRange.Rows.Count - 1
+    ws.UsedRange.UnMerge: ws.UsedRange.Clear
+    If last > 4 Then ws.Rows(5).Resize(last - 4).Delete
+    Set MonitorOutputSheet = ws
+End Function
+
+Private Sub WriteMonitorPacket(ByVal ws As Worksheet, ByRef packet() As Variant, ByRef used As Long, ByRef dest As Long)
+    Dim tail() As Variant, i As Long, j As Long
+    If used = 0 Then Exit Sub
+    If dest + used - 1 > ws.Rows.Count Then Err.Raise vbObjectError + 495, , "Monitor output exceeds Excel row limit."
+    If used = UBound(packet, 1) Then
+        ws.Cells(dest, 1).Resize(used, 16).Value2 = packet
+    Else
+        ReDim tail(1 To used, 1 To 16)
+        For i = 1 To used: For j = 1 To 16: tail(i, j) = packet(i, j): Next j: Next i
+        ws.Cells(dest, 1).Resize(used, 16).Value2 = tail
+    End If
+    dest = dest + used: used = 0: ReDim packet(1 To 512, 1 To 16)
+End Sub
+
+Private Function MonitorFlag(ByRef flags As Variant, ByVal row As Long, ByVal offset As Long) As Boolean
+    Dim flag As Variant
+    If IsArray(flags) Then flag = flags(row, offset) Else flag = flags
+    If IsError(flag) Then Err.Raise vbObjectError + 495, , "Monitor matching Address flag error."
+    If Len(Trim$(CStr(flag))) = 0 Then Exit Function
+    If Not IsNumeric(flag) Then Err.Raise vbObjectError + 495, , "Monitor matching flag must be 0/1 or blank."
+    If CDbl(flag) <> 0 And CDbl(flag) <> 1 Then Err.Raise vbObjectError + 495, , "Monitor matching flag must be 0/1 or blank."
+    MonitorFlag = (CDbl(flag) = 1)
+End Function
+
+Private Sub FormatMonitorOutput(ByVal ws As Worksheet, ByVal last As Long)
+    Dim c As Long
+    With ws.Cells(1, 1).Resize(last, 16)
+        .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .RowHeight = 26
+    End With
+    ws.Columns("A:P").ColumnWidth = 12
+    ws.Columns("B").ColumnWidth = 18
+    ws.Rows(1).RowHeight = 30: ws.Rows(2).RowHeight = 42: ws.Rows(3).RowHeight = 30
+    ws.Range("A2:P2").WrapText = True
+    With ws.Range("A4:P4")
+        .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True
+        .Orientation = 90: .WrapText = True: .RowHeight = 160: .Borders.LineStyle = xlContinuous
+    End With
+    With ws.Range("A1:P1"): .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Bold = True: End With
+    If ws.Name = "Monitor Fail Analysis" Then
+        ws.Columns("J:L").ColumnWidth = 24: ws.Columns("O").ColumnWidth = 28
+        If last >= 5 Then
+            ws.Range("J5:L" & last).WrapText = True
+            ws.Cells(5, 1).Resize(last - 4, 16).RowHeight = 60
+        End If
+    Else
+        ws.Columns("O:P").ColumnWidth = 28
+    End If
+    ws.Range("A4:P" & last).AutoFilter
+    ws.Cells(1, 1).Resize(last, 16).BorderAround LineStyle:=xlContinuous, Weight:=xlThin
+    ws.Activate: Application.ActiveWindow.DisplayGridlines = False
+End Sub
+
+Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal outputWorkbook As Workbook = Nothing) As String
+    Dim wanted As Object, functions As Object, monitors As Object, columns As Object, lookup As Object
+    Dim endpoints As Object, scopes As Object, scope As Object, catalog As Object, chipCounts As Object
+    Dim detail As Worksheet, summary As Worksheet, report As Worksheet, source As Worksheet, cfg As Worksheet
+    Dim data As Variant, xy As Variant, flags As Variant, info As Variant, entry As Variant, item As Variant
+    Dim packet() As Variant, sums() As Variant, endpoint As Variant, tno As Variant, colKey As Variant
+    Dim writeCols As Collection, readCols As Collection, chosen As Collection, group As Variant, groups As Collection
+    Dim low As Long, high As Long, col As Long, phase As Long, last As Long, first As Long, take As Long, i As Long, j As Long
+    Dim r As Long, start As Long, batch As Long, used As Long, dest As Long, summaryUsed As Long, summaryDest As Long
+    Dim firstConfig As Long, lastConfig As Long, code As Long, total As Long, wCount As Long, readCount As Long
+    Dim key As String, chipKey As String, wt As String, kind As String, mappingNote As String, sourceNote As String
+    Dim wList As String, rList As String, functionList As String, label As String, errorText As String
+    On Error GoTo Failed
+    If outputWorkbook Is Nothing Then Set outputWorkbook = wb
+    Set detail = MonitorOutputSheet(outputWorkbook, "Monitor Fail Analysis")
+    Set summary = MonitorOutputSheet(outputWorkbook, "Monitor BLK Summary")
+    Set cfg = wb.Worksheets("Config"): Set source = wb.Worksheets("Fail Address")
+    Set report = outputWorkbook.Worksheets("Missing BLK Address")
+    If CStr(report.Range("M4").Value2) <> "Pattern Address Count" Then Err.Raise vbObjectError + 495, , "Refresh Pattern Address coverage before Monitor analysis."
+    Set functions = AuditFunctions(cfg, "ALL FUNCTION"): Set endpoints = AuditFunctions(cfg, "FAIL MAP")
+    Set wanted = CreateObject("Scripting.Dictionary"): Set monitors = CreateObject("Scripting.Dictionary")
+    For Each tno In functions: wanted.Add CStr(tno), True: Next tno
+    data = cfg.Range("A2:C901").Value2
+    For i = 1 To UBound(data, 1)
+        If Len(Trim$(CStr(data(i, 1)))) > 0 Then
+            kind = MonitorKind(CStr(data(i, 2)))
+            If Len(kind) > 0 Then
+                tno = CStr(AuditInteger(data(i, 1), 100, 999))
+                If wanted.Exists(tno) Then Err.Raise vbObjectError + 495, , "Duplicate Monitor/Function TNO: " & tno
+                wanted.Add CStr(tno), True: monitors.Add CStr(tno), kind
+                If kind = "W" Then wCount = wCount + 1 Else readCount = readCount + 1
+            End If
+        End If
+    Next i
+    If wCount = 0 Or readCount = 0 Then Err.Raise vbObjectError + 495, , "Configure both W-Low pBL and R-Low pBL Monitor items in Config A:C."
+    Set columns = ResolveAuditColumns(wb, wanted, mappingNote): sourceNote = AuditSourceNote(wb)
+    Set lookup = CreateObject("Scripting.Dictionary")
+    For Each colKey In columns
+        info = columns(colKey): lookup(CStr(info(0)) & "|" & CStr(info(1))) = CLng(colKey)
+    Next colKey
+    Set scopes = CreateObject("Scripting.Dictionary")
+    For Each endpoint In endpoints
+        info = endpoints(endpoint)
+        Set scope = DrillFunctionScope(cfg, CStr(endpoint), CStr(info(2)), firstConfig, lastConfig)
+        scopes.Add CStr(endpoint), scope
+    Next endpoint
+    Set catalog = CreateObject("Scripting.Dictionary"): Set chipCounts = CreateObject("Scripting.Dictionary")
+    last = report.Cells(report.Rows.Count, 1).End(xlUp).Row
+    For first = 5 To last Step 512
+        take = last - first + 1: If take > 512 Then take = 512
+        data = report.Cells(first, 1).Resize(take, 15).Value2
+        For i = 1 To take
+            key = CStr(data(i, 1)) & "|" & CStr(data(i, 2)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7)) & "|" & CStr(data(i, 8))
+            If catalog.Exists(key) Then Err.Raise vbObjectError + 495, , "Duplicate Map BLK in Monitor catalog."
+            'Entry: WT,Pattern,StopTNO,X,Y,BLK,FBC,expected interval count,basis,endpoint gap,observed,W,R,WR,None.
+            catalog.Add key, Array(data(i, 1), data(i, 5), data(i, 2), data(i, 6), data(i, 7), data(i, 8), data(i, 9), data(i, 13), data(i, 14), data(i, 11), 0&, 0&, 0&, 0&, 0&)
+            chipKey = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
+            If Not chipCounts.Exists(chipKey) Then chipCounts.Add chipKey, 0
+            chipCounts(chipKey) = CLng(chipCounts(chipKey)) + 1
+        Next i
+    Next first
+    detail.Range("A4:P4").Value2 = Array("WT", "Pattern", "Stop TNO", "X", "Y", "BLK", "WL", "BL", "IO", "Function Fail TNOs", "Write Monitor TNOs", "Read Monitor TNOs", "Write Monitor Fail", "Read Monitor Fail", "Classification", "Source Address Row")
+    summary.Range("A4:P4").Value2 = Array("WT", "Pattern", "Stop TNO", "X", "Y", "Chip Fail BLK Count", "BLK", "FBC", "Pattern Address Count", "Write Fail", "Read Fail", "Write&Read Fail", "No monitor item Fail", "Endpoint Missing Count", "Coverage Basis", "Analysis Status")
+    detail.Columns("J:L").NumberFormat = "@"
+    dest = 5: ReDim packet(1 To 512, 1 To 16)
+    last = AuditLastRow(source, 1)
+    For phase = 1 To BLKVminEngine.BLK_PhaseCount(wb)
+        wt = "WT" & phase: Set writeCols = New Collection: Set readCols = New Collection: Set groups = New Collection
+        low = source.Columns.Count: high = 0
+        For Each tno In monitors
+            col = CLng(lookup(wt & "|" & CStr(tno)))
+            If monitors(tno) = "W" Then writeCols.Add Array(col, CStr(tno)) Else readCols.Add Array(col, CStr(tno))
+            If col < low Then low = col
+            If col > high Then high = col
+        Next tno
+        For Each endpoint In endpoints
+            Set chosen = New Collection: Set scope = scopes(endpoint)
+            For Each tno In scope
+                col = CLng(lookup(wt & "|" & CStr(tno))): chosen.Add Array(col, CStr(tno))
+                If col < low Then low = col
+                If col > high Then high = col
+            Next tno
+            info = endpoints(endpoint): groups.Add Array(CStr(endpoint), CStr(info(2)), chosen)
+        Next endpoint
+        batch = 131072 \ (high - low + 1): If batch > 4096 Then batch = 4096
+        For start = 2 To last Step batch
+            take = last - start + 1: If take > batch Then take = batch
+            xy = source.Cells(start, 1).Resize(take, 6).Value2
+            flags = source.Cells(start, low).Resize(take, high - low + 1).Value2
+            For r = 1 To take
+                wList = "": rList = ""
+                For Each item In writeCols
+                    If MonitorFlag(flags, r, CLng(item(0)) - low + 1) Then
+                        If Len(wList) > 0 Then wList = wList & ","
+                        wList = wList & CStr(item(1))
+                    End If
+                Next item
+                For Each item In readCols
+                    If MonitorFlag(flags, r, CLng(item(0)) - low + 1) Then
+                        If Len(rList) > 0 Then rList = rList & ","
+                        rList = rList & CStr(item(1))
+                    End If
+                Next item
+                For Each group In groups
+                    key = wt & "|" & CStr(group(0)) & "|" & CStr(xy(r, 1)) & "|" & CStr(xy(r, 2)) & "|" & CStr(xy(r, 3))
+                    If catalog.Exists(key) Then
+                        functionList = "": Set chosen = group(2)
+                        For Each item In chosen
+                            If MonitorFlag(flags, r, CLng(item(0)) - low + 1) Then
+                                If Len(functionList) > 0 Then functionList = functionList & ","
+                                functionList = functionList & CStr(item(1))
+                            End If
+                        Next item
+                        If Len(functionList) > 0 Then
+                            code = 14: label = "No monitor item Fail"
+                            If Len(wList) > 0 And Len(rList) > 0 Then
+                                code = 13: label = "Write&Read Fail"
+                            ElseIf Len(wList) > 0 Then
+                                code = 11: label = "Write Fail"
+                            ElseIf Len(rList) > 0 Then
+                                code = 12: label = "Read Fail"
+                            End If
+                            entry = catalog(key): entry(10) = CLng(entry(10)) + 1: entry(code) = CLng(entry(code)) + 1: catalog(key) = entry
+                            used = used + 1: total = total + 1
+                            packet(used, 1) = wt: packet(used, 2) = group(1): packet(used, 3) = CLng(group(0))
+                            For j = 1 To 6: packet(used, j + 3) = xy(r, j): Next j
+                            packet(used, 10) = functionList: packet(used, 11) = wList: packet(used, 12) = rList
+                            packet(used, 13) = IIf(Len(wList) > 0, 1, 0): packet(used, 14) = IIf(Len(rList) > 0, 1, 0)
+                            packet(used, 15) = label: packet(used, 16) = start + r - 1
+                            If used = 512 Then WriteMonitorPacket detail, packet, used, dest
+                        End If
+                    End If
+                Next group
+            Next r
+            Application.StatusBar = "Match " & wt & " Function / Monitor Address: " & start + take - 1 & "/" & last
+        Next start
+    Next phase
+    WriteMonitorPacket detail, packet, used, dest
+    summaryDest = 5: summaryUsed = 0: ReDim sums(1 To 512, 1 To 16)
+    For Each colKey In catalog
+        entry = catalog(colKey)
+        If CLng(entry(10)) <> CLng(entry(7)) Then Err.Raise vbObjectError + 495, , "Pattern Address count changed since coverage; refresh analysis."
+        summaryUsed = summaryUsed + 1
+        sums(summaryUsed, 1) = entry(0): sums(summaryUsed, 2) = entry(1): sums(summaryUsed, 3) = entry(2)
+        sums(summaryUsed, 4) = entry(3): sums(summaryUsed, 5) = entry(4)
+        chipKey = CStr(entry(0)) & "|" & CStr(entry(1)) & "|" & CStr(entry(3)) & "|" & CStr(entry(4))
+        sums(summaryUsed, 6) = chipCounts(chipKey): sums(summaryUsed, 7) = entry(5): sums(summaryUsed, 8) = entry(6)
+        sums(summaryUsed, 9) = entry(10)
+        If CLng(entry(10)) > 0 Then
+            For j = 11 To 14: sums(summaryUsed, j - 1) = entry(j): Next j
+            sums(summaryUsed, 16) = "Recorded Address classified"
+        Else
+            sums(summaryUsed, 16) = "No Function Address"
+        End If
+        sums(summaryUsed, 14) = entry(9): sums(summaryUsed, 15) = entry(8)
+        If summaryUsed = 512 Then WriteMonitorPacket summary, sums, summaryUsed, summaryDest
+    Next colKey
+    WriteMonitorPacket summary, sums, summaryUsed, summaryDest
+    For Each item In Array("Monitor Fail Analysis", "Monitor BLK Summary")
+        With outputWorkbook.Worksheets(CStr(item))
+            .Range("A1:P1").Merge: .Range("A1").Value2 = CStr(item)
+            .Range("A2:P2").Merge: .Range("A2").Value2 = "Same WT + full X/Y/BLK/WL/BL/IO; any configured W-Low pBL / R-Low pBL voltage. No monitor item Fail = no recorded matching Monitor flag; unrecorded Function bits are not classified."
+            .Range("A3:P3").Merge: .Range("A3").Value2 = "Map-counted BLKs only; Function Pattern interval union; exact numeric TNO mapping. Source: " & wb.Name
+        End With
+    Next item
+    FormatMonitorOutput detail, dest - 1: FormatMonitorOutput summary, summaryDest - 1
+    If dest > 5 Then
+        With detail.Range("O5:O" & dest - 1)
+            .FormatConditions.Add Type:=xlExpression, Formula1:="=$O5=""Write&Read Fail"""
+            .FormatConditions(.FormatConditions.Count).Interior.Color = RGB(255, 237, 213)
+        End With
+    End If
+    BLKVminEngine.BLK_OrderSheets outputWorkbook
+    BLKVminEngine.BLK_BuildChipMonitorMap wb, outputWorkbook
+    BuildMonitorFailAnalysis = "Monitor analysis complete. Map BLKs=" & catalog.Count & "; classified Addresses=" & total
+    Exit Function
+Failed:
+    errorText = "Monitor analysis failed (" & Err.Number & "): " & Err.Description
+    On Error Resume Next
+    If Not detail Is Nothing Then detail.UsedRange.ClearContents: detail.Range("A2").Value2 = errorText
+    If Not summary Is Nothing Then summary.UsedRange.ClearContents: summary.Range("A2").Value2 = errorText
+    If Not outputWorkbook Is Nothing Then BLKVminEngine.BLK_ClearChipMonitorMap outputWorkbook
+    BuildMonitorFailAnalysis = errorText
 End Function
 
 Public Sub WriteOperationLog(ByVal wb As Workbook, ByVal operation As String, ByVal message As String, Optional ByVal failed As Boolean = False)
@@ -949,6 +1219,46 @@ Public Sub WriteOperationLog(ByVal wb As Workbook, ByVal operation As String, By
     ws.Range("A1:D5").BorderAround LineStyle:=xlContinuous, Weight:=xlThin, Color:=RGB(80, 80, 80)
     If failed Then ws.Cells(row, 3).Interior.Color = RGB(255, 217, 102) Else ws.Cells(row, 3).Interior.Color = RGB(220, 252, 231)
     BLKVminEngine.BLK_SizeOutput ws
+    BLKVminEngine.BLK_BuildImportInfo wb
+End Sub
+
+Public Function IsMonitorCountCell(ByVal ws As Object, ByVal target As Range) As Boolean
+    Dim header As Range, wt As String
+    On Error GoTo Done
+    If TypeName(ws) <> "Worksheet" Or target.CountLarge <> 1 Then Exit Function
+    If ws.Name <> "W&R Map" Or target.Row < 5 Then Exit Function
+    If IsError(target.Value2) Then Exit Function
+    If Not IsNumeric(target.Value2) Then Exit Function
+    If CDbl(target.Value2) <= 0 Then Exit Function
+    Set header = ws.Cells(3, target.Column).MergeArea.Cells(1, 1): wt = CStr(header.Value2)
+    IsMonitorCountCell = (wt = "WT1" Or wt = "WT2" Or wt = "WT3") And target.Column >= header.Column
+Done:
+End Function
+
+Public Sub OpenMonitorCountDetails(ByVal wb As Workbook, ByVal ws As Object, ByVal target As Range)
+    Dim view As Worksheet, header As Range, wt As String, label As String, x As Long, y As Long, origin As Long, parity As Long
+    On Error GoTo Failed
+    If Not IsMonitorCountCell(ws, target) Then Exit Sub
+    Set header = ws.Cells(3, target.Column).MergeArea.Cells(1, 1): wt = CStr(header.Value2): origin = header.Column - 1
+    x = CLng(ws.Cells(4, target.Column).MergeArea.Cells(1, 1).Value2)
+    y = CLng(ws.Cells(5 + 2 * ((target.Row - 5) \ 2), origin).MergeArea.Cells(1, 1).Value2)
+    parity = (target.Column - header.Column) Mod 2
+    If (target.Row - 5) Mod 2 = 0 Then
+        If parity = 0 Then label = "Read Fail" Else label = "Write Fail"
+    Else
+        If parity = 0 Then label = "Write&Read Fail" Else label = "No monitor item Fail"
+    End If
+    Set view = wb.Worksheets("Monitor Fail Analysis")
+    If Left$(CStr(view.Range("A2").Value2), 14) = "Source updated" Then Err.Raise vbObjectError + 498, , "Refresh analysis before opening Monitor detail."
+    If view.FilterMode Then view.ShowAllData
+    With view.Range("A4:P" & view.Cells(view.Rows.Count, 1).End(xlUp).Row)
+        .AutoFilter Field:=1, Criteria1:=wt: .AutoFilter Field:=4, Criteria1:=x: .AutoFilter Field:=5, Criteria1:=y
+        .AutoFilter Field:=15, Criteria1:=label
+    End With
+    view.Activate: Application.Goto view.Range("A4"), True
+    Exit Sub
+Failed:
+    MsgBox "Cannot open Monitor detail: " & Err.Description, vbExclamation
 End Sub
 
 Public Function IsMapFailCell(ByVal mapSheet As Object, ByVal target As Range) As Boolean
@@ -1103,7 +1413,12 @@ Public Function OpenMapChipDetails(ByVal wb As Workbook, ByVal mapSheet As Objec
     stageSheet.Cells(detailHeader - 1, 1).Resize(1, 11).Merge
     stageSheet.Cells(detailHeader - 1, 1).Value2 = "Detailed Fail Address | rows=" & totalAddresses & " | exact WT/TNO/Chip/BLK"
     stageSheet.Cells(detailHeader, 1).Resize(1, 11).Value2 = Array("WT", "TNO", "Func.", "Test Voltage", "X", "Y", "BLK", "WL", "BL", "IO", "Source Row")
-    If totalAddresses > 0 Then stageSheet.Cells(detailStart, 1).Resize(totalAddresses, 11).Value2 = detailPacket
+    If totalAddresses > 0 Then
+        stageSheet.Cells(detailStart, 1).Resize(totalAddresses, 11).Value2 = detailPacket
+        For detailRow = 1 To totalAddresses
+            stageSheet.Hyperlinks.Add Anchor:=stageSheet.Cells(detailStart + detailRow - 1, 11), Address:="", SubAddress:="'Fail Address'!A" & CLng(detailPacket(detailRow, 11)), TextToDisplay:=CStr(detailPacket(detailRow, 11))
+        Next detailRow
+    End If
     With stageSheet.UsedRange
         .Font.Name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 26
         .Columns.AutoFit
@@ -1275,22 +1590,62 @@ Private Sub RecordImportIndex(ByVal wb As Workbook, ByVal mode As String, ByRef 
     start = IIf(mode = "Address", 2, 5)
     ws.Cells(start, 8).Resize(3, 8).Value2 = manifest
     ws.Visible = xlSheetVeryHidden
+    If mode = "Address" Then AddFailAddressNotes wb
     MarkAuditStale wb, mode
     BLKVminEngine.BLK_InvalidateDetails wb, mode & " source updated. Double-click a Fail Chip to refresh details."
 End Sub
 
+Private Sub AddFailAddressNotes(ByVal wb As Workbook)
+    Dim idx As Worksheet, ws As Worksheet, data As Variant, i As Long, last As Long, col As Long, monitors As Object, cfg As Variant
+    Set idx = wb.Worksheets("Import Index"): Set ws = wb.Worksheets("Fail Address")
+    ws.Rows(1).ClearComments: last = idx.Cells(idx.Rows.Count, 1).End(xlUp).Row
+    If last < 2 Then Exit Sub
+    Set monitors = CreateObject("Scripting.Dictionary"): cfg = wb.Worksheets("Config").Range("A2:A901").Value2
+    For i = 1 To UBound(cfg, 1): If Len(CStr(cfg(i, 1))) > 0 Then monitors(CStr(CLng(cfg(i, 1)))) = True
+    Next i
+    data = idx.Range("A2:D" & last).Value2
+    For i = 1 To UBound(data, 1)
+        col = CLng(data(i, 3))
+        ws.Cells(1, col).AddComment CStr(data(i, 1)) & " | " & IIf(monitors.Exists(CStr(data(i, 2))), "Monitor", "Function") & " | TNO=" & CStr(data(i, 2))
+    Next i
+End Sub
+
 Private Sub MarkAuditStale(ByVal wb As Workbook, ByVal mode As String)
     On Error Resume Next
+    With wb.Worksheets("Wafer Maps")
+        .Range("A2").Value2 = mode & " source updated. Refresh Maps before using these figures."
+        .Range("A2:U2").Interior.Color = RGB(255, 217, 102)
+    End With
+    With wb.Worksheets("Fail Analysis")
+        .Range("A3").Value2 = mode & " source updated. Refresh Map / Address comparison before using these rows."
+        .Range("A3:P3").Interior.Color = RGB(255, 217, 102)
+    End With
     With wb.Worksheets("Missing BLK Address")
         .Range("A2").Value2 = mode & " source import updated. Refresh BLK Address comparison before using its rows."
         .Range("A2:L2").Interior.Color = RGB(255, 217, 102)
     End With
-    With wb.Worksheets("Fail BLK Address Map")
+    With wb.Worksheets("FailBLK Loss Map")
         If Len(CStr(.Range("A1").Value2)) > 0 Then
             .Range("A1").Value2 = "Address/FBC updated - refresh Map"
             .Range("A1").Interior.Color = RGB(255, 217, 102): .Range("A1").Font.Color = vbBlack
         End If
     End With
+    With wb.Worksheets("Monitor Fail Analysis")
+        .Range("A2").Value2 = "Source updated. Refresh Map / Address comparison to update Monitor analysis."
+        .Range("A2:P2").Interior.Color = RGB(255, 217, 102)
+    End With
+    With wb.Worksheets("Monitor BLK Summary")
+        .Range("A2").Value2 = "Source updated. Refresh Map / Address comparison to update Monitor analysis."
+        .Range("A2:P2").Interior.Color = RGB(255, 217, 102)
+    End With
+
+    With wb.Worksheets("W&R Map")
+        If Len(CStr(.Range("A1").Value2)) > 0 Then
+            .Range("A1").Value2 = "Monitor source updated - refresh Map"
+            .Range("A1").Interior.Color = RGB(255, 217, 102): .Range("A1").Font.Color = vbBlack
+        End If
+    End With
+
 End Sub
 
 
@@ -1650,3 +2005,17 @@ Private Function IntegerInRange(ByVal text As String, ByVal lower As Double, ByV
     If negative Then number = -number
     IntegerInRange = (number >= lower And number <= upper)
 End Function
+
+Public Sub GoWaferMap()
+    BLKVminEngine.BLK_GoWaferMap ThisWorkbook
+End Sub
+Public Sub ExportWaferMapsPPT()
+    Dim path As String, started As Date
+    On Error GoTo Failed
+    started = Now
+    path = BLKVminEngine.BLK_ExportMapsPPT(ThisWorkbook)
+    MsgBox "PPT saved: " & path & vbCrLf & "Seconds: " & DateDiff("s", started, Now), vbInformation
+    Exit Sub
+Failed:
+    MsgBox "PPT export failed: " & Err.Description, vbExclamation
+End Sub

@@ -1,0 +1,24 @@
+{
+  "feature": "Map Chip double-click -> column-major256 BLK voltage grid -> BLK double-click voltage/observed WR details",
+  "independent_ASC_BLK_cases": 2304,
+  "chip_contexts": 9,
+  "source_FBC_records": 11032,
+  "checks": [
+    "Hard Fail gate",
+    "previous WT all Function gate",
+    "Scan before March",
+    "first Function TNO503 and1.035V in Demo",
+    "unknown Function voltage",
+    "missing earlier FBC yields uncertain first voltage",
+    "W1/R1/Equal1/Unknown2 -> Mixed fixture",
+    "missing Monitor voltage -> Insufficient",
+    "one-sided flags not Pass",
+    "original Address tables and links retained",
+    "actual Workbook double-click and Source Row events",
+    "chart reused across BLKs",
+    "new Address reads use512-row batches"
+  ],
+  "output_scope": "Chip Fail Details; no new analysis sheet;3D not included",
+  "native_engine": "Desktop Excel COM, saved and reopened",
+  "compatibility": "Excel2016-compatible VBA; no Python runtime dependency"
+}

@@ -1,0 +1,45 @@
+{
+  "native_excel": "Desktop Excel COM: fresh import3 files, repeat3-to-1-to-2, production save/reopen",
+  "independent_CSV_matches": {
+    "Map_rows": 384,
+    "coverage_rows": 209,
+    "Monitor_Address_rows": 477,
+    "Monitor_BLK_rows": 209,
+    "Chip_quadrants": 192
+  },
+  "exhaustive_ASC_Address_TNO_flags": 6809,
+  "Fail_Address_header_notes": 177,
+  "interaction": [
+    "4 Monitor categories",
+    "merged pass Chip",
+    "merged Scan Fail Chip",
+    "Loss BLK scope",
+    "Source Row exact jump"
+  ],
+  "presentation": [
+    "Calibri11 tables",
+    "Map24 axes20",
+    "uniform2x2Chip",
+    "dashed inside/medium solid outside",
+    "blue wholeChip merged",
+    "5 original buttons retained"
+  ],
+  "files": [
+    {
+      "file": "ASC_Wafer_Analysis.xlsm",
+      "ZIP_CRC": "pass",
+      "bytes": 304733
+    },
+    {
+      "file": "ASC_Wafer_Analysis_Demo64_Frozen_Address.xlsm",
+      "ZIP_CRC": "pass",
+      "bytes": 18161630
+    }
+  ],
+  "Fail_Address_layout": {
+    "frozen_rows": 1,
+    "frozen_columns": 7,
+    "grid": "thin continuous borders",
+    "native_reopen": "passed; demo2444 rows and177 notes preserved"
+  }
+}

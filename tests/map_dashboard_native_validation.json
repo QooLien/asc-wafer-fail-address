@@ -1,0 +1,37 @@
+{
+  "demo": "64Chip previously validated ASC simulation",
+  "Map_checks": {
+    "Count_cells": 384,
+    "Pattern_quadrants": 1536,
+    "Loss_cells": 384,
+    "navigation_buttons": 18,
+    "panel_count": 18,
+    "Config_buttons_retained": 5
+  },
+  "integration": [
+    "WT1/Scan Read quadrant to exact Chip Fail Details",
+    "Source Row exact Fail Address hyperlink",
+    "repeat import1 then3 files",
+    "no duplicate buttons",
+    "old Map sources veryHidden",
+    "Fail Address freeze row1/columnsA:G retained"
+  ],
+  "PPT": {
+    "slides": 1,
+    "width_cm": 37,
+    "bitmap_images": 18,
+    "file_media": "PNG",
+    "overlaps": 0,
+    "outside_slide": 0,
+    "order": [
+      "WT1 Scan",
+      "WT1 March",
+      "WT2 Scan",
+      "WT2 March",
+      "WT3 Scan",
+      "WT3 March"
+    ],
+    "inset": "Loss bitmap below right of each lower quadrant map"
+  },
+  "validation_engine": "Native desktop Excel and PowerPoint; saved/reopened"
+}
