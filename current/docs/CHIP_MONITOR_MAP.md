@@ -1,3 +1,5 @@
+> 最新版面、灰字與Cat1～4藍底規則見 [Map版面規則](../MAP_LAYOUT.md)。下文保留較早版規格供對照。
+
 # Chip Monitor vs Function Map 固定規格
 
 最新版改為 Fail Bit Match **數量**，不是 R/W/RW/X 文字。

@@ -5,3 +5,5 @@ Validation JSON records summarize completed desktop Excel/PowerPoint tests. BLK 
 `expected_blk_voltage.py` derives2304 expected BLK states/first voltages/WR counts from the original synthetic ASC and Config CSV. PowerShell tests require desktop Excel and an editable project-root path. `test_blk_voltage_events.ps1` uses a test-only event wrapper; it is not embedded in the release workbooks. These scripts retain the development workspace paths for reproducibility and may require adapting the root/build fixture location.
 
 Excel users do not need Python or these tests to run the shipped XLSM.
+
+For v0.26.0 Map styling/blue rules, use `map_layout_native_validation.json` and `Expected_Map_Layout_Blue.csv`. `expected_map_layout.py` derives the384 Chip/WT/Pattern blue states from synthetic ASC/CATLST and configured Stop Signs. Earlier JSON files describe the validation at their original feature versions.

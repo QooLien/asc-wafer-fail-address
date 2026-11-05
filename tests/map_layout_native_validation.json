@@ -1,0 +1,52 @@
+{
+  "layout": {
+    "zoom": 70,
+    "column_width": 6,
+    "map_row_height": 22,
+    "bold": true,
+    "lower_right_font_RGB": [
+      128,
+      128,
+      128
+    ]
+  },
+  "titles": {
+    "quad_example": "X768#11 BL=0 WT1 Scan Fail",
+    "count_example": "WT1 X768#11 1.20v~0.56v Scan Fail BLK",
+    "voltage_range": "actual max/min configured Function voltage within Pattern interval",
+    "BL0_label_only": true
+  },
+  "quad_blue": {
+    "WT1_categories": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "current_WT_Pattern_endpoint_all256_FBC_zero": true,
+    "missing_is_not_zero": true,
+    "positive_matches_override_blue": true
+  },
+  "native_validation": {
+    "count_values_unchanged": 384,
+    "quadrant_values_unchanged": 1536,
+    "independent_Cat_endpoint_checks": 384,
+    "blue_cases_in_fixture": 157,
+    "Cat_bounds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "nonendpoint_extrema": [
+      1.337,
+      0.333
+    ],
+    "test_inputs": "read-only artificial edits discarded; original SIMMAP Demo retained",
+    "native_print_preview": "verified;gray numbers,title,row22/bold all visible",
+    "final_save_reopen": true,
+    "navigation_buttons": "fit new width,no overlap"
+  }
+}

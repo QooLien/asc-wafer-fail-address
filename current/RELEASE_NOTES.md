@@ -1,3 +1,21 @@
+# Wafer ASC 分析 v0.26.0
+
+[下載正式 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.26.0/ASC_Wafer_Analysis_Map_Layout.xlsm) · [下載64顆Chip Demo](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.26.0/ASC_Wafer_Analysis_Map_Layout_Demo64.xlsm) · [下載完整套件](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.26.0/ASC_Wafer_Analysis_Map_Layout_Latest.zip)
+
+- **Map版面**：縮放70%、欄寬6、Map區列高22，字體加粗；四宮格右下數量改RGB(128,128,128)灰字。導覽按鈕配合欄寬縮排，不重疊。
+- **四宮格標題**：例如 `X768#11 BL=0 WT1 Scan Fail`；March／WT2／WT3依對應Pattern與WT命名。Lot先取前6碼，再去掉前2碼，Wafer補足兩位。
+- **Fail BLK Count標題**：例如 `WT1 X768#11 1.20v~0.56v Scan Fail BLK`。實際查找該Pattern Function區間最高／最低電壓，不只取首尾測試點。缺電壓顯示`V?~V?`。
+- **BL=0僅為標題文字**：統計仍包含BL0～15，所有Fail數字維持不變。
+- **四宮格藍底**：Cat固定採WT1；Cat1～4且當前WT／Pattern終點完整256個BLK FBC全部為0時，整Chip填RGB(0,176,240)。缺資料不當0、Cat0／5以上不依此條件填藍；已有Fail數字時優先保留。
+- 保留v0.25.0的BLK電壓雙擊、Observed W/R分析、Source Row、合併Map與一鍵PPT，以及Fail Address凍結與格線。
+- 原生Excel驗證：384個Count與1536個四格數值不變；384組獨立Cat／終點FBC條件、Cat0～5邊界、非首尾站電壓極值、標題、數字優先與儲存重開均通過。
+
+全部VBA已內嵌，執行不需Python；採Excel2016相容VBA。詳見 [Map版面與標題規則](MAP_LAYOUT.md)。
+
+---
+
+以下為歷史版本說明；最新版以上方v0.26.0為準。
+
 # Wafer ASC 分析 v0.25.0
 
 [下載正式 VBA Excel](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.25.0/ASC_BLK_Voltage_Analysis.xlsm) · [下載64顆Chip Demo](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.25.0/ASC_BLK_Voltage_Analysis_Demo64.xlsm) · [下載完整套件（含VBA及模擬ASC）](https://github.com/QooLien/asc-wafer-fail-address/releases/download/v0.25.0/ASC_BLK_Voltage_Analysis_Latest.zip)

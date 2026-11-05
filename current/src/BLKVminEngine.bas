@@ -1463,7 +1463,7 @@ Public Sub BLK_BuildChipMonitorMap(ByVal wb As Workbook, ByVal outputWorkbook As
                 With ws.Cells(row + 1, col): .Value2 = CLng(totals(2)): .Interior.Color = RGB(255, 102, 0): End With
             End If
             If CLng(totals(3)) > 0 Then
-                With ws.Cells(row + 1, col + 1): .Value2 = CLng(totals(3)): .Font.Color = RGB(255, 255, 255): .Interior.Pattern = xlNone: End With
+                With ws.Cells(row + 1, col + 1): .Value2 = CLng(totals(3)): .Font.Color = RGB(128, 128, 128): .Interior.Pattern = xlNone: End With
             End If
         Next item
         ws.Cells(3, origin).Resize(2 * (maxY - minY + 1) + 2, panelWidth - 1).BorderAround LineStyle:=xlContinuous, Weight:=xlThin
@@ -1621,8 +1621,8 @@ Private Sub MapFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal title As St
     Dim span As Long, phase As Long, origin As Long, x As Long, y As Long, c As Long, r As Long
     span = 2 * (maxX - minX + 1) + 2
     With ws.Cells(top, 1).Resize(2 * (maxY - minY + 1) + 6, span * phases)
-        .Font.Name = "Calibri": .Font.Size = 24: .Font.Color = vbBlack
-        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .ColumnWidth = 6.5: .RowHeight = 36
+        .Font.Name = "Calibri": .Font.Size = 24: .Font.Color = vbBlack: .Font.Bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .ColumnWidth = 6: .RowHeight = 22
     End With
     ws.Cells(top, 1).Resize(1, span * phases).Merge
     With ws.Cells(top, 1): .Value2 = title: .WrapText = True: .RowHeight = 60: .Font.Bold = True: .Font.Color = vbWhite: .Interior.Color = RGB(23, 50, 77): End With
@@ -1799,7 +1799,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
                             .Value2 = value
                             If j = 1 Then .Interior.Color = RGB(255, 217, 202)
                             If j = 2 Then .Interior.Color = RGB(255, 102, 0)
-                            If j = 3 Then .Font.Color = vbWhite
+                            If j = 3 Then .Font.Color = RGB(128, 128, 128)
                         End If
                     End With
                     IndexMapCell index, dest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, "", x, y, "Monitor Address Count", CStr(category(j)), "", value, IIf(value > 0, "Recorded matches", "No recorded matches")
@@ -1812,7 +1812,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
         If ws.Name = "W&R Map" Or ws.Name = "FailBLK Loss Map" Or Right$(ws.Name, 8) = "Fail Map" Then
             ws.Activate
             With Application.ActiveWindow
-                .DisplayGridlines = False: .Zoom = IIf(phases = 3, 45, IIf(phases = 2, 65, 90))
+                .DisplayGridlines = False: .Zoom = 70
                 .FreezePanes = False: .SplitColumn = 1: .SplitRow = 4: .FreezePanes = True
                 .ScrollRow = 1: .ScrollColumn = 1
             End With
@@ -2317,24 +2317,26 @@ End Sub
 
 Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim ws As Worksheet, loc As Worksheet, idx As Worksheet, source As Worksheet
-    Dim coords As Object, patterns As Object, wanted As Object, hard As Object, pass As Object, counts As Object
+    Dim coords As Object, patterns As Object, wanted As Object, hard As Object, counts As Object
     Dim ordered As Collection, item As Variant, xy As Variant, data As Variant, mapIndex As Variant
     Dim kind As Variant, name As Variant, detail As Variant, keys As Variant, key As String, label As String
     Dim last As Long, i As Long, j As Long, phase As Long, phases As Long, slot As Long, panelDest As Long, mapDest As Long
     Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long, r As Long, c As Long
     Dim span As Long, height As Long, top As Long, sourceTop As Long, sourceLeft As Long, patternIndex As Long, n As Long
     Dim classNames As Variant, v As Long, keep As Long, packet() As Variant
+    Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
+    Dim navStep As Double
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 6) = "navMap" Then ws.Shapes(i).Delete
     Next i
-    ws.Columns("A:V").ColumnWidth = 6.5: ws.Rows("1:8").RowHeight = 26
+    ws.Columns("A:V").ColumnWidth = 6: ws.Rows("1:8").RowHeight = 26
     ws.Range("A1:U1").Merge: ws.Range("A1").Value2 = "Wafer Maps"
     With ws.Range("A1:U1"): .Font.Name = "Calibri": .Interior.Color = RGB(23, 50, 77): .Font.Color = vbWhite: .Font.Size = 24: .Font.Bold = True: .RowHeight = 36: .HorizontalAlignment = xlCenter: End With
     ws.Range("A2:U2").Merge: ws.Range("A2").Value2 = "Fail BLK / W&R matching / Fail BLK loss"
-    MapNavButton ws, "navMapPPT", "Export PPT", ws.Range("A7").Left, ws.Range("A7").Top, 145, "", "ExportWaferMapsPPT"
-    MapNavButton ws, "navMapRefresh", "Refresh Maps", ws.Range("E7").Left, ws.Range("E7").Top, 145, "", "BuildFailMaps"
+    MapNavButton ws, "navMapPPT", "Export PPT", ws.Range("A7").Left, ws.Range("A7").Top, ws.Range("A7:D7").Width - 4, "", "ExportWaferMapsPPT"
+    MapNavButton ws, "navMapRefresh", "Refresh Maps", ws.Range("E7").Left, ws.Range("E7").Top, ws.Range("E7:H7").Width - 4, "", "BuildFailMaps"
     ws.Range("I7:U7").Merge: ws.Range("I7").Value2 = "Double-click Chip for details"
     last = idx.Cells(idx.Rows.Count, 46).End(xlUp).Row: idx.Cells(1, 46).Resize(last, 8).ClearContents
     idx.Cells(1, 46).Resize(1, 8).Value2 = Array("Sheet", "Kind", "WT", "Pattern", "Top", "Left", "Rows", "Columns"): panelDest = 2
@@ -2355,7 +2357,15 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     span = 2 * (maxX - minX + 1) + 2: height = 2 * (maxY - minY + 1) + 2
     phases = BLK_PhaseCount(wb): Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
     If patterns.Count = 0 Then GoTo Finish
-    keys = patterns.Keys: Set pass = ConfirmedFunctionPassChips(wb, coords, phases)
+    navStep = ws.Range("A1:U1").Width / (phases * patterns.Count)
+    If navStep > 130 Then navStep = 130
+    keys = patterns.Keys
+    Set quadCategories = BLK_Categories(wb, "WT1")
+    Set quadEndpoints = CreateObject("Scripting.Dictionary")
+    For Each name In patterns
+        detail = patterns(name): quadEndpoints(CStr(detail(0))) = True
+    Next name
+    Set quadMasks = LoadMapCounts(wb.Worksheets("FBC by BLK"), quadEndpoints)
     Set counts = CreateObject("Scripting.Dictionary"): Set source = wb.Worksheets("Monitor Fail Analysis")
     last = source.Cells(source.Rows.Count, 1).End(xlUp).Row
     If last >= 5 Then
@@ -2393,9 +2403,11 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                 End Select
                 source.Cells(sourceTop, sourceLeft).Resize(height, span - 1).Copy Destination:=ws.Cells(top, 1)
                 With ws.Cells(top, 2).MergeArea.Cells(1, 1)
-                    .Value2 = "WT" & phase & " " & CStr(name) & " - " & label: .Font.Size = 24
+                    .Value2 = MapPanelCaption(wb, CStr(kind), "WT" & phase, CStr(name))
+                    .Font.Size = 24: .Font.Bold = True: .WrapText = False: .ShrinkToFit = True
                 End With
-                ws.Rows(top).Resize(height).RowHeight = 36
+                ws.Rows(top).Resize(height).RowHeight = 22
+                ws.Cells(top, 1).Resize(height, span - 1).Font.Bold = True
                 If CStr(kind) = "QUAD" Then
                     For Each item In ordered
                         xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
@@ -2404,9 +2416,9 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                             .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack
                         End With
                         key = "WT" & phase & "|" & CStr(item)
-                        If pass.Exists(key) Then
+                        If QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
                             With ws.Cells(r, c).Resize(2, 2): .Merge: .Interior.Color = RGB(0, 176, 240): End With
-                            IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "All Function Pass"
+                            IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                         Else
                             For j = 0 To 3
                                 key = "WT" & phase & "|" & CStr(name) & "|" & CStr(item) & "|" & CStr(classNames(j)): v = 0
@@ -2416,7 +2428,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                                         .Value2 = v
                                         If j = 1 Then .Interior.Color = RGB(255, 217, 202)
                                         If j = 2 Then .Interior.Color = RGB(255, 102, 0)
-                                        If j = 3 Then .Font.Color = vbWhite
+                                        If j = 3 Then .Font.Color = RGB(128, 128, 128)
                                     End If
                                 End With
                                 IndexMapCell idx, mapDest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, CStr(name), x, y, "Monitor Address Count", CStr(classNames(j)), CStr(detail(0)), v, IIf(v > 0, "Recorded matches", "No recorded matches")
@@ -2437,7 +2449,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                 idx.Cells(panelDest, 46).Resize(1, 8).Value2 = Array("Wafer Maps", kind, "WT" & phase, name, top, 1, height, span - 1): panelDest = panelDest + 1
                 n = 3: If CStr(kind) = "QUAD" Then n = 4
                 If CStr(kind) = "LOSS" Then n = 5
-                MapNavButton ws, "navMap_" & kind & "_" & slot, "WT" & phase & " " & CStr(name) & " " & label, ws.Cells(n, 1).Left + (slot - 1) * 130, ws.Cells(n, 1).Top, 126, "A" & top
+                MapNavButton ws, "navMap_" & kind & "_" & slot, "WT" & phase & " " & CStr(name) & " " & label, ws.Cells(n, 1).Left + (slot - 1) * navStep, ws.Cells(n, 1).Top, navStep - 4, "A" & top
                 top = top + height + 4
             Next patternIndex
         Next phase
@@ -2942,4 +2954,68 @@ Done:
 Failed:
     BLK_ShowBLKVoltage = "Error: " & Err.Description
     Resume Done
+End Function
+Private Function MapLotWaferLabel(ByVal wb As Workbook, ByVal wt As String) As String
+    Dim idx As Worksheet, phase As Long, manifestRow As Long, lot As String, wafer As String
+    Set idx = wb.Worksheets("Import Index"): phase = CLng(Right$(wt, 1))
+    manifestRow = phase + 4
+    lot = Trim$(CStr(idx.Cells(manifestRow, 10).Value2)): wafer = Trim$(CStr(idx.Cells(manifestRow, 11).Value2))
+    If Len(lot) = 0 Or Len(wafer) = 0 Then
+        manifestRow = phase + 1
+        lot = Trim$(CStr(idx.Cells(manifestRow, 10).Value2)): wafer = Trim$(CStr(idx.Cells(manifestRow, 11).Value2))
+    End If
+    lot = Left$(lot, 6)
+    If Len(lot) > 2 Then lot = Mid$(lot, 3) Else lot = "LOT?"
+    If IsNumeric(wafer) And Len(wafer) > 0 Then wafer = Format$(CLng(wafer), "00") Else wafer = "??"
+    MapLotWaferLabel = lot & "#" & wafer
+End Function
+
+Private Function MapPatternVoltageRange(ByVal wb As Workbook, ByVal pattern As String) As String
+    Dim scope As Collection, item As Variant, maximum As Double, minimum As Double, found As Boolean, incomplete As Boolean
+    Set scope = VD_Scope(wb.Worksheets("Config"), pattern)
+    For Each item In scope
+        If IsEmpty(item(1)) Then
+            incomplete = True
+        Else
+            If Not found Then maximum = CDbl(item(1)): minimum = maximum: found = True
+            If CDbl(item(1)) > maximum Then maximum = CDbl(item(1))
+            If CDbl(item(1)) < minimum Then minimum = CDbl(item(1))
+        End If
+    Next item
+    If Not found Or incomplete Then
+        MapPatternVoltageRange = "V?~V?"
+    Else
+        MapPatternVoltageRange = VD_VoltageText(maximum) & "~" & VD_VoltageText(minimum)
+    End If
+End Function
+
+Private Function MapPanelCaption(ByVal wb As Workbook, ByVal kind As String, ByVal wt As String, ByVal pattern As String) As String
+    Dim identity As String
+    identity = MapLotWaferLabel(wb, wt)
+    Select Case kind
+        Case "QUAD"
+            'BL=0 is a requested title label only. Data still include BL0..15.
+            MapPanelCaption = identity & " BL=0 " & wt & " " & pattern & " Fail"
+        Case "COUNT"
+            MapPanelCaption = wt & " " & identity & " " & MapPatternVoltageRange(wb, pattern) & " " & pattern & " Fail BLK"
+        Case Else
+            MapPanelCaption = wt & " " & identity & " " & pattern & " Fail BLK / Loss BLK"
+    End Select
+End Function
+Private Function QuadPatternZero(ByVal categories As Object, ByVal masks As Object, ByVal observed As Object, ByVal wt As String, ByVal pattern As String, ByVal endpoint As String, ByVal chip As String) As Boolean
+    Dim category As Long, key As String, label As Variant
+    If Not categories.Exists(chip) Then Exit Function
+    category = CLng(categories(chip))
+    If category < 1 Or category > 4 Then Exit Function
+    key = wt & "|" & endpoint & "|" & chip
+    If Not masks.Exists(key) Then Exit Function
+    If CStr(masks(key)) <> String$(256, "0") Then Exit Function
+    'Recorded positive match counts retain priority over a whole-Chip blue fill.
+    For Each label In Array("Read Fail", "Write Fail", "Write&Read Fail", "No monitor item Fail")
+        key = wt & "|" & pattern & "|" & chip & "|" & CStr(label)
+        If observed.Exists(key) Then
+            If CLng(observed(key)) > 0 Then Exit Function
+        End If
+    Next label
+    QuadPatternZero = True
 End Function
