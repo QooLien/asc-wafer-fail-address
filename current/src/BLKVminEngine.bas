@@ -1685,6 +1685,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
     Dim i As Long, j As Long, phase As Long, phases As Long, minX As Long, maxX As Long, minY As Long, maxY As Long
     Dim last As Long, span As Long, top As Long, blockHeight As Long, origin As Long, r As Long, c As Long, dest As Long, maximum As Long, x As Long, y As Long
     Dim value As Variant, state As String, fail As Long, lost As Long, category As Variant, oldQuad As Worksheet, oldLastCol As Long, oldLastRow As Long
+    Dim dualCategories As Object, dualEndpoints As Object, dualMasks As Object
     Set loc = wb.Worksheets("Chip Locations"): last = loc.Cells(loc.Rows.Count, 1).End(xlUp).Row
     If last < 2 Then Exit Sub
     Set coords = CreateObject("Scripting.Dictionary"): data = loc.Range("A2:B" & last).Value2
@@ -1700,6 +1701,12 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
     phases = BLK_PhaseCount(wb): span = 2 * (maxX - minX + 1) + 2: blockHeight = 2 * (maxY - minY + 1) + 6
     Set pass = ConfirmedFunctionPassChips(wb, coords, phases)
     Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, blocked)
+    Set dualCategories = BLK_Categories(wb, "WT1")
+    Set dualEndpoints = CreateObject("Scripting.Dictionary")
+    For Each name In patterns
+        detail = patterns(name): dualEndpoints(CStr(detail(0))) = True
+    Next name
+    Set dualMasks = LoadMapCounts(wb.Worksheets("FBC by BLK"), dualEndpoints)
     Set counts = CreateObject("Scripting.Dictionary"): Set summary = wb.Worksheets("BLK Fail Count")
     last = summary.Cells(summary.Rows.Count, 1).End(xlUp).Row
     If last >= 2 Then
@@ -1759,9 +1766,9 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
                 If fail > maximum Then maximum = fail
                 r = top + 4 + 2 * (y - minY)
                 With summary.Cells(r, c).Resize(2, 2)
-                    If pass.Exists("WT" & phase & "|" & CStr(item)) Then
+                    If fail = 0 And lost = 0 And CatPatternZero(dualCategories, dualMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                         .Merge: .Interior.Color = RGB(0, 176, 240)
-                        IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "All Function Pass"
+                        IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                     ElseIf state <> "Pass" And state <> "Fail" Then
                         .Merge: .Interior.Color = MapColor(state)
                         IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, state
@@ -2326,6 +2333,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim classNames As Variant, v As Long, keep As Long, packet() As Variant
     Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
     Dim navStep As Double
+    Dim dualData As Object, dualValue As Variant, failCount As Long, lossCount As Long, dualState As String
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
     For i = ws.Shapes.Count To 1 Step -1
@@ -2379,6 +2387,20 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     last = idx.Cells(idx.Rows.Count, 33).End(xlUp).Row
     If last < 2 Then Err.Raise vbObjectError + 520, , "Refresh Maps before merging them."
     mapIndex = idx.Cells(2, 33).Resize(last - 1, 12).Value2
+    Set dualData = CreateObject("Scripting.Dictionary")
+    For i = 1 To UBound(mapIndex, 1)
+        If CStr(mapIndex(i, 1)) = "FailBLK Loss Map" Then
+            key = CStr(mapIndex(i, 4)) & "|" & CStr(mapIndex(i, 5)) & "|" & CStr(mapIndex(i, 6)) & "|" & CStr(mapIndex(i, 7))
+            If dualData.Exists(key) Then dualValue = dualData(key) Else dualValue = Array(0&, 0&, "No Data")
+            Select Case CStr(mapIndex(i, 8))
+                Case "Confirmed Pass": dualValue(2) = "Pass"
+                Case "Fail BLK Count": dualValue(0) = CLng(Val(CStr(mapIndex(i, 11)))): dualValue(2) = CStr(mapIndex(i, 12))
+                Case "Loss BLK Count": dualValue(1) = CLng(Val(CStr(mapIndex(i, 11)))): dualValue(2) = CStr(mapIndex(i, 12))
+                Case "Unavailable": dualValue(2) = CStr(mapIndex(i, 12))
+            End Select
+            dualData(key) = dualValue
+        End If
+    Next i
     ReDim packet(1 To UBound(mapIndex, 1), 1 To 12)
     For i = 1 To UBound(mapIndex, 1)
         If CStr(mapIndex(i, 1)) <> "Wafer Maps" Then
@@ -2434,6 +2456,31 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                                 IndexMapCell idx, mapDest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, CStr(name), x, y, "Monitor Address Count", CStr(classNames(j)), CStr(detail(0)), v, IIf(v > 0, "Recorded matches", "No recorded matches")
                             Next j
                         End If
+                        ChipBorder ws.Cells(r, c).Resize(2, 2)
+                    Next item
+                ElseIf CStr(kind) = "LOSS" Then
+                    For Each item In ordered
+                        xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+                        r = top + 2 + 2 * (y - minY): c = 2 + 2 * (x - minX)
+                        key = "WT" & phase & "|" & CStr(name) & "|" & CStr(item)
+                        dualValue = Array(0&, 0&, "No Data"): If dualData.Exists(key) Then dualValue = dualData(key)
+                        failCount = CLng(dualValue(0)): lossCount = CLng(dualValue(1)): dualState = CStr(dualValue(2))
+                        With ws.Cells(r, c).Resize(2, 2)
+                            .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack
+                            If failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
+                                .Merge: .Interior.Color = RGB(0, 176, 240)
+                                IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
+                            ElseIf dualState <> "Pass" And dualState <> "Fail" And failCount = 0 And lossCount = 0 Then
+                                .Merge: .Interior.Color = MapColor(dualState)
+                                IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, dualState
+                            Else
+                                ws.Cells(r, c).Resize(2, 1).Merge: ws.Cells(r, c + 1).Resize(2, 1).Merge
+                                If failCount > 0 Then ws.Cells(r, c).Value2 = failCount
+                                If lossCount > 0 Then ws.Cells(r, c + 1).Value2 = lossCount
+                                IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Fail BLK Count", "", CStr(detail(0)), failCount, dualState
+                                IndexMapCell idx, mapDest, ws, r, c + 1, "WT" & phase, CStr(name), x, y, "Loss BLK Count", "", CStr(detail(0)), lossCount, dualState
+                            End If
+                        End With
                         ChipBorder ws.Cells(r, c).Resize(2, 2)
                     Next item
                 Else
@@ -3003,13 +3050,8 @@ Private Function MapPanelCaption(ByVal wb As Workbook, ByVal kind As String, ByV
     End Select
 End Function
 Private Function QuadPatternZero(ByVal categories As Object, ByVal masks As Object, ByVal observed As Object, ByVal wt As String, ByVal pattern As String, ByVal endpoint As String, ByVal chip As String) As Boolean
-    Dim category As Long, key As String, label As Variant
-    If Not categories.Exists(chip) Then Exit Function
-    category = CLng(categories(chip))
-    If category < 1 Or category > 4 Then Exit Function
-    key = wt & "|" & endpoint & "|" & chip
-    If Not masks.Exists(key) Then Exit Function
-    If CStr(masks(key)) <> String$(256, "0") Then Exit Function
+    Dim key As String, label As Variant
+    If Not CatPatternZero(categories, masks, wt, endpoint, chip) Then Exit Function
     'Recorded positive match counts retain priority over a whole-Chip blue fill.
     For Each label In Array("Read Fail", "Write Fail", "Write&Read Fail", "No monitor item Fail")
         key = wt & "|" & pattern & "|" & chip & "|" & CStr(label)
@@ -3018,4 +3060,14 @@ Private Function QuadPatternZero(ByVal categories As Object, ByVal masks As Obje
         End If
     Next label
     QuadPatternZero = True
+End Function
+
+Private Function CatPatternZero(ByVal categories As Object, ByVal masks As Object, ByVal wt As String, ByVal endpoint As String, ByVal chip As String) As Boolean
+    Dim category As Long, key As String
+    If Not categories.Exists(chip) Then Exit Function
+    category = CLng(categories(chip))
+    If category < 1 Or category > 4 Then Exit Function
+    key = wt & "|" & endpoint & "|" & chip
+    If Not masks.Exists(key) Then Exit Function
+    CatPatternZero = (CStr(masks(key)) = String$(256, "0"))
 End Function

@@ -1,0 +1,37 @@
+{
+  "scope": "Apply WT1 Cat1-4 endpoint-zero blue to two-cell FailBLK Loss Map and retain four-quadrant behavior",
+  "rgb": [
+    0,
+    176,
+    240
+  ],
+  "native_excel_validation": {
+    "fail_count_values_unchanged": 384,
+    "loss_count_values_unchanged": 384,
+    "independent_blue_conditions": 384,
+    "blue_cases_per_view": 157,
+    "views": [
+      "visible dual",
+      "hidden dual source",
+      "visible quad"
+    ],
+    "Cat_bounds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "missing_FBC_not_blue": true,
+    "positive_Fail_Loss_preserved": true,
+    "left_right_detail_navigation": true,
+    "save_reopen_both_XLSM": true,
+    "native_PDF_visual_QA": true
+  },
+  "logs": [
+    "PASS final save/reopen ASC_Wafer_Analysis_Cat_Maps.xlsm\nPASS384 Fail counts and384 Loss counts unchanged;384 independent blue cases agree across dual source,visible dual andquad;157 blue per view.\nPASS dual left→BLK voltage grid;right→oneNo Address BLK;no fake Addresses.\nPASS final save/reopen ASC_Wafer_Analysis_Cat_Maps_Demo64.xlsm\n",
+    "PASS dual andquad FBC-zero Cat1/2/3/4 blue;Cat5/0 not blue. Read-only fixture discarded.\n",
+    "PASS missing endpoint FBC never blue;positive Fail1/Loss1 retained even with synthetic zero endpoint;readonly discarded.\n"
+  ]
+}
