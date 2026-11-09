@@ -2333,7 +2333,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim classNames As Variant, v As Long, keep As Long, packet() As Variant
     Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
     Dim navStep As Double, panelLeft As Long, panelWidth As Long, panelHeight As Long
-    Dim chipAddresses As Object, addressSheet As Worksheet, cat As Long
+    Dim chipAddresses As Object, addressSheet As Worksheet
     Dim dualData As Object, dualValue As Variant, failCount As Long, lossCount As Long, dualState As String
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
@@ -2448,13 +2448,13 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                     With ws.Cells(top, 1).Resize(height, span - 1)
                         .Font.Name = "Arial": .Font.Bold = True: .RowHeight = 22
                         .FormatConditions.Delete
+                        .Borders.LineStyle = xlNone
                     End With
                     ws.Cells(top + 1, 2).Resize(1, span - 2).Font.Color = RGB(191, 191, 191)
                     ws.Cells(top + 2, 1).Resize(height - 2, 1).Font.Color = RGB(191, 191, 191)
                 End If
-                With ws.Cells(top, panelLeft + 1).MergeArea.Cells(1, 1)
-                    .Value2 = MapPanelCaption(wb, CStr(kind), "WT" & phase, CStr(name))
-                    .Font.Bold = True: .WrapText = False: .ShrinkToFit = True
+                ExtendMapTitle ws, top, panelLeft, panelWidth, panelHeight, MapPanelCaption(wb, CStr(kind), "WT" & phase, CStr(name))
+                With ws.Cells(top, panelLeft)
                     If CStr(kind) = "COUNT" Then .Font.Size = 12 Else .Font.Size = 24
                 End With
                 If CStr(kind) = "QUAD" Then
@@ -2482,6 +2482,13 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                                 End With
                                 IndexMapCell idx, mapDest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, CStr(name), x, y, "Monitor Address Count", CStr(classNames(j)), CStr(detail(0)), v, IIf(v > 0, "Recorded matches", "No recorded matches")
                             Next j
+                            If MapChipNeedsGray(quadCategories, chipAddresses, CStr(item)) Then
+                                If Application.Count(ws.Cells(r, c).Resize(2, 2)) = 0 Then
+                                    With ws.Cells(r, c).Resize(2, 2)
+                                        .Merge: .Interior.Color = RGB(128, 128, 128)
+                                    End With
+                                End If
+                            End If
                         End If
                         ChipBorder ws.Cells(r, c).Resize(2, 2)
                     Next item
@@ -2492,14 +2499,12 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         key = "WT" & phase & "|" & CStr(name) & "|" & CStr(item)
                         dualValue = Array(0&, 0&, "No Data"): If dualData.Exists(key) Then dualValue = dualData(key)
                         failCount = CLng(dualValue(0)): lossCount = CLng(dualValue(1)): dualState = CStr(dualValue(2))
-                        cat = 0
-                        If quadCategories.Exists(CStr(item)) Then cat = CLng(quadCategories(CStr(item)))
                         With ws.Cells(r, c).Resize(2, 2)
                             .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack
                             If failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                                 .Merge: .Interior.Color = RGB(0, 176, 240)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
-                            ElseIf failCount = 0 And lossCount = 0 And cat <> 1 And cat <> 2 And Not chipAddresses.Exists(CStr(item)) Then
+                            ElseIf failCount = 0 And lossCount = 0 And MapChipNeedsGray(quadCategories, chipAddresses, CStr(item)) Then
                                 .Merge: .Interior.Color = RGB(128, 128, 128)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, dualState
                             Else
@@ -2521,7 +2526,11 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         If CStr(mapIndex(i, 1)) = source.Name And CStr(mapIndex(i, 4)) = "WT" & phase And CStr(mapIndex(i, 5)) = CStr(name) Then
                             r = top + 2 + CLng(mapIndex(i, 7)) - minY
                             c = panelLeft + 1 + CLng(mapIndex(i, 6)) - minX
-                            If Val(CStr(mapIndex(i, 11))) > 0 Then ws.Cells(r, c).Value2 = mapIndex(i, 11)
+                            If Val(CStr(mapIndex(i, 11))) > 0 Then
+                                ws.Cells(r, c).Value2 = mapIndex(i, 11)
+                            ElseIf MapChipNeedsGray(quadCategories, chipAddresses, CStr(mapIndex(i, 6)) & "|" & CStr(mapIndex(i, 7))) Then
+                                ws.Cells(r, c).Interior.Color = RGB(128, 128, 128)
+                            End If
                             ChipBorder ws.Cells(r, c)
                             IndexMapCell idx, mapDest, ws, r, c, CStr(mapIndex(i, 4)), CStr(name), CLng(mapIndex(i, 6)), CLng(mapIndex(i, 7)), CStr(mapIndex(i, 8)), CStr(mapIndex(i, 9)), CStr(mapIndex(i, 10)), mapIndex(i, 11), CStr(mapIndex(i, 12))
                         End If
@@ -2546,6 +2555,32 @@ Finish:
     BLK_OrderSheets wb
 End Sub
 
+Private Sub ExtendMapTitle(ByVal ws As Worksheet, ByVal top As Long, ByVal left As Long, ByVal width As Long, ByVal height As Long, ByVal caption As String)
+    Dim titleFill As Long, titlePattern As Long
+    titleFill = ws.Cells(top, left + 1).Interior.Color
+    titlePattern = ws.Cells(top, left + 1).Interior.Pattern
+    With ws.Cells(top, left).Resize(1, width)
+        .UnMerge: .ClearContents
+        If titlePattern = xlNone Then .Interior.Pattern = xlNone Else .Interior.Color = titleFill
+        .Merge
+        .Cells(1, 1).Value2 = caption
+        .Font.Bold = True: .WrapText = False: .ShrinkToFit = True
+        .Borders.LineStyle = xlNone
+    End With
+    ws.Cells(top + 1, left).Resize(1, width).Borders.LineStyle = xlNone
+    ws.Cells(top + 2, left).Resize(height - 2, 1).Borders.LineStyle = xlNone
+End Sub
+
+Private Function MapChipNeedsGray(ByVal categories As Object, ByVal chipAddresses As Object, ByVal chip As String) As Boolean
+    If chipAddresses.Exists(chip) Then Exit Function
+    If categories.Exists(chip) Then
+        Select Case CLng(categories(chip))
+            Case 1, 2: Exit Function
+        End Select
+    End If
+    MapChipNeedsGray = True
+End Function
+
 Private Sub CountPanelFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal left As Long, ByVal minX As Long, ByVal maxX As Long, ByVal minY As Long, ByVal maxY As Long, ByVal phase As Long, ByVal patternIndex As Long)
     Dim body As Range, axis As Range, colors As Variant, limits As Variant, fills As Variant
     Dim i As Long, rule As FormatCondition
@@ -2554,7 +2589,6 @@ Private Sub CountPanelFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal left
     With ws.Cells(top, left).Resize(body.Rows.Count + 2, body.Columns.Count + 1)
         .Font.Name = "Arial": .Font.Size = 14: .Font.Bold = True
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 20
-        .BorderAround LineStyle:=xlContinuous, Weight:=xlThin
     End With
     With ws.Cells(top, left + 1).Resize(1, body.Columns.Count)
         .Merge: .Interior.Color = colors((phase - 1) * 2 + patternIndex Mod 2): .RowHeight = 16.5
@@ -2606,6 +2640,7 @@ Public Function BLK_ExportMapsPPT(ByVal wb As Workbook) As String
     Dim slideWidth As Double, slideHeight As Double, insetWidth As Double, h As Double, panel As Range
     Dim key As String, base As String, path As String, suffix As Long, oldScreen As Boolean, oldEvents As Boolean, created As Boolean
     Dim errorNumber As Long, errorText As String
+    Dim mapGroup As Object, shapeIndices() As Variant
     oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents
     On Error GoTo Failed
     Set ws = wb.Worksheets("Wafer Maps"): Set idx = wb.Worksheets("Import Index")
@@ -2645,7 +2680,13 @@ Public Function BLK_ExportMapsPPT(ByVal wb As Workbook) As String
         Next i
         top = top + mainHeight
     Next kind
-    slideHeight = top
+    ReDim shapeIndices(0 To slide.Shapes.Count - 1)
+    For i = 0 To UBound(shapeIndices): shapeIndices(i) = i + 1: Next i
+    Set mapGroup = slide.Shapes.Range(shapeIndices).Group
+    mapGroup.Name = "Wafer Maps"
+    mapGroup.LockAspectRatio = -1: mapGroup.Width = slideWidth
+    mapGroup.Left = 0: mapGroup.Top = 0
+    slideHeight = mapGroup.Height
     deck.PageSetup.SlideWidth = slideWidth: deck.PageSetup.SlideHeight = slideHeight
     base = wb.Name: If InStrRev(base, ".") > 0 Then base = Left$(base, InStrRev(base, ".") - 1)
     path = wb.Path: If Len(path) = 0 Then path = Application.DefaultFilePath
@@ -3069,9 +3110,10 @@ Private Function MapLotWaferLabel(ByVal wb As Workbook, ByVal wt As String) As S
 End Function
 
 Private Function MapPatternVoltageRange(ByVal wb As Workbook, ByVal pattern As String) As String
-    Dim scope As Collection, item As Variant, maximum As Double, minimum As Double, found As Boolean, incomplete As Boolean
+    Dim scope As Collection, item As Variant, maximum As Double, minimum As Double, found As Boolean, incomplete As Boolean, hasRetention As Boolean
     Set scope = VD_Scope(wb.Worksheets("Config"), pattern)
     For Each item In scope
+        If InStr(1, CStr(item(2)), "Retention", vbTextCompare) > 0 Then hasRetention = True
         If IsEmpty(item(1)) Then
             incomplete = True
         Else
@@ -3085,6 +3127,7 @@ Private Function MapPatternVoltageRange(ByVal wb As Workbook, ByVal pattern As S
     Else
         MapPatternVoltageRange = VD_VoltageText(maximum) & "~" & VD_VoltageText(minimum)
     End If
+    If hasRetention Then MapPatternVoltageRange = MapPatternVoltageRange & ",DR"
 End Function
 
 Private Function MapPanelCaption(ByVal wb As Workbook, ByVal kind As String, ByVal wt As String, ByVal pattern As String) As String
