@@ -1411,7 +1411,7 @@ Public Sub BLK_BuildChipMonitorMap(ByVal wb As Workbook, ByVal outputWorkbook As
     If oldLastCol > panelWidth * phaseCount Then ws.Range(ws.Columns(panelWidth * phaseCount + 1), ws.Columns(oldLastCol)).Delete
     If oldLastRow > newLastRow Then ws.Range(ws.Rows(newLastRow + 1), ws.Rows(oldLastRow)).Delete
     With ws.Cells(1, 1).Resize(newLastRow, panelWidth * phaseCount)
-        .Font.Name = "Calibri": .Font.Size = 24: .Font.Color = vbBlack
+        .Font.Name = "Arial": .Font.Size = 24: .Font.Color = vbBlack
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
         .ColumnWidth = 8.5: .RowHeight = 42: .Interior.Pattern = xlNone
         If maxCount >= 100 Then .ColumnWidth = 11
@@ -1457,13 +1457,13 @@ Public Sub BLK_BuildChipMonitorMap(ByVal wb As Workbook, ByVal outputWorkbook As
                 With ws.Cells(row, col): .Value2 = CLng(totals(0)): .Interior.Pattern = xlNone: End With
             End If
             If CLng(totals(1)) > 0 Then
-                With ws.Cells(row, col + 1): .Value2 = CLng(totals(1)): .Interior.Color = RGB(255, 217, 202): End With
+                With ws.Cells(row, col + 1): .Value2 = CLng(totals(1)): .Interior.Color = RGB(255, 217, 102): End With
             End If
             If CLng(totals(2)) > 0 Then
                 With ws.Cells(row + 1, col): .Value2 = CLng(totals(2)): .Interior.Color = RGB(255, 102, 0): End With
             End If
             If CLng(totals(3)) > 0 Then
-                With ws.Cells(row + 1, col + 1): .Value2 = CLng(totals(3)): .Font.Color = RGB(128, 128, 128): .Interior.Pattern = xlNone: End With
+                With ws.Cells(row + 1, col + 1): .Value2 = CLng(totals(3)): .Font.Color = RGB(166, 166, 166): .Interior.Pattern = xlNone: End With
             End If
         Next item
         ws.Cells(3, origin).Resize(2 * (maxY - minY + 1) + 2, panelWidth - 1).BorderAround LineStyle:=xlContinuous, Weight:=xlThin
@@ -1621,7 +1621,7 @@ Private Sub MapFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal title As St
     Dim span As Long, phase As Long, origin As Long, x As Long, y As Long, c As Long, r As Long
     span = 2 * (maxX - minX + 1) + 2
     With ws.Cells(top, 1).Resize(2 * (maxY - minY + 1) + 6, span * phases)
-        .Font.Name = "Calibri": .Font.Size = 24: .Font.Color = vbBlack: .Font.Bold = True
+        .Font.Name = "Arial": .Font.Size = 24: .Font.Color = vbBlack: .Font.Bold = True
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .ColumnWidth = 6: .RowHeight = 22
     End With
     ws.Cells(top, 1).Resize(1, span * phases).Merge
@@ -1804,9 +1804,9 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
                     With ws.Cells(r + j \ 2, c + j Mod 2)
                         If value > 0 Then
                             .Value2 = value
-                            If j = 1 Then .Interior.Color = RGB(255, 217, 202)
+                            If j = 1 Then .Interior.Color = RGB(255, 217, 102)
                             If j = 2 Then .Interior.Color = RGB(255, 102, 0)
-                            If j = 3 Then .Font.Color = RGB(128, 128, 128)
+                            If j = 3 Then .Font.Color = RGB(166, 166, 166)
                         End If
                     End With
                     IndexMapCell index, dest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, "", x, y, "Monitor Address Count", CStr(category(j)), "", value, IIf(value > 0, "Recorded matches", "No recorded matches")
@@ -2319,7 +2319,7 @@ Public Sub BLK_GoWaferMap(ByVal wb As Workbook, Optional ByVal buttonName As Str
     address = ws.Shapes(buttonName).AlternativeText
     If Len(address) = 0 Then Exit Sub
     ws.Activate: Application.Goto ws.Range(address), True
-    Application.ActiveWindow.ScrollColumn = 1
+    Application.ActiveWindow.ScrollColumn = ws.Range(address).Column
 End Sub
 
 Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
@@ -2332,7 +2332,8 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim span As Long, height As Long, top As Long, sourceTop As Long, sourceLeft As Long, patternIndex As Long, n As Long
     Dim classNames As Variant, v As Long, keep As Long, packet() As Variant
     Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
-    Dim navStep As Double
+    Dim navStep As Double, panelLeft As Long, panelWidth As Long, panelHeight As Long
+    Dim chipAddresses As Object, addressSheet As Worksheet, cat As Long
     Dim dualData As Object, dualValue As Variant, failCount As Long, lossCount As Long, dualState As String
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
@@ -2374,6 +2375,17 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
         detail = patterns(name): quadEndpoints(CStr(detail(0))) = True
     Next name
     Set quadMasks = LoadMapCounts(wb.Worksheets("FBC by BLK"), quadEndpoints)
+    Set chipAddresses = CreateObject("Scripting.Dictionary")
+    Set addressSheet = wb.Worksheets("Fail Address")
+    last = addressSheet.Cells(addressSheet.Rows.Count, 1).End(xlUp).Row
+    If last >= 2 Then
+        data = addressSheet.Range("A2:B" & last).Value2
+        For i = 1 To UBound(data, 1)
+            If IsNumeric(data(i, 1)) And IsNumeric(data(i, 2)) Then
+                If Len(CStr(data(i, 1))) > 0 And Len(CStr(data(i, 2))) > 0 Then chipAddresses(CStr(data(i, 1)) & "|" & CStr(data(i, 2))) = True
+            End If
+        Next i
+    End If
     Set counts = CreateObject("Scripting.Dictionary"): Set source = wb.Worksheets("Monitor Fail Analysis")
     last = source.Cells(source.Rows.Count, 1).End(xlUp).Row
     If last >= 5 Then
@@ -2411,6 +2423,10 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     If keep > 0 Then idx.Cells(2, 33).Resize(UBound(packet, 1), 12).Value2 = packet
     mapDest = keep + 2: top = 9
     classNames = Array("Read Fail", "Write Fail", "Write&Read Fail", "No monitor item Fail")
+    ws.Columns(1).ColumnWidth = 3.63
+    ws.Columns(2).Resize(, span - 2).ColumnWidth = 6
+    ws.Columns(span + 1).Resize(, maxX - minX + 2).ColumnWidth = 4.88
+    MapNavButton ws, "navMapHome", "Map menu", ws.Cells(7, span + 1).Left, ws.Cells(7, span + 1).Top, 85, "A9"
     For Each kind In Array("COUNT", "QUAD", "LOSS")
         slot = 0
         For phase = 1 To phases
@@ -2423,19 +2439,30 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                     Case "LOSS": Set source = wb.Worksheets("FailBLK Loss Map"): sourceTop = 3 + patternIndex * (height + 4): label = "Fail BLK / Loss BLK"
                     Case "QUAD": Set source = wb.Worksheets("W&R Map"): label = "W&R"
                 End Select
-                source.Cells(sourceTop, sourceLeft).Resize(height, span - 1).Copy Destination:=ws.Cells(top, 1)
-                With ws.Cells(top, 2).MergeArea.Cells(1, 1)
+                panelLeft = 1: panelWidth = span - 1: panelHeight = height
+                If CStr(kind) = "COUNT" Then
+                    panelLeft = span + 1: panelWidth = maxX - minX + 2: panelHeight = maxY - minY + 3
+                    CountPanelFrame ws, top, panelLeft, minX, maxX, minY, maxY, phase, patternIndex
+                Else
+                    source.Cells(sourceTop, sourceLeft).Resize(height, span - 1).Copy Destination:=ws.Cells(top, 1)
+                    With ws.Cells(top, 1).Resize(height, span - 1)
+                        .Font.Name = "Arial": .Font.Bold = True: .RowHeight = 22
+                        .FormatConditions.Delete
+                    End With
+                    ws.Cells(top + 1, 2).Resize(1, span - 2).Font.Color = RGB(191, 191, 191)
+                    ws.Cells(top + 2, 1).Resize(height - 2, 1).Font.Color = RGB(191, 191, 191)
+                End If
+                With ws.Cells(top, panelLeft + 1).MergeArea.Cells(1, 1)
                     .Value2 = MapPanelCaption(wb, CStr(kind), "WT" & phase, CStr(name))
-                    .Font.Size = 24: .Font.Bold = True: .WrapText = False: .ShrinkToFit = True
+                    .Font.Bold = True: .WrapText = False: .ShrinkToFit = True
+                    If CStr(kind) = "COUNT" Then .Font.Size = 12 Else .Font.Size = 24
                 End With
-                ws.Rows(top).Resize(height).RowHeight = 22
-                ws.Cells(top, 1).Resize(height, span - 1).Font.Bold = True
                 If CStr(kind) = "QUAD" Then
                     For Each item In ordered
                         xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
                         r = top + 2 + 2 * (y - minY): c = 2 + 2 * (x - minX)
                         With ws.Cells(r, c).Resize(2, 2)
-                            .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack
+                            .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack: .Font.Size = 26
                         End With
                         key = "WT" & phase & "|" & CStr(item)
                         If QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
@@ -2448,9 +2475,9 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                                 With ws.Cells(r + j \ 2, c + j Mod 2)
                                     If v > 0 Then
                                         .Value2 = v
-                                        If j = 1 Then .Interior.Color = RGB(255, 217, 202)
+                                        If j = 1 Then .Interior.Color = RGB(255, 217, 102)
                                         If j = 2 Then .Interior.Color = RGB(255, 102, 0)
-                                        If j = 3 Then .Font.Color = RGB(128, 128, 128)
+                                        If j = 3 Then .Font.Color = RGB(166, 166, 166)
                                     End If
                                 End With
                                 IndexMapCell idx, mapDest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, CStr(name), x, y, "Monitor Address Count", CStr(classNames(j)), CStr(detail(0)), v, IIf(v > 0, "Recorded matches", "No recorded matches")
@@ -2465,18 +2492,24 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         key = "WT" & phase & "|" & CStr(name) & "|" & CStr(item)
                         dualValue = Array(0&, 0&, "No Data"): If dualData.Exists(key) Then dualValue = dualData(key)
                         failCount = CLng(dualValue(0)): lossCount = CLng(dualValue(1)): dualState = CStr(dualValue(2))
+                        cat = 0
+                        If quadCategories.Exists(CStr(item)) Then cat = CLng(quadCategories(CStr(item)))
                         With ws.Cells(r, c).Resize(2, 2)
                             .UnMerge: .ClearContents: .Interior.Pattern = xlNone: .Font.Color = vbBlack
                             If failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                                 .Merge: .Interior.Color = RGB(0, 176, 240)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
-                            ElseIf dualState <> "Pass" And dualState <> "Fail" And failCount = 0 And lossCount = 0 Then
-                                .Merge: .Interior.Color = MapColor(dualState)
+                            ElseIf failCount = 0 And lossCount = 0 And cat <> 1 And cat <> 2 And Not chipAddresses.Exists(CStr(item)) Then
+                                .Merge: .Interior.Color = RGB(128, 128, 128)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, dualState
                             Else
                                 ws.Cells(r, c).Resize(2, 1).Merge: ws.Cells(r, c + 1).Resize(2, 1).Merge
                                 If failCount > 0 Then ws.Cells(r, c).Value2 = failCount
-                                If lossCount > 0 Then ws.Cells(r, c + 1).Value2 = lossCount
+                                If lossCount > 0 Then
+                                    With ws.Cells(r, c + 1).MergeArea
+                                        .Cells(1, 1).Value2 = lossCount: .Interior.Color = vbRed: .Font.Color = vbWhite
+                                    End With
+                                End If
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Fail BLK Count", "", CStr(detail(0)), failCount, dualState
                                 IndexMapCell idx, mapDest, ws, r, c + 1, "WT" & phase, CStr(name), x, y, "Loss BLK Count", "", CStr(detail(0)), lossCount, dualState
                             End If
@@ -2486,18 +2519,19 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                 Else
                     For i = 1 To UBound(mapIndex, 1)
                         If CStr(mapIndex(i, 1)) = source.Name And CStr(mapIndex(i, 4)) = "WT" & phase And CStr(mapIndex(i, 5)) = CStr(name) Then
-                            r = top + CLng(mapIndex(i, 2)) - sourceTop: c = 1 + CLng(mapIndex(i, 3)) - sourceLeft
-                            If r >= top And r < top + height And c >= 1 And c < span Then
-                                IndexMapCell idx, mapDest, ws, r, c, CStr(mapIndex(i, 4)), CStr(name), CLng(mapIndex(i, 6)), CLng(mapIndex(i, 7)), CStr(mapIndex(i, 8)), CStr(mapIndex(i, 9)), CStr(mapIndex(i, 10)), mapIndex(i, 11), CStr(mapIndex(i, 12))
-                            End If
+                            r = top + 2 + CLng(mapIndex(i, 7)) - minY
+                            c = panelLeft + 1 + CLng(mapIndex(i, 6)) - minX
+                            If Val(CStr(mapIndex(i, 11))) > 0 Then ws.Cells(r, c).Value2 = mapIndex(i, 11)
+                            ChipBorder ws.Cells(r, c)
+                            IndexMapCell idx, mapDest, ws, r, c, CStr(mapIndex(i, 4)), CStr(name), CLng(mapIndex(i, 6)), CLng(mapIndex(i, 7)), CStr(mapIndex(i, 8)), CStr(mapIndex(i, 9)), CStr(mapIndex(i, 10)), mapIndex(i, 11), CStr(mapIndex(i, 12))
                         End If
                     Next i
                 End If
-                idx.Cells(panelDest, 46).Resize(1, 8).Value2 = Array("Wafer Maps", kind, "WT" & phase, name, top, 1, height, span - 1): panelDest = panelDest + 1
+                idx.Cells(panelDest, 46).Resize(1, 8).Value2 = Array("Wafer Maps", kind, "WT" & phase, name, top, panelLeft, panelHeight, panelWidth): panelDest = panelDest + 1
                 n = 3: If CStr(kind) = "QUAD" Then n = 4
                 If CStr(kind) = "LOSS" Then n = 5
-                MapNavButton ws, "navMap_" & kind & "_" & slot, "WT" & phase & " " & CStr(name) & " " & label, ws.Cells(n, 1).Left + (slot - 1) * navStep, ws.Cells(n, 1).Top, navStep - 4, "A" & top
-                top = top + height + 4
+                MapNavButton ws, "navMap_" & kind & "_" & slot, "WT" & phase & " " & CStr(name) & " " & label, ws.Cells(n, 1).Left + (slot - 1) * navStep, ws.Cells(n, 1).Top, navStep - 4, ws.Cells(top, panelLeft).Address(False, False)
+                top = top + panelHeight + 4
             Next patternIndex
         Next phase
     Next kind
@@ -2512,11 +2546,44 @@ Finish:
     BLK_OrderSheets wb
 End Sub
 
+Private Sub CountPanelFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal left As Long, ByVal minX As Long, ByVal maxX As Long, ByVal minY As Long, ByVal maxY As Long, ByVal phase As Long, ByVal patternIndex As Long)
+    Dim body As Range, axis As Range, colors As Variant, limits As Variant, fills As Variant
+    Dim i As Long, rule As FormatCondition
+    colors = Array(RGB(198, 224, 180), RGB(244, 176, 132), RGB(0, 255, 0), RGB(255, 230, 153), RGB(0, 176, 80), RGB(191, 143, 0))
+    Set body = ws.Cells(top + 2, left + 1).Resize(maxY - minY + 1, maxX - minX + 1)
+    With ws.Cells(top, left).Resize(body.Rows.Count + 2, body.Columns.Count + 1)
+        .Font.Name = "Arial": .Font.Size = 14: .Font.Bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: .RowHeight = 20
+        .BorderAround LineStyle:=xlContinuous, Weight:=xlThin
+    End With
+    With ws.Cells(top, left + 1).Resize(1, body.Columns.Count)
+        .Merge: .Interior.Color = colors((phase - 1) * 2 + patternIndex Mod 2): .RowHeight = 16.5
+    End With
+    Set axis = body.Rows(1).Offset(-1)
+    With axis
+        .Font.Size = 8: .Font.Color = RGB(166, 166, 166)
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin
+    End With
+    For i = minX To maxX: axis.Cells(1, i - minX + 1).Value2 = i: Next i
+    Set axis = body.Columns(1).Offset(0, -1)
+    With axis
+        .Font.Size = 6: .Font.Color = RGB(166, 166, 166)
+        .Borders.LineStyle = xlContinuous: .Borders.Weight = xlThin
+    End With
+    For i = minY To maxY: axis.Cells(i - minY + 1, 1).Value2 = i: Next i
+    limits = Array(1, 10, 20, 50, 256)
+    fills = Array(RGB(255, 242, 204), RGB(255, 230, 153), RGB(255, 217, 102), RGB(191, 143, 0))
+    For i = 0 To 3
+        Set rule = body.FormatConditions.Add(Type:=xlCellValue, Operator:=xlBetween, Formula1:=CStr(limits(i)), Formula2:=CStr(limits(i + 1) - IIf(i = 3, 0, 1)))
+        rule.Interior.Color = fills(i)
+    Next i
+End Sub
+
 Private Function PPTBitmap(ByVal slide As Object, ByVal source As Range, ByVal left As Double, ByVal top As Double, ByVal width As Double, ByVal name As String) As Object
     Dim pasted As Object, pic As Object, attempt As Long, errorText As String
     For attempt = 1 To 4
         On Error Resume Next
-        Err.Clear: source.Worksheet.Activate
+        Err.Clear: Application.Goto source.Cells(1, 1), True
         source.CopyPicture Appearance:=xlScreen, Format:=xlBitmap
         DoEvents
         If Err.Number = 0 Then Set pasted = slide.Shapes.PasteSpecial(1)
@@ -2531,21 +2598,12 @@ Private Function PPTBitmap(ByVal slide As Object, ByVal source As Range, ByVal l
     Set PPTBitmap = pic
 End Function
 
-Private Sub PPTLabel(ByVal slide As Object, ByVal text As String, ByVal left As Double, ByVal top As Double, ByVal width As Double, ByVal height As Double, ByVal size As Double)
-    Dim box As Object
-    Set box = slide.Shapes.AddTextbox(1, left, top, width, height)
-    With box.TextFrame
-        .MarginLeft = 0: .MarginRight = 0: .MarginTop = 0: .MarginBottom = 0
-        With .TextRange: .Text = text: .Font.Name = "Calibri": .Font.Size = size: .Font.Color.RGB = RGB(23, 50, 77): End With
-    End With
-End Sub
-
 Public Function BLK_ExportMapsPPT(ByVal wb As Workbook) As String
     Const PT_PER_CM As Double = 28.3464566929134
     Dim pp As Object, deck As Object, slide As Object, pic As Object, ws As Worksheet, idx As Worksheet, previous As Object
     Dim data As Variant, panels As Object, order As New Collection, entry As Variant, item As Variant, kind As Variant
     Dim i As Long, last As Long, columns As Long, pictureLeft As Double, width As Double, top As Double, mainHeight As Double
-    Dim slideWidth As Double, slideHeight As Double, lowerTop As Double, insetTop As Double, insetWidth As Double, h As Double
+    Dim slideWidth As Double, slideHeight As Double, insetWidth As Double, h As Double, panel As Range
     Dim key As String, base As String, path As String, suffix As Long, oldScreen As Boolean, oldEvents As Boolean, created As Boolean
     Dim errorNumber As Long, errorText As String
     oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents
@@ -2569,33 +2627,26 @@ Public Function BLK_ExportMapsPPT(ByVal wb As Workbook) As String
     If pp Is Nothing Then Set pp = CreateObject("PowerPoint.Application"): created = True
     pp.Visible = True
     Set deck = pp.Presentations.Add
-    slideWidth = 37 * PT_PER_CM: width = (slideWidth - 36 - 6 * (columns - 1)) / columns
-    entry = panels("COUNT|" & CStr(order(1)))
-    With ws.Cells(CLng(entry(0)), CLng(entry(1))).Resize(CLng(entry(2)), CLng(entry(3)))
-        mainHeight = width * .Height / .Width
-    End With
-    h = (slideWidth * 9 / 16 - 136) / 2.36
-    If mainHeight > h Then width = width * h / mainHeight: mainHeight = h
-    lowerTop = 54 + mainHeight + 34: insetTop = lowerTop + mainHeight + 6: insetWidth = width * 0.36
-    slideHeight = insetTop + mainHeight * 0.36 + 48
-    If slideHeight < slideWidth * 9 / 16 Then slideHeight = slideWidth * 9 / 16
-    deck.PageSetup.SlideWidth = slideWidth: deck.PageSetup.SlideHeight = slideHeight
+    slideWidth = 37 * PT_PER_CM: width = slideWidth / columns: insetWidth = width * 0.36
     Set slide = deck.Slides.Add(1, 12)
-    PPTLabel slide, "Fail BLK Count", 18, 12, slideWidth - 36, 30, 24
-    PPTLabel slide, "W&R Monitor Matching", 18, lowerTop - 29, slideWidth - 36, 26, 20
-    For i = 1 To columns
-        item = order(i): pictureLeft = (slideWidth - (columns * width + 6 * (columns - 1))) / 2 + (i - 1) * (width + 6)
-        For Each kind In Array("COUNT", "QUAD", "LOSS")
+    top = 0
+    For Each kind In Array("COUNT", "QUAD", "LOSS")
+        mainHeight = 0
+        For i = 1 To columns
+            item = order(i): pictureLeft = (i - 1) * width: h = width
             key = CStr(kind) & "|" & CStr(item)
             If Not panels.Exists(key) Then Err.Raise vbObjectError + 522, , "Missing PPT panel: " & key
-            entry = panels(key): top = 54: h = width
-            If CStr(kind) = "QUAD" Then top = lowerTop
-            If CStr(kind) = "LOSS" Then top = insetTop: h = insetWidth
-            Set pic = PPTBitmap(slide, ws.Cells(CLng(entry(0)), CLng(entry(1))).Resize(CLng(entry(2)), CLng(entry(3))), pictureLeft + IIf(CStr(kind) = "LOSS", width - insetWidth, 0), top, h, CStr(kind) & "_" & Replace(CStr(item), "|", "_"))
-            pic.AlternativeText = "WT / Pattern: " & CStr(item) & "; Map: " & CStr(kind) & "; Excel: " & ws.Cells(CLng(entry(0)), CLng(entry(1))).Address(False, False)
-        Next kind
-    Next i
-    PPTLabel slide, "W&R: Read only / Write only / Both / No recorded Monitor match. Small inset: Fail BLK / Loss BLK.", 18, slideHeight - 30, slideWidth - 36, 24, 11
+            entry = panels(key)
+            Set panel = ws.Cells(CLng(entry(0)), CLng(entry(1))).Resize(CLng(entry(2)), CLng(entry(3)))
+            If CStr(kind) = "LOSS" Then pictureLeft = pictureLeft + width - insetWidth: h = insetWidth
+            Set pic = PPTBitmap(slide, panel, pictureLeft, top, h, CStr(kind) & "_" & Replace(CStr(item), "|", "_"))
+            pic.AlternativeText = "WT / Pattern: " & CStr(item) & "; Map: " & CStr(kind) & "; Excel: " & panel.Cells(1, 1).Address(False, False)
+            If pic.Height > mainHeight Then mainHeight = pic.Height
+        Next i
+        top = top + mainHeight
+    Next kind
+    slideHeight = top
+    deck.PageSetup.SlideWidth = slideWidth: deck.PageSetup.SlideHeight = slideHeight
     base = wb.Name: If InStrRev(base, ".") > 0 Then base = Left$(base, InStrRev(base, ".") - 1)
     path = wb.Path: If Len(path) = 0 Then path = Application.DefaultFilePath
     base = path & Application.PathSeparator & base & "_Wafer_Maps": path = base & ".pptx"
