@@ -2967,9 +2967,9 @@ Private Function VD_FirstFail(ByVal counts As Object, ByVal scope As Collection,
     End If
 End Function
 
-Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByVal colors As Object)
+Private Function VD_LegendGroups(ByVal scope As Collection, ByVal colors As Object) As Object
     Dim groups As Object, items As Object, entry As Variant, voltage As String, func As String
-    Dim group As Variant, name As Variant, angle As Double, row As Long
+    Dim angle As Double
     Set groups = CreateObject("Scripting.Dictionary")
     For Each entry In scope
         func = Trim$(CStr(entry(2)))
@@ -2987,6 +2987,12 @@ Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByV
         Set items = groups(voltage)
         items(func) = True
     Next entry
+    Set VD_LegendGroups = groups
+End Function
+
+Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByVal colors As Object)
+    Dim groups As Object, items As Object, group As Variant, name As Variant, row As Long
+    Set groups = VD_LegendGroups(scope, colors)
     ws.Range("A55:R55").Merge
     ws.Range("A55").Value2 = "Function items by test voltage"
     ws.Range("A55:R55").Interior.color = RGB(23, 50, 77)
@@ -3013,13 +3019,80 @@ Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByV
     End With
 End Sub
 
+Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection, ByVal dut As String, ByVal endpoint As String, ByVal b As Long, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByRef states() As String, ByRef sweep() As Variant, Optional ByVal phases As Long = 3) As Long
+    Dim phase As Long, chosen As Long, wt As String, first As Variant
+    For phase = 1 To phases
+        wt = "WT" & phase
+        states(phase) = VD_State(counts, wt, dut, endpoint, b, hard, wanted, predecessors)
+        sweep(phase) = Array("", Empty, "", "", Empty)
+        If states(phase) = "Fail" Or states(phase) = "Pass" Then
+            first = VD_FirstFail(counts, scope, wt, dut, b)
+            sweep(phase) = first
+            If Len(CStr(first(0))) > 0 Then
+                states(phase) = "Fail"
+                If chosen = 0 Then chosen = phase
+            ElseIf CStr(first(2)) = "Sweep incomplete" Then
+                states(phase) = "No Data"
+            End If
+        End If
+    Next phase
+    VD_BlockSweep = chosen
+End Function
+
+Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal b As Long, ByVal chosen As Long, ByRef states() As String, ByRef sweep() As Variant, ByVal stats As Object, ByVal colors As Object, Optional ByVal compact As Boolean = False)
+    Dim first As Variant, a As Variant, topCell As Range, band As Range
+    Dim label As String, notes As String, func As String, key As String, phase As Long
+    label = "": notes = "BLK" & b
+    If chosen > 0 Then
+        first = sweep(chosen)
+        func = Trim$(CStr(first(3)))
+        If Len(func) = 0 Then func = "TNO " & CStr(first(0))
+        label = VD_VoltageText(first(4))
+        notes = notes & vbLf & "WT" & chosen & " | TNO " & first(0) & " | " & VD_VoltageText(first(1)) & vbLf & first(2)
+    End If
+    Set band = ws.cells(r, c).Resize(1, 6): band.Merge
+    Set topCell = band.cells(1, 1)
+    topCell.Value2 = label
+    topCell.AddComment notes
+    band.Font.Bold = True
+    If compact Then
+        band.ShrinkToFit = True: band.RowHeight = 16
+    Else
+        band.WrapText = True: band.RowHeight = 29
+    End If
+    If chosen > 0 Then band.Interior.color = CLng(colors(func))
+    For phase = 1 To 3
+        Set band = ws.cells(r + 1, c + (phase - 1) * 2).Resize(1, 2): band.Merge: band.RowHeight = IIf(compact, 7, 10)
+        band.Borders(xlEdgeRight).LineStyle = xlContinuous
+        band.Borders(xlEdgeRight).color = RGB(190, 190, 190)
+        If states(phase) = "Pass" Then band.Interior.color = RGB(0, 176, 240)
+        If states(phase) = "Fail" Then band.Interior.color = RGB(255, 0, 0)
+        key = "WT" & phase & "|" & b
+        If states(phase) = "Fail" And stats.Exists(key) Then
+            a = stats(key)
+            If CLng(a(5)) > 0 Then
+                With ws.cells(r + 2, c + (phase - 1) * 2)
+                    .Value2 = a(5): .Interior.color = RGB(255, 217, 102)
+                End With
+            End If
+            If CLng(a(6)) > 0 Then ws.cells(r + 2, c + (phase - 1) * 2 + 1).Value2 = a(6)
+        End If
+    Next phase
+    With ws.cells(r + 2, c).Resize(1, 6)
+        .RowHeight = IIf(compact, 11, 15): .Font.Bold = True: .ShrinkToFit = True
+        .Borders.LineStyle = xlDot
+        .Borders.color = RGB(190, 190, 190)
+    End With
+    ws.cells(r, c).Resize(3, 6).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(95, 95, 95)
+End Sub
+
 Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Boolean
-    Dim ws As Worksheet, idx As Worksheet, cfg As Worksheet, topCell As Range, band As Range
+    Dim ws As Worksheet, idx As Worksheet, cfg As Worksheet
     Dim patterns As Object, wanted As Object, hard As Object, counts As Object, predecessors As Object, stats As Object, colors As Object
-    Dim scope As Collection, detail As Variant, first As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
+    Dim scope As Collection, detail As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
     Dim selectedFirst As Variant, sweep(1 To 3) As Variant, states(1 To 3) As String, phase As Long, chosen As Long
     Dim b As Long, r As Long, c As Long, j As Long, wt As String, dut As String, endpoint As String, pattern As String
-    Dim label As String, notes As String, func As String, key As String
+    Dim key As String
     pattern = CStr(info(4))
     If Len(pattern) = 0 Then Exit Function
     Set cfg = wb.Worksheets("Config")
@@ -3065,59 +3138,8 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     VD_WriteLegend ws, scope, colors
     For b = 0 To 255
         r = 6 + 3 * (b Mod 16): c = 1 + 6 * (b \ 16)
-        chosen = 0
-        For phase = 1 To 3
-            wt = "WT" & phase
-            states(phase) = VD_State(counts, wt, dut, endpoint, b, hard, wanted, predecessors)
-            sweep(phase) = Array("", Empty, "", "", Empty)
-            If states(phase) = "Fail" Or states(phase) = "Pass" Then
-                first = VD_FirstFail(counts, scope, wt, dut, b)
-                sweep(phase) = first
-                If Len(CStr(first(0))) > 0 Then
-                    states(phase) = "Fail"
-                    If chosen = 0 Then chosen = phase
-                ElseIf CStr(first(2)) = "Sweep incomplete" Then
-                    states(phase) = "No Data"
-                End If
-            End If
-        Next phase
-        label = "": notes = "BLK" & b
-        If chosen > 0 Then
-            first = sweep(chosen)
-            func = Trim$(CStr(first(3)))
-            If Len(func) = 0 Then func = "TNO " & CStr(first(0))
-            label = VD_VoltageText(first(4))
-            notes = notes & vbLf & "WT" & chosen & " | TNO " & first(0) & " | " & VD_VoltageText(first(1)) & vbLf & first(2)
-        End If
-        Set band = ws.cells(r, c).Resize(1, 6): band.Merge
-        Set topCell = band.cells(1, 1)
-        topCell.Value2 = label
-        topCell.AddComment notes
-        band.WrapText = True: band.Font.Bold = True: band.RowHeight = 29
-        If chosen > 0 Then band.Interior.color = CLng(colors(func))
-        For phase = 1 To 3
-            Set band = ws.cells(r + 1, c + (phase - 1) * 2).Resize(1, 2): band.Merge: band.RowHeight = 10
-            band.Borders(xlEdgeRight).LineStyle = xlContinuous
-            band.Borders(xlEdgeRight).color = RGB(190, 190, 190)
-            If states(phase) = "Pass" Then band.Interior.color = RGB(0, 176, 240)
-            If states(phase) = "Fail" Then band.Interior.color = RGB(255, 0, 0)
-            key = "WT" & phase & "|" & b
-            If states(phase) = "Fail" And stats.Exists(key) Then
-                a = stats(key)
-                If CLng(a(5)) > 0 Then
-                    With ws.cells(r + 2, c + (phase - 1) * 2)
-                        .Value2 = a(5): .Interior.color = RGB(255, 217, 102)
-                    End With
-                End If
-                If CLng(a(6)) > 0 Then ws.cells(r + 2, c + (phase - 1) * 2 + 1).Value2 = a(6)
-            End If
-        Next phase
-        With ws.cells(r + 2, c).Resize(1, 6)
-            .RowHeight = 15: .Font.Bold = True: .ShrinkToFit = True
-            .Borders.LineStyle = xlDot
-            .Borders.color = RGB(190, 190, 190)
-        End With
-        ws.cells(r, c).Resize(3, 6).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(95, 95, 95)
+        chosen = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep)
+        VD_PaintBlock ws, r, c, b, chosen, states, sweep, stats, colors
 
         If chosen = 0 Then chosen = CLng(Right$(CStr(info(3)), 1))
         wt = "WT" & chosen: key = wt & "|" & b
@@ -3135,6 +3157,153 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     SetMapDrillProperty ws, "ASCVoltageGrid", "1"
     Application.ActiveWindow.DisplayGridlines = False
     VD_BuildGrid = True
+End Function
+
+Public Sub PreviewBLKDistribution()
+    Dim x As Variant, y As Variant, oldScreen As Boolean
+    x = Application.InputBox("Enter Chip X", "BLK Distribution Preview", Type:=1)
+    If VarType(x) = vbBoolean Then Exit Sub
+    y = Application.InputBox("Enter Chip Y", "BLK Distribution Preview", Type:=1)
+    If VarType(y) = vbBoolean Then Exit Sub
+    oldScreen = Application.ScreenUpdating
+    On Error GoTo Failed
+    If x <> Fix(x) Or y <> Fix(y) Then Err.Raise vbObjectError + 532, , "Enter integer X and Y coordinates."
+    Application.ScreenUpdating = False
+    VD_BuildPreview ThisWorkbook, CLng(x), CLng(y)
+    Application.ScreenUpdating = oldScreen
+    Exit Sub
+Failed:
+    Application.ScreenUpdating = oldScreen
+    MsgBox Err.description, vbExclamation, "BLK Distribution Preview"
+End Sub
+
+Private Sub VD_BuildPreview(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
+    Const previewName As String = "BLK Distribution Preview"
+    Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
+    Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
+    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long
+    Set cfg = wb.Worksheets("Config")
+    Set patterns = ReadStopPatterns(cfg, wanted, hard)
+    If patterns.count = 0 Then Err.Raise vbObjectError + 532, , "Set a Pattern Stop Sign in Config."
+    dut = x & "|" & y
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut)
+    If counts.count = 0 Then Err.Raise vbObjectError + 532, , "No Function FBC found for X" & x & " Y" & y & "."
+    If InStr(1, CStr(wb.Worksheets("Monitor Fail Analysis").Range("A2").Value2), "Source updated", vbTextCompare) > 0 Then
+        Err.Raise vbObjectError + 532, , "Refresh the analysis before building the preview."
+    End If
+    Set predecessors = PatternPredecessors(patterns)
+    Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
+    phases = BLK_PhaseCount(wb)
+    Set ws = ReportSheet(wb, previewName)
+    With ws.Range("A:CR")
+        .ColumnWidth = 2.15
+    End With
+    With ws.Range("A1:CR1")
+        .Merge: .Value2 = "BLK Distribution Preview | X" & x & " Y" & y
+        .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .RowHeight = 22
+    End With
+    top = 4: nav = 1
+    For Each name In patterns
+        If nav <= 85 Then
+            ws.cells(2, nav).Resize(1, 12).Merge
+            ws.Hyperlinks.Add ws.cells(2, nav), "", "'" & previewName & "'!A" & top, , CStr(name)
+            nav = nav + 12
+        End If
+        detail = patterns(name)
+        Set scope = VD_Scope(cfg, CStr(name))
+        top = VD_PreviewPattern(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors)
+    Next name
+    With ws.Range("A1:CR" & top - 1)
+        .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
+    ws.Range("A1").Font.Size = 12
+    ws.Activate
+    With Application.ActiveWindow
+        .DisplayGridlines = False
+        .Zoom = 70
+    End With
+    Application.Goto ws.Range("A1"), True
+End Sub
+
+Private Function VD_PreviewPattern(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object) As Long
+    Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
+    Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
+    Dim allPass As Boolean, b As Long, phase As Long, row As Long, col As Long, dut As String
+    dut = x & "|" & y
+    allPass = True
+    For b = 0 To 255
+        failPhase(b) = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, phases)
+        If failPhase(b) > 0 Then firstFail(b) = sweep(failPhase(b))
+        For phase = 1 To phases
+            blockStates(b, phase) = states(phase)
+            If states(phase) <> "Pass" Then allPass = False
+        Next phase
+    Next b
+
+    With ws.cells(top, 1).Resize(1, 96)
+        .Merge: .Value2 = pattern & " | WT1" & IIf(phases > 1, "-WT" & phases, "")
+        .Interior.color = RGB(38, 77, 111): .Font.color = vbWhite: .RowHeight = 18
+    End With
+    If allPass Then
+        With ws.cells(top + 1, 1).Resize(3, 96)
+            .Merge: .Value2 = "All Pass"
+            .Interior.color = RGB(0, 176, 240): .RowHeight = 15
+        End With
+        VD_PreviewPattern = top + 5
+        Exit Function
+    End If
+
+    Set groups = VD_LegendGroups(scope, colors)
+    Set stats = VD_Stats(wb, x, y, pattern)
+    With ws.cells(top + 1, 1).Resize(2, 96)
+        .Interior.color = RGB(239, 244, 250): .RowHeight = 12
+    End With
+    For col = 1 To 96 Step 6
+        For phase = 1 To phases
+            With ws.cells(top + 1, col + (phase - 1) * 2).Resize(1, 2)
+                .Merge: .Value2 = "WT" & phase
+            End With
+            ws.cells(top + 2, col + (phase - 1) * 2).Value2 = "W"
+            ws.cells(top + 2, col + (phase - 1) * 2 + 1).Value2 = "R"
+        Next phase
+    Next col
+    For b = 0 To 255
+        row = top + 3 + 3 * (b Mod 16): col = 1 + 6 * (b \ 16)
+        For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
+        If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
+        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, True
+    Next b
+    VD_PreviewPattern = VD_PreviewLegend(ws, top + 52, groups, colors) + 1
+End Function
+
+Private Function VD_PreviewLegend(ByVal ws As Worksheet, ByVal row As Long, ByVal groups As Object, ByVal colors As Object) As Long
+    Dim group As Variant, item As Variant, items As Object, col As Long
+    With ws.cells(row, 1).Resize(1, 96)
+        .Merge: .Value2 = "Function items by test voltage"
+        .Interior.color = RGB(239, 244, 250): .RowHeight = 15
+    End With
+    row = row + 1
+    For Each group In groups
+        Set items = groups(group)
+        With ws.cells(row, 1).Resize(1, 6)
+            .Merge: .Value2 = CStr(group)
+        End With
+        col = 7
+        For Each item In items
+            If col > 96 Then
+                row = row + 1
+                col = 7
+            End If
+            With ws.cells(row, col).Resize(1, 6)
+                .Merge: .Value2 = CStr(item)
+                .ShrinkToFit = True: .Interior.color = CLng(colors(item)): .RowHeight = 14
+            End With
+            col = col + 6
+        Next item
+        row = row + 1
+    Next group
+    VD_PreviewLegend = row
 End Function
 
 Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range) As Boolean
