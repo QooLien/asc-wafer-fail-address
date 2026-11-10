@@ -9,6 +9,17 @@ Private mHeaderRegex As Object
 Private mBitMasks As Variant
 Private busy As Boolean
 
+Private Sub RestoreProgressStatus(ByVal previous As Variant)
+    'Use an empty string so Excel never renders a coerced Boolean as status text.
+    If VarType(previous) = vbString Then
+        If Len(Trim$(previous)) > 0 And StrComp(Trim$(previous), "False", vbTextCompare) <> 0 Then
+            Application.StatusBar = CStr(previous)
+            Exit Sub
+        End If
+    End If
+    Application.StatusBar = vbNullString
+End Sub
+
 ' No per-address logs. Keep one address index and one bit per selected TNO/address.
 Public Sub ImportASCFailAddresses()
     RunThreeASC False
@@ -23,13 +34,15 @@ Public Sub ImportASCFBC()
 End Sub
 
 Public Sub BuildFailMaps()
-    Dim text As String, started As Date, oldScreen As Boolean, oldEvents As Boolean
+    Dim text As String, started As Date, oldScreen As Boolean, oldEvents As Boolean, oldStatus As Variant
     If busy Then MsgBox "An import or Map build is already running.", vbExclamation: Exit Sub
     busy = True: started = Now
     oldScreen = Application.ScreenUpdating: oldEvents = Application.EnableEvents
+    oldStatus = Application.StatusBar
     On Error GoTo FailedMap
     Application.ScreenUpdating = False: Application.EnableEvents = False
     BLKVminEngine.BLK_MigrateReportNames ThisWorkbook
+    Application.StatusBar = "Wafer Maps: calculating Fail BLK counts..."
     text = BLKVminEngine.BLK_BuildFailMaps(ThisWorkbook)
     If Len(text) = 0 Then
         text = AuditFunctionBlocks(ThisWorkbook)
@@ -37,14 +50,20 @@ Public Sub BuildFailMaps()
     End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
     WriteOperationLog ThisWorkbook, "Map", IIf(Len(text) = 0, "Fail Maps complete.", text), (Len(text) > 0)
-    If Len(text) = 0 Then BLKVminEngine.BLK_PublishReports ThisWorkbook
+    If Len(text) = 0 Then
+        Application.StatusBar = "Wafer Maps: updating report layout..."
+        BLKVminEngine.BLK_PublishReports ThisWorkbook
+    End If
     If Len(text) > 0 Then
         MsgBox text, vbExclamation
     Else
+        Application.StatusBar = "Wafer Maps: saving workbook..."
         ThisWorkbook.Save
+        Application.StatusBar = "Wafer Maps complete."
         MsgBox "Fail Maps complete. Seconds: " & DateDiff("s", started, Now), vbInformation
     End If
 DoneMap:
+    RestoreProgressStatus oldStatus
     Application.ScreenUpdating = oldScreen: Application.EnableEvents = oldEvents: busy = False
     Exit Sub
 FailedMap:
@@ -88,6 +107,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     Set fso = CreateObject("Scripting.FileSystemObject")
     BLKVminEngine.BLK_MigrateReportNames ThisWorkbook
     stage = "Validate Config"
+    Application.StatusBar = "Import: checking Config..."
     Set cfg = ThisWorkbook.Worksheets("Config")
     If Not fbcOnly Then Set dst = ThisWorkbook.Worksheets("Fail Address")
     stage = "Validate Monitor / Function settings"
@@ -160,6 +180,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
         BLKVminEngine.BLK_BeginFile path
     Do While Seek(fileNo) <= fileSize
         stage = "Read ASC chunk"
+        Application.StatusBar = "Import WT" & phase & " of " & fileCount & ": reading ASC..."
         raw = ReadASCChunk(fileNo, encoding)
         bytePosition = Seek(fileNo) - 1
         If addressOnly Then
@@ -174,7 +195,9 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
         If Not fbcOnly Then ParseASCBuffer buffer, False, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
         chunkCount = chunkCount + 1
         If chunkCount Mod 8 = 0 Then
-            Application.StatusBar = "ASC: " & Format$(bytePosition / 1024, "#,##0") & " / " & Format$(fileSize / 1024, "#,##0") & " KB"
+            Application.StatusBar = "Import WT" & phase & " of " & fileCount & ": " & _
+                Format$(bytePosition / fileSize, "0%") & " read (" & _
+                Format$(bytePosition / 1024, "#,##0") & " / " & Format$(fileSize / 1024, "#,##0") & " KB)"
             DoEvents
         End If
     Loop
@@ -217,6 +240,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
         For Each v In localTNOs: headers(1, 8 + CLng(localTNOs(v))) = "WT" & phase & vbLf & CStr(addressLabels(CStr(v))): Next v
     Next phase
     stage = "Write output batches"
+    Application.StatusBar = "Import: writing results..."
     If dst.AutoFilterMode Then dst.AutoFilterMode = False
     dst.UsedRange.FormatConditions.Delete
     dst.UsedRange.ClearContents
@@ -299,6 +323,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     End If
     If Not fbcOnly Then RecordImportIndex ThisWorkbook, "Address", meta, paths, tnos, fileCount
     stage = "Build FBC comparison and Maps"
+    Application.StatusBar = "Analysis: building FBC comparison and Wafer Maps..."
     blkMessage = BLKVminEngine.BLK_Finalize(ThisWorkbook)
     If Len(blkMessage) > 0 Then
         blkWarnings = blkWarnings & vbCrLf & blkMessage & "; Maps were not updated."
@@ -314,16 +339,33 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     RecordImportIndex ThisWorkbook, "FBC", meta, paths, tnos
     If Not fbcOnly And Len(blkWarnings) = 0 Then
         stage = "Audit Map BLK Address coverage"
+        Application.StatusBar = "Analysis: checking BLK Address coverage..."
         auditMessage = AuditFunctionBlocks(ThisWorkbook)
         If Left$(auditMessage, 15) <> "Audit complete." Then blkWarnings = blkWarnings & vbCrLf & auditMessage
     End If
     BLKVminEngine.BLK_ApplyPresentation ThisWorkbook
 SaveResult:
+    Application.StatusBar = "Analysis: preparing final reports..."
     If Not addressOnly And Len(blkWarnings) = 0 Then BLKVminEngine.BLK_PublishReports ThisWorkbook
     BLKVminEngine.BLK_BuildImportInfo ThisWorkbook
+    If Not addressOnly And Not fbcOnly And Len(blkWarnings) = 0 Then
+        ThisWorkbook.Worksheets("Wafer Maps").Activate
+        With Application.ActiveWindow
+            .Zoom = 80
+            .ScrollRow = 6
+            .ScrollColumn = 1
+        End With
+        ThisWorkbook.Worksheets("Wafer Maps").Range("A6").Select
+    End If
     stage = "Save result workbook"
+    Application.StatusBar = "Import: saving result workbook..."
     Application.Calculation = oldCalc
     ThisWorkbook.SaveAs Filename:=outputPath, FileFormat:=xlOpenXMLWorkbookMacroEnabled, CreateBackup:=False
+    If Len(blkWarnings) = 0 Then
+        Application.StatusBar = "Import complete."
+    Else
+        Application.StatusBar = "Import saved. See Import Info for details."
+    End If
     n = DateDiff("s", startedAt, Now)
     elapsedText = Format$(Fix(n / 3600), "00") & ":" & Format$(Fix(n / 60) Mod 60, "00") & ":" & Format$(n Mod 60, "00")
     If addressOnly Then
@@ -339,12 +381,13 @@ Done:
     Application.Calculation = oldCalc
     Application.EnableEvents = oldEvents
     Application.ScreenUpdating = oldScreen
-    Application.StatusBar = oldStatus
+    RestoreProgressStatus oldStatus
     BLKVminEngine.BLK_Release
     busy = False
     Exit Sub
 Failed:
     errorNumber = Err.Number: errorText = Err.Description
+    Application.StatusBar = "Import stopped: " & stage
     WriteOperationLog ThisWorkbook, IIf(fbcOnly, "FBC", "Address"), "Import failed (" & errorNumber & "): " & errorText & vbCrLf & "Stage: " & stage & "; bytes read: " & bytePosition, True
     MsgBox "Import failed (" & errorNumber & "): " & errorText & vbCrLf & "Stage: " & stage & "; bytes read: " & bytePosition, vbExclamation
     Resume Done
@@ -467,18 +510,22 @@ Public Sub FindMissingBLKAddresses()
             Application.AutomationSecurity = oldSecurity: opened = True
         End If
     End If
+    Application.StatusBar = "Audit: checking BLK Address coverage..."
     result = AuditFunctionBlocks(source, ThisWorkbook)
     If Left$(result, 12) = "Audit failed" Then
         MsgBox result, vbExclamation
     Else
+        Application.StatusBar = "Audit: saving results..."
         ThisWorkbook.Save
+        Application.StatusBar = "Audit complete."
         MsgBox result & vbCrLf & "Seconds: " & DateDiff("s", started, Now), vbInformation
     End If
 DoneAudit:
     On Error Resume Next
     If opened Then source.Close SaveChanges:=False
     Application.AutomationSecurity = oldSecurity
-    Application.ScreenUpdating = oldScreen: Application.EnableEvents = oldEvents: Application.Calculation = oldCalc: Application.StatusBar = oldStatus
+    Application.ScreenUpdating = oldScreen: Application.EnableEvents = oldEvents: Application.Calculation = oldCalc
+    RestoreProgressStatus oldStatus
     busy = False: Exit Sub
 FailedAudit:
     MsgBox "Audit failed (" & Err.Number & "): " & Err.Description, vbExclamation

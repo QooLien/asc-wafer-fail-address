@@ -2340,13 +2340,22 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     For i = ws.Shapes.count To 1 Step -1
         If left$(ws.Shapes(i).name, 6) = "navMap" Then ws.Shapes(i).Delete
     Next i
-    ws.columns("A:V").ColumnWidth = 6: ws.rows("1:8").RowHeight = 26
-    ws.Range("A1:U1").Merge: ws.Range("A1").Value2 = "Wafer Maps"
-    With ws.Range("A1:U1"): .Font.name = "Calibri": .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .Font.Size = 24: .Font.Bold = True: .RowHeight = 36: .HorizontalAlignment = xlCenter: End With
-    ws.Range("A2:U2").Merge: ws.Range("A2").Value2 = "Fail BLK / W&R matching / Fail BLK loss"
-    MapNavButton ws, "navMapPPT", "Export PPT", ws.Range("A7").left, ws.Range("A7").top, ws.Range("A7:D7").width - 4, "", "ExportWaferMapsPPT"
-    MapNavButton ws, "navMapRefresh", "Refresh Maps", ws.Range("E7").left, ws.Range("E7").top, ws.Range("E7:H7").width - 4, "", "BuildFailMaps"
-    ws.Range("I7:U7").Merge: ws.Range("I7").Value2 = "Double-click Chip for details"
+    ws.columns("A:V").ColumnWidth = 6
+    ws.rows("1:4").RowHeight = 25
+    ws.rows(5).RowHeight = 4
+    ws.Range("A1:E1").Merge: ws.Range("A1").Value2 = "Wafer Maps"
+    With ws.Range("A1:E1")
+        .Font.name = "Calibri": .Interior.color = RGB(23, 50, 77)
+        .Font.color = vbWhite: .Font.Size = 16: .Font.Bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
+    MapNavButton ws, "navMapPPT", "Export PPT", ws.Range("F1").left, ws.Range("F1").top, ws.Range("F1:I1").width - 4, "", "ExportWaferMapsPPT"
+    MapNavButton ws, "navMapRefresh", "Refresh Maps", ws.Range("J1").left, ws.Range("J1").top, ws.Range("J1:M1").width - 4, "", "BuildFailMaps"
+    ws.Range("N1:U1").Merge: ws.Range("N1").Value2 = "Double-click Chip for details"
+    With ws.Range("N1:U1")
+        .Font.name = "Calibri": .Font.Size = 11
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
     last = idx.cells(idx.rows.count, 46).End(xlUp).row: idx.cells(1, 46).Resize(last, 8).ClearContents
     idx.cells(1, 46).Resize(1, 8).Value2 = Array("Sheet", "Kind", "WT", "Pattern", "Top", "Left", "Rows", "Columns"): panelDest = 2
     last = loc.cells(loc.rows.count, 1).End(xlUp).row
@@ -2415,12 +2424,12 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Next i
     idx.cells(2, 33).Resize(last - 1, 12).ClearContents
     If keep > 0 Then idx.cells(2, 33).Resize(UBound(packet, 1), 12).Value2 = packet
-    mapDest = keep + 2: top = 9
+    mapDest = keep + 2: top = 6
     classNames = Array("Read Fail", "Write Fail", "Write&Read Fail", "No monitor item Fail")
     ws.columns(1).ColumnWidth = 3.63
     ws.columns(2).Resize(, span - 2).ColumnWidth = 6
     ws.columns(span + 1).Resize(, maxX - minX + 2).ColumnWidth = 4.88
-    MapNavButton ws, "navMapHome", "Map menu", ws.cells(7, span + 1).left, ws.cells(7, span + 1).top, 85, "A9"
+    MapNavButton ws, "navMapHome", "Map menu", ws.cells(1, span + 1).left, ws.cells(1, span + 1).top, 85, "A6"
     For Each kind In Array("COUNT", "QUAD", "LOSS")
         slot = 0
         For phase = 1 To phases
@@ -2536,19 +2545,18 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                     Next i
                 End If
                 idx.cells(panelDest, 46).Resize(1, 8).Value2 = Array("Wafer Maps", kind, "WT" & phase, name, top, panelLeft, panelHeight, panelWidth): panelDest = panelDest + 1
-                n = 3: If CStr(kind) = "QUAD" Then n = 4
-                If CStr(kind) = "LOSS" Then n = 5
+                n = 2: If CStr(kind) = "QUAD" Then n = 3
+                If CStr(kind) = "LOSS" Then n = 4
                 MapNavButton ws, "navMap_" & kind & "_" & slot, "WT" & phase & " " & CStr(name) & " " & label, ws.cells(n, 1).left + (slot - 1) * navStep, ws.cells(n, 1).top, navStep - 4, ws.cells(top, panelLeft).address(False, False)
                 top = top + panelHeight + 4
             Next patternIndex
         Next phase
     Next kind
 Finish:
-    With ws.Range("A2:U8"): .Font.name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: End With
     ws.Activate
     With Application.ActiveWindow
-        .DisplayGridlines = False: .FreezePanes = False: .SplitRow = 8: .SplitColumn = 0: .FreezePanes = True
-        .ScrollRow = 1: .ScrollColumn = 1: .Zoom = 70
+        .DisplayGridlines = False: .FreezePanes = False: .SplitRow = 5: .SplitColumn = 0: .FreezePanes = True
+        .ScrollRow = 6: .ScrollColumn = 1: .Zoom = 80
     End With
     RevealMapSources wb, False
     BLK_OrderSheets wb
