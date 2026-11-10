@@ -614,6 +614,16 @@ Private Function Coordinate(ByVal text As String) As String
 End Function
 
 
+Public Function BLK_AllObservedCatsC20() As Boolean
+    Dim category As Variant
+    If mCats Is Nothing Then Exit Function
+    If mCats.count = 0 Then Exit Function
+    For Each category In mCats.Items
+        If CLng(category) <> 20 Then Exit Function
+    Next category
+    BLK_AllObservedCatsC20 = True
+End Function
+
 Public Function BLK_RecordCount() As Long
     If Len(mBLKError) = 0 Then BLK_RecordCount = mData.count
 End Function
@@ -1242,7 +1252,6 @@ Public Sub BLK_BuildCoverageMap(ByVal wb As Workbook)
                     If status = "Pass" Or status = "Fail" Then
                         fail = CLng(summaries(i, 8)): key = "WT" & phase & "|" & CStr(name) & "|" & chip
                         loss = 0: If losses.Exists(key) Then loss = CLng(losses(key))
-                        If loss > fail Then Err.Raise vbObjectError + 492, , "Loss BLKs exceed Map Fail BLKs: " & key
                         ws.cells(row, col).Value2 = fail: ws.cells(row, col + 1).Value2 = loss
                         If fail > maximum Then maximum = fail
                     Else
@@ -1689,6 +1698,16 @@ Private Sub MapHeat(ByVal ws As Worksheet, ByVal top As Long, ByVal minY As Long
     Next phase
 End Sub
 
+Private Sub AddMapLoss(ByVal counts As Object, ByVal seen As Object, ByVal wt As String, ByVal pattern As String, ByVal x As String, ByVal y As String, ByVal block As String)
+    Dim key As String, blockKey As String
+    key = wt & "|" & pattern & "|" & x & "|" & y
+    blockKey = key & "|" & block
+    If seen.Exists(blockKey) Then Exit Sub
+    seen.Add blockKey, True
+    If Not counts.Exists(key) Then counts.Add key, 0
+    counts(key) = CLng(counts(key)) + 1
+End Sub
+
 Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
     Dim loc As Worksheet, ws As Worksheet, index As Worksheet, summary As Worksheet
     Dim coords As Object, patterns As Object, counts As Object, loss As Object, seen As Object, pass As Object, quad As Object
@@ -1730,10 +1749,12 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
         data = summary.Range("A5:O" & last).Value2
         For i = 1 To UBound(data, 1)
             If CStr(data(i, 12)) = "No Address" Then
-                key = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7)): k = key & "|" & CStr(data(i, 8))
-                If Not seen.Exists(k) Then
-                    seen(k) = True: If Not loss.Exists(key) Then loss(key) = 0
-                    loss(key) = CLng(loss(key)) + 1
+                If StrComp(CStr(data(i, 5)), "Hard Fail", vbTextCompare) = 0 Then
+                    For Each name In patterns
+                        AddMapLoss loss, seen, CStr(data(i, 1)), CStr(name), CStr(data(i, 6)), CStr(data(i, 7)), CStr(data(i, 8))
+                    Next name
+                Else
+                    AddMapLoss loss, seen, CStr(data(i, 1)), CStr(data(i, 5)), CStr(data(i, 6)), CStr(data(i, 7)), CStr(data(i, 8))
                 End If
             End If
         Next i
@@ -1780,7 +1801,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
                     If fail = 0 And lost = 0 And CatPatternZero(dualCategories, dualMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                         .Merge: .Interior.color = RGB(0, 176, 240)
                         IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
-                    ElseIf state <> "Pass" And state <> "Fail" Then
+                    ElseIf state <> "Pass" And state <> "Fail" And lost = 0 Then
                         .Merge: .Interior.color = MapColor(state)
                         IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, state
                     Else
@@ -1899,7 +1920,7 @@ End Function
 
 Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal target As Range)
     Dim info As Variant, ws As Worksheet, source As Worksheet, data As Variant, item As Variant, row(0 To 15) As Variant
-    Dim blocks As New Collection, addresses As New Collection, allowed As Object, loss As Object, key As String, categoryCol As Long
+    Dim blocks As New Collection, addresses As New Collection, lossEvidence As New Collection, allowed As Object, loss As Object, key As String, categoryCol As Long
     Dim i As Long, j As Long, last As Long, top As Long, addrHeader As Long, t As ListObject, legacy As Boolean, r As Long
     On Error GoTo Failed
     info = BLK_MapContext(wb, map, target): If Not IsArray(info) Then Exit Sub
@@ -1913,7 +1934,10 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
         If last >= 5 Then
             data = source.Range("A5:O" & last).Value2
             For i = 1 To UBound(data, 1)
-                If CStr(data(i, 1)) = CStr(info(3)) And CStr(data(i, 5)) = CStr(info(4)) And CLng(data(i, 6)) = CLng(info(5)) And CLng(data(i, 7)) = CLng(info(6)) And CStr(data(i, 12)) = "No Address" Then loss(CStr(data(i, 8))) = True
+                If CStr(data(i, 1)) = CStr(info(3)) And (CStr(data(i, 5)) = CStr(info(4)) Or CStr(data(i, 5)) = "Hard Fail") And CLng(data(i, 6)) = CLng(info(5)) And CLng(data(i, 7)) = CLng(info(6)) And CStr(data(i, 12)) = "No Address" Then
+                    loss(CStr(data(i, 8))) = True
+                    lossEvidence.Add Array(data(i, 1), data(i, 2), data(i, 3), data(i, 5), data(i, 8), data(i, 9), data(i, 10), data(i, 14))
+                End If
             Next i
         End If
     End If
@@ -1970,6 +1994,9 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
     For r = 1 To addresses.count
         item = addresses(r): ws.Hyperlinks.Add ws.cells(addrHeader + r, 16), "", "'Fail Address'!A" & CLng(item(15)), , CStr(item(15))
     Next r
+    If lossEvidence.count > 0 Then
+        top = PutCollection(ws, top, "Missing Address evidence", Array("WT", "TNO", "Function", "Pattern", "BLK", "FBC", "Address Count", "Coverage"), lossEvidence, "tblChipLossEvidence")
+    End If
     ws.UsedRange.Font.name = "Calibri": ws.UsedRange.Font.Size = 11: ws.UsedRange.HorizontalAlignment = xlCenter: ws.UsedRange.VerticalAlignment = xlCenter
     ws.columns("A:P").ColumnWidth = 12: ws.columns("J:L").ColumnWidth = 24: ws.columns("O:P").ColumnWidth = 28
     ws.Range("A1:P1").Interior.color = RGB(23, 50, 77): ws.Range("A1:P1").Font.color = vbWhite
@@ -2514,7 +2541,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         With ws.cells(r, c).Resize(2, 2)
                             .UnMerge: .ClearContents: .Interior.pattern = xlNone: .Font.color = vbBlack
                             panelKey = "WT" & phase & "|" & CStr(detail(0)) & "|" & CStr(item)
-                            If grayChips.Exists(panelKey) Then
+                            If grayChips.Exists(panelKey) And lossCount = 0 Then
                                 .Merge: .Interior.color = RGB(128, 128, 128)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
                             ElseIf failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
