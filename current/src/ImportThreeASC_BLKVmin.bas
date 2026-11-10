@@ -988,7 +988,7 @@ Public Function AuditFunctionBlocks(ByVal wb As Workbook, Optional ByVal outputW
     stage.Activate: Application.ActiveWindow.DisplayGridlines = False
     Application.DisplayAlerts = oldAlerts
     If outputWorkbook Is wb Then BLKVminEngine.BLK_BuildCoverageMap wb
-    monitorNote = BuildMonitorFailAnalysis(wb, outputWorkbook)
+    monitorNote = BuildMonitorFailAnalysis(wb, outputWorkbook, mapMasks)
     If Left$(monitorNote, 26) <> "Monitor analysis complete." Then Err.Raise vbObjectError + 495, , monitorNote
     AuditFunctionBlocks = "Audit complete. Map BLKs=" & missing & "; Complete=" & completeCount & "; Endpoint Partial=" & partialCount & "; No Address=" & absentCount & "; Endpoint Excess=" & excessCount & "; Earlier only=" & intervalOnlyCount
     AuditFunctionBlocks = AuditFunctionBlocks & "; " & monitorNote
@@ -1084,7 +1084,7 @@ Private Sub FormatMonitorOutput(ByVal ws As Worksheet, ByVal last As Long)
     ws.Activate: Application.ActiveWindow.DisplayGridlines = False
 End Sub
 
-Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal outputWorkbook As Workbook = Nothing) As String
+Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal outputWorkbook As Workbook = Nothing, Optional ByVal mapMasks As Object = Nothing) As String
     Dim wanted As Object, functions As Object, monitors As Object, columns As Object, lookup As Object
     Dim endpoints As Object, scopes As Object, scope As Object, catalog As Object, chipCounts As Object
     Dim detail As Worksheet, summary As Worksheet, report As Worksheet, source As Worksheet, cfg As Worksheet
@@ -1094,7 +1094,7 @@ Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal ou
     Dim low As Long, high As Long, col As Long, phase As Long, last As Long, first As Long, take As Long, i As Long, j As Long
     Dim r As Long, start As Long, batch As Long, used As Long, dest As Long, summaryUsed As Long, summaryDest As Long
     Dim firstConfig As Long, lastConfig As Long, code As Long, total As Long, wCount As Long, readCount As Long
-    Dim key As String, chipKey As String, wt As String, kind As String, mappingNote As String, sourceNote As String
+    Dim key As String, chipKey As String, prefix As String, mask As String, wt As String, kind As String, mappingNote As String, sourceNote As String
     Dim wList As String, rList As String, functionList As String, label As String, errorText As String
     On Error GoTo Failed
     If outputWorkbook Is Nothing Then Set outputWorkbook = wb
@@ -1130,19 +1130,30 @@ Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal ou
         Set scope = DrillFunctionScope(cfg, CStr(endpoint), CStr(info(2)), firstConfig, lastConfig)
         scopes.Add CStr(endpoint), scope
     Next endpoint
+    If mapMasks Is Nothing Then Set mapMasks = BLKVminEngine.BLK_MapIncludedMasks(wb)
     Set catalog = CreateObject("Scripting.Dictionary"): Set chipCounts = CreateObject("Scripting.Dictionary")
     last = report.Cells(report.Rows.Count, 1).End(xlUp).Row
     For first = 5 To last Step 512
         take = last - first + 1: If take > 512 Then take = 512
         data = report.Cells(first, 1).Resize(take, 15).Value2
         For i = 1 To take
-            key = CStr(data(i, 1)) & "|" & CStr(data(i, 2)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7)) & "|" & CStr(data(i, 8))
-            If catalog.Exists(key) Then Err.Raise vbObjectError + 495, , "Duplicate Map BLK in Monitor catalog."
-            'Entry: WT,Pattern,StopTNO,X,Y,BLK,FBC,expected interval count,basis,endpoint gap,observed,W,R,WR,None.
-            catalog.Add key, Array(data(i, 1), data(i, 5), data(i, 2), data(i, 6), data(i, 7), data(i, 8), data(i, 9), data(i, 13), data(i, 14), data(i, 11), 0&, 0&, 0&, 0&, 0&)
-            chipKey = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
-            If Not chipCounts.Exists(chipKey) Then chipCounts.Add chipKey, 0
-            chipCounts(chipKey) = CLng(chipCounts(chipKey)) + 1
+            'Coverage also includes Hard Fail and other loss-only rows. Monitor is scoped to Map-counted endpoint BLKs.
+            tno = CStr(data(i, 2))
+            If endpoints.Exists(tno) Then
+                prefix = CStr(data(i, 1)) & "|" & tno & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
+                If mapMasks.Exists(prefix) Then
+                    mask = CStr(mapMasks(prefix))
+                    If Mid$(mask, CLng(data(i, 8)) + 1, 1) = "1" Then
+                        key = prefix & "|" & CStr(data(i, 8))
+                        If catalog.Exists(key) Then Err.Raise vbObjectError + 495, , "Duplicate Map BLK in Monitor catalog."
+                        'Entry: WT,Pattern,StopTNO,X,Y,BLK,FBC,expected interval count,basis,endpoint gap,observed,W,R,WR,None.
+                        catalog.Add key, Array(data(i, 1), data(i, 5), data(i, 2), data(i, 6), data(i, 7), data(i, 8), data(i, 9), data(i, 13), data(i, 14), data(i, 11), 0&, 0&, 0&, 0&, 0&)
+                        chipKey = CStr(data(i, 1)) & "|" & CStr(data(i, 5)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))
+                        If Not chipCounts.Exists(chipKey) Then chipCounts.Add chipKey, 0
+                        chipCounts(chipKey) = CLng(chipCounts(chipKey)) + 1
+                    End If
+                End If
+            End If
         Next i
     Next first
     detail.Range("A4:P4").Value2 = Array("WT", "Pattern", "Stop TNO", "X", "Y", "BLK", "WL", "BL", "IO", "Function Fail TNOs", "Write Monitor TNOs", "Read Monitor TNOs", "Write Monitor Fail", "Read Monitor Fail", "Classification", "Source Address Row")
@@ -1225,7 +1236,7 @@ Public Function BuildMonitorFailAnalysis(ByVal wb As Workbook, Optional ByVal ou
     summaryDest = 5: summaryUsed = 0: ReDim sums(1 To 512, 1 To 16)
     For Each colKey In catalog
         entry = catalog(colKey)
-        If CLng(entry(10)) <> CLng(entry(7)) Then Err.Raise vbObjectError + 495, , "Pattern Address count changed since coverage; refresh analysis."
+        If CLng(entry(10)) <> CLng(entry(7)) Then Err.Raise vbObjectError + 495, , "Pattern Address count changed since coverage: " & CStr(colKey) & "; expected " & entry(7) & ", found " & entry(10) & ". Refresh analysis."
         summaryUsed = summaryUsed + 1
         sums(summaryUsed, 1) = entry(0): sums(summaryUsed, 2) = entry(1): sums(summaryUsed, 3) = entry(2)
         sums(summaryUsed, 4) = entry(3): sums(summaryUsed, 5) = entry(4)
