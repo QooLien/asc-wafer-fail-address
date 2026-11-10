@@ -716,12 +716,19 @@ Private Sub WriteMapLocations(ByVal wb As Workbook)
     End With
 End Sub
 
+Public Function BLK_StopSignOffset(ByVal cfg As Worksheet) As Long
+    BLK_StopSignOffset = 4
+    If StrComp(Trim$(CStr(cfg.Range("H1").Value2)), "Stop Sign", vbTextCompare) = 0 Then BLK_StopSignOffset = 5
+End Function
+
 Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object, ByRef hard As Object) As Object
     Dim result As Object, data As Variant, i As Long, name As String, tno As String, func As String, voltage As Variant, intervalStart As Long, j As Long, hardTno As String
     Set result = CreateObject("Scripting.Dictionary"): result.CompareMode = vbTextCompare
     Set wanted = CreateObject("Scripting.Dictionary")
     Set hard = CreateObject("Scripting.Dictionary")
-    data = cfg.Range("D2:G901").Value2
+    Dim stopCol As Long
+    stopCol = BLK_StopSignOffset(cfg)
+    data = cfg.Range("D2:H901").Value2
     intervalStart = LBound(data, 1)
     For i = LBound(data, 1) To UBound(data, 1)
         If IsError(data(i, 1)) Then Err.Raise vbObjectError + 451, , "Function TNO cell error at row " & i + 1
@@ -732,8 +739,8 @@ Private Function ReadStopPatterns(ByVal cfg As Worksheet, ByRef wanted As Object
             If CLng(tno) < 100 Then Err.Raise vbObjectError + 451, , "Function TNO must be 100-999."
             If Not wanted.Exists(tno) Then wanted.Add tno, True
         End If
-        If IsError(data(i, 4)) Then Err.Raise vbObjectError + 451, , "Stop Sign cell error at Config G" & i + 1
-        name = Trim$(CStr(data(i, 4)))
+        If IsError(data(i, stopCol)) Then Err.Raise vbObjectError + 451, , "Stop Sign cell error at Config row " & i + 1
+        name = Trim$(CStr(data(i, stopCol)))
         If Len(name) > 0 Then
             If IsError(data(i, 1)) Then Err.Raise vbObjectError + 451, , "Function TNO cell error at row " & i + 1
             tno = Trim$(CStr(data(i, 1)))
@@ -775,9 +782,9 @@ Private Function PatternPredecessors(ByVal patterns As Object) As Object
     Set PatternPredecessors = result
 End Function
 
-Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object, Optional ByVal onlyDut As String = "") As Object
+Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object, Optional ByVal onlyDut As String = "", Optional ByVal numericFBC As Object = Nothing) As Object
     Dim result As Object, last As Long, start As Long, take As Long, data As Variant, i As Long, b As Long
-    Dim wt As String, tno As String, key As String, count As Long
+    Dim wt As String, tno As String, key As String, count As Long, values(0 To 255) As Double
     Set result = CreateObject("Scripting.Dictionary")
     last = PresentationLastRow(ws, 2)
     For start = 2 To last Step 512
@@ -795,6 +802,10 @@ Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object, Op
                     If result.Exists(key) Then Err.Raise vbObjectError + 452, , "Duplicate FBC WT/TNO/XY: " & key
                     count = CountFBCRow(data, i)
                     result.Add key, FBCRowMask(data, i)
+                    If Not numericFBC Is Nothing Then
+                        For b = 0 To 255: values(b) = CDbl(data(i, b + 5)): Next b
+                        numericFBC.Add key, values
+                    End If
                 End If
             End If
         Next i
@@ -1298,7 +1309,7 @@ End Sub
 Private Function ConfirmedFunctionPassChips(ByVal wb As Workbook, ByVal coords As Object, ByVal phaseCount As Long) As Object
     Dim wanted As Object, counts As Object, addressFail As Object, result As Object, cfg As Variant
     Dim chip As Variant, tno As Variant, i As Long, phase As Long, key As String, recordKey As String
-    Dim allZero As Boolean, zeroMask As String
+    Dim allZero As Boolean, zeroMask As String, phaseCats As Object
     Set wanted = CreateObject("Scripting.Dictionary"): Set result = CreateObject("Scripting.Dictionary")
     cfg = wb.Worksheets("Config").Range("D2:D901").Value2
     For i = 1 To UBound(cfg, 1)
@@ -1310,9 +1321,10 @@ Private Function ConfirmedFunctionPassChips(ByVal wb As Workbook, ByVal coords A
     zeroMask = String$(256, "0")
     For phase = 1 To phaseCount
         If CStr(wb.Worksheets("Chip Locations").cells(phase + 1, 5).Value2) <> "Data Error" Then
+            Set phaseCats = BLK_Categories(wb, "WT" & phase)
             For Each chip In coords
                 key = "WT" & phase & "|" & CStr(chip)
-                If Not addressFail.Exists(key) Then
+                If Not addressFail.Exists(key) And Not CatIsPostFunctionISB(phaseCats, CStr(chip)) Then
                     allZero = True
                     For Each tno In wanted
                         recordKey = "WT" & phase & "|" & CStr(tno) & "|" & CStr(chip)
@@ -1643,7 +1655,176 @@ Public Sub BLK_PublishReports(ByVal wb As Workbook)
     BLK_BuildIntegratedAnalysis wb
     BLK_BuildImportInfo wb
     BLK_BuildUnifiedMaps wb
+    BLK_BuildCatWaferMap wb
+    BLK_OrderSheets wb
 End Sub
+
+Private Function CatGroup(ByVal category As Long) As Long
+    Select Case category
+        Case 1, 2: CatGroup = 0
+        Case 3, 4: CatGroup = 1
+        Case 10, 11: CatGroup = 2
+        Case 15 To 17: CatGroup = 3
+        Case 14: CatGroup = 4
+        Case 9: CatGroup = 5
+        Case 5 To 8: CatGroup = 6
+        Case 19: CatGroup = 7
+        Case 18: CatGroup = 8
+        Case 12, 13: CatGroup = 9
+        Case Else: CatGroup = 10
+    End Select
+End Function
+
+Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
+    Dim ws As Worksheet, loc As Worksheet, coords As Object, phaseCats(1 To 3) As Object
+    Dim item As Variant, xy As Variant, data As Variant, labels As Variant, colors As Variant
+    Dim last As Long, i As Long, phase As Long, phases As Long, category As Long
+    Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
+    Dim width As Long, span As Long, origin As Long, legendRow As Long, repairTop As Long
+    Dim counts As Object, patterns As Object, wanted As Object, hard As Object, stations As Collection, hit As Variant, repair As Range
+    Set loc = wb.Worksheets("Chip Locations")
+    Set coords = CreateObject("Scripting.Dictionary")
+    last = loc.cells(loc.rows.count, 1).End(xlUp).row
+    If last >= 2 Then
+        data = loc.Range("A2:B" & last).Value2
+        For i = 1 To UBound(data, 1)
+            coords(CStr(data(i, 1)) & "|" & CStr(data(i, 2))) = True
+        Next i
+    End If
+    phases = BLK_PhaseCount(wb)
+    For phase = 1 To phases
+        Set phaseCats(phase) = BLK_Categories(wb, "WT" & phase)
+        For Each item In phaseCats(phase)
+            coords(CStr(item)) = True
+        Next item
+    Next phase
+    If coords.count = 0 Then Exit Sub
+
+    data = coords.keys: xy = Split(CStr(data(0)), "|")
+    minX = CLng(xy(0)): maxX = minX: minY = CLng(xy(1)): maxY = minY
+    For Each item In coords
+        xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+        If x < minX Then minX = x
+        If x > maxX Then maxX = x
+        If y < minY Then minY = y
+        If y > maxY Then maxY = y
+    Next item
+    If CDbl(maxX) - minX > 99 Or CDbl(maxY) - minY > 99 Then Err.Raise vbObjectError + 533, , "Cat Wafer Map coordinate span exceeds 100."
+    width = maxX - minX + 1: span = width + 2
+    legendRow = 7 + maxY - minY
+    labels = Array("C1-C2 | Pass", "C3-C4 | Repair", "C10-C11 | Open/Short, Leak", "C15-C17 | ISB", "C14 | Register & SWT", "C9 | Hard Fail", "C5-C8 | Soft Fail", "C19 | Retention", "C18 | March Soft Fail", "C12-C13 | ISB After Function", "Other recorded Cat")
+    colors = Array(RGB(198, 239, 206), RGB(189, 215, 238), RGB(191, 191, 191), RGB(217, 210, 233), RGB(255, 217, 102), RGB(255, 153, 153), RGB(248, 203, 173), RGB(155, 194, 230), RGB(255, 230, 153), RGB(219, 173, 219), RGB(242, 242, 242))
+    Set ws = ReportSheet(wb, "Cat Wafer Map")
+    SetMapDrillProperty ws, "ASCCatSpan", CStr(span)
+    SetMapDrillProperty ws, "ASCCatPhases", CStr(phases)
+    With ws.cells(1, 1).Resize(legendRow + 10, phases * span)
+        .Font.name = "Arial": .Font.Size = 10
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .ColumnWidth = 4.88: .RowHeight = 19
+    End With
+    With ws.cells(1, 1).Resize(1, phases * span - 1)
+        .Merge: .Value2 = "Cat Wafer Map"
+        .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .Font.Bold = True: .Font.Size = 13
+    End With
+    With ws.cells(2, 1).Resize(1, phases * span - 1)
+        .Merge: .Value2 = "Double-click a Chip to see its combined BLK Distribution"
+        .ShrinkToFit = True
+    End With
+    For phase = 1 To phases
+        origin = 1 + (phase - 1) * span
+        With ws.cells(3, origin).Resize(1, width + 1)
+            .Merge: .Value2 = "WT" & phase
+            .Interior.color = RGB(221, 235, 247): .Font.Bold = True
+        End With
+        ws.cells(4, origin + 1).Resize(1, width).Font.color = RGB(120, 120, 120)
+        ws.cells(5, origin).Resize(maxY - minY + 1, 1).Font.color = RGB(120, 120, 120)
+        For x = minX To maxX: ws.cells(4, origin + 1 + x - minX).Value2 = x: Next x
+        For y = minY To maxY: ws.cells(5 + y - minY, origin).Value2 = y: Next y
+        For Each item In coords
+            xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+            category = 0
+            If phaseCats(phase).Exists(item) Then category = CLng(phaseCats(phase)(item))
+            With ws.cells(5 + y - minY, origin + 1 + x - minX)
+                .Value2 = category
+                .NumberFormat = """C""0;-0;;@"
+                .Font.Bold = True: .ShrinkToFit = True
+                .Borders.LineStyle = xlContinuous
+                .Borders.color = RGB(150, 150, 150)
+                If category > 0 Then .Interior.color = colors(CatGroup(category))
+            End With
+        Next item
+    Next phase
+    For i = LBound(labels) To UBound(labels)
+        With ws.cells(legendRow + i, 1).Resize(1, 7)
+            .Merge: .Value2 = labels(i)
+            .Interior.color = colors(i): .Font.Bold = True: .ShrinkToFit = True
+        End With
+    Next i
+    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
+    Set stations = VD_RepairStations(wb.Worksheets("Config"), patterns)
+    If stations.count > 0 Then
+        Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
+        repairTop = legendRow + 12
+        ws.cells(1, 1).Resize(4, phases * span).Copy Destination:=ws.cells(repairTop, 1)
+        ws.cells(repairTop, 1).Value2 = "BL=1 Repair Cat"
+        ws.cells(repairTop + 1, 1).Value2 = "C3 / C4 only | Fail Cat from the first recorded Fail TNO"
+        For phase = 1 To phases
+            origin = 1 + (phase - 1) * span
+            For y = minY To maxY: ws.cells(repairTop + 4 + y - minY, origin).Value2 = y: Next y
+            For Each item In coords
+                xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+                Set repair = ws.cells(repairTop + 4 + y - minY, origin + 1 + x - minX)
+                repair.Value2 = 0
+                repair.NumberFormat = """C""0;-0;;@"
+                repair.HorizontalAlignment = xlCenter: repair.VerticalAlignment = xlCenter
+                repair.Font.name = "Arial": repair.Font.Size = 10: repair.Font.Bold = True
+                repair.Borders.LineStyle = xlContinuous: repair.Borders.color = RGB(150, 150, 150)
+                If phaseCats(phase).Exists(item) Then
+                    category = CLng(phaseCats(phase)(item))
+                    If category = 3 Or category = 4 Then
+                        hit = VD_FirstRepairStation(stations, counts, CStr(item), phase)
+                        If IsArray(hit) Then
+                            category = CLng(hit(2))
+                            If category > 0 Then
+                                repair.Value2 = category
+                                repair.Interior.color = colors(CatGroup(category))
+                            End If
+                            repair.AddComment hit(4) & " | TNO " & hit(0)
+                        End If
+                    End If
+                End If
+            Next item
+        Next phase
+    End If
+    ws.Activate: Application.ActiveWindow.DisplayGridlines = False
+End Sub
+
+Public Function BLK_TryOpenCatMap(ByVal wb As Workbook, ByVal ws As Object, ByVal target As Range) As Boolean
+    Dim span As Long, phase As Long, origin As Long, x As Variant, y As Variant, value As Variant
+    Dim oldScreen As Boolean
+    If TypeName(ws) <> "Worksheet" Then Exit Function
+    If ws.name <> "Cat Wafer Map" Or target.CountLarge <> 1 Or target.row < 5 Then Exit Function
+    span = CLng(Val(VD_Property(ws, "ASCCatSpan")))
+    If span < 3 Then Exit Function
+    phase = 1 + ((target.column - 1) \ span)
+    If phase > Val(VD_Property(ws, "ASCCatPhases")) Then Exit Function
+    origin = 1 + (phase - 1) * span
+    If target.column <= origin Or target.column >= origin + span - 1 Then Exit Function
+    x = ws.cells(4, target.column).Value2: y = ws.cells(target.row, origin).Value2: value = target.Value2
+    If IsEmpty(value) Or Not IsNumeric(value) Or Not IsNumeric(x) Or Not IsNumeric(y) Then Exit Function
+
+    BLK_TryOpenCatMap = True
+    oldScreen = Application.ScreenUpdating
+    On Error GoTo Failed
+    Application.ScreenUpdating = False
+    VD_OpenPatternDistribution wb, ws, target, CLng(x), CLng(y)
+Done:
+    Application.ScreenUpdating = oldScreen
+    Exit Function
+Failed:
+    MsgBox "Cannot open Chip BLK Distribution: " & Err.description, vbExclamation
+    Resume Done
+End Function
 
 Private Sub MapFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal title As String, ByVal minX As Long, ByVal maxX As Long, ByVal minY As Long, ByVal maxY As Long, ByVal phases As Long)
     Dim span As Long, phase As Long, origin As Long, x As Long, y As Long, c As Long, r As Long
@@ -1723,7 +1904,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
     Dim i As Long, j As Long, phase As Long, phases As Long, minX As Long, maxX As Long, minY As Long, maxY As Long
     Dim last As Long, span As Long, top As Long, blockHeight As Long, origin As Long, r As Long, c As Long, dest As Long, maximum As Long, x As Long, y As Long
     Dim value As Variant, state As String, fail As Long, lost As Long, category As Variant, oldQuad As Worksheet, oldLastCol As Long, oldLastRow As Long
-    Dim dualCategories As Object, dualEndpoints As Object, dualMasks As Object
+    Dim dualCategories As Object, dualEndpoints As Object, dualMasks As Object, dualPhaseCats As Object
     Set loc = wb.Worksheets("Chip Locations"): last = loc.cells(loc.rows.count, 1).End(xlUp).row
     If last < 2 Then Exit Sub
     Set coords = CreateObject("Scripting.Dictionary"): data = loc.Range("A2:B" & last).Value2
@@ -1784,6 +1965,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
         maximum = 2
         For phase = 1 To phases
             origin = 1 + (phase - 1) * span
+            Set dualPhaseCats = BLK_Categories(wb, "WT" & phase)
             For Each item In ordered
                 xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1)): c = origin + 1 + 2 * (x - minX): r = 5 + 2 * (y - minY)
                 key = "WT" & phase & "|" & CStr(name) & "|" & CStr(item): value = Empty: state = "No Data"
@@ -1802,7 +1984,7 @@ Public Sub BLK_StandardizeMaps(ByVal wb As Workbook)
                 If fail > maximum Then maximum = fail
                 r = top + 4 + 2 * (y - minY)
                 With summary.cells(r, c).Resize(2, 2)
-                    If fail = 0 And lost = 0 And CatPatternZero(dualCategories, dualMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
+                    If fail = 0 And lost = 0 And Not CatIsPostFunctionISB(dualPhaseCats, CStr(item)) And CatPatternZero(dualCategories, dualMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                         .Merge: .Interior.color = RGB(0, 176, 240)
                         IndexMapCell index, dest, summary, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                     ElseIf state <> "Pass" And state <> "Fail" And lost = 0 Then
@@ -1932,6 +2114,16 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
         If InStr(1, CStr(map.Range("A2").Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 512, , "Refresh Maps before opening updated sources."
     End If
     If InStr(1, CStr(map.cells(1, 1).Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 512, , "Refresh analysis before opening updated sources."
+    If map.name = "W&R Map" Or CStr(info(7)) = "Monitor Address Count" Then
+        VD_OpenPatternDistribution wb, map, target, CLng(info(5)), CLng(info(6))
+        Exit Sub
+    End If
+    If map.name = "Wafer Maps" Then
+        If VD_IsQuadPanel(wb, target.row) Then
+            VD_OpenPatternDistribution wb, map, target, CLng(info(5)), CLng(info(6))
+            Exit Sub
+        End If
+    End If
     Set allowed = CreateObject("Scripting.Dictionary"): Set loss = CreateObject("Scripting.Dictionary")
     isLoss = (CStr(info(7)) = "Loss BLK Count")
     If isLoss Then
@@ -2098,6 +2290,11 @@ Public Sub BLK_InvalidateDetails(ByVal wb As Workbook, ByVal message As String)
         If VD_Property(ws, "ASCVoltageGrid") = "1" Then ws.Range("A2").Value2 = message
     End If
     Set ws = Nothing
+    Set ws = wb.Worksheets("Cat Wafer Map")
+    If Not ws Is Nothing Then
+        If Len(VD_Property(ws, "ASCCatSpan")) > 0 Then ws.Visible = xlSheetVeryHidden
+    End If
+    Set ws = Nothing
     Set ws = wb.Worksheets("BLK Pattern Distribution")
     If Not ws Is Nothing Then
         If VD_Property(ws, "ASCVoltagePatternDistribution") = "1" Then ws.Visible = xlSheetVeryHidden
@@ -2130,7 +2327,7 @@ Public Sub BLK_ApplyPresentation(ByVal wb As Workbook)
     Dim previousWindow As window, previousSheet As Object, window As window, ws As Worksheet, lastRow As Long, lastCol As Long
     On Error GoTo Restore
     Set previousWindow = Application.ActiveWindow: Set previousSheet = Application.ActiveSheet
-    wb.Worksheets("Config").Range("H1:N901").Borders.LineStyle = xlNone
+    With wb.Worksheets("Config"): .Range(.cells(1, 4 + BLK_StopSignOffset(wb.Worksheets("Config"))), .Range("N901")).Borders.LineStyle = xlNone: End With
     If wb.Worksheets("Log").Visible = xlSheetVisible And wb.Worksheets("Log").index <> wb.Worksheets.count Then wb.Worksheets("Log").Move After:=wb.Worksheets(wb.Worksheets.count)
     If wb.Worksheets("Chip Locations").Visible = xlSheetVisible And wb.Worksheets("Chip Locations").index <> wb.Worksheets.count - 1 Then wb.Worksheets("Chip Locations").Move before:=wb.Worksheets("Log")
     Set ws = wb.Worksheets("FBC by BLK")
@@ -2158,7 +2355,7 @@ Public Sub BLK_ApplyPresentation(ByVal wb As Workbook)
             End If
         Next ws
     Next window
-    wb.Worksheets("Config").Range("H1:N901").Borders.LineStyle = xlNone
+    With wb.Worksheets("Config"): .Range(.cells(1, 4 + BLK_StopSignOffset(wb.Worksheets("Config"))), .Range("N901")).Borders.LineStyle = xlNone: End With
     If wb.Worksheets("Log").Visible = xlSheetVisible And wb.Worksheets("Log").index <> wb.Worksheets.count Then wb.Worksheets("Log").Move After:=wb.Worksheets(wb.Worksheets.count)
     If wb.Worksheets("Chip Locations").Visible = xlSheetVisible And wb.Worksheets("Chip Locations").index <> wb.Worksheets.count - 1 Then wb.Worksheets("Chip Locations").Move before:=wb.Worksheets("Log")
 Restore:
@@ -2169,7 +2366,7 @@ End Sub
 
 Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
     Dim lastRow As Long, lastCol As Long, c As Long, firstData As Long, height As Double, maximum As Double
-    If ws.name = "BLK Distribution" Or ws.name = "BLK Pattern Distribution" Then Exit Sub
+    If ws.name = "BLK Distribution" Or ws.name = "BLK Pattern Distribution" Or ws.name = "Cat Wafer Map" Then Exit Sub
     If ws.name = "Config" Or ws.name = "Import Index" Or ws.name = "FBC by BLK" Or ws.name = "Fail Analysis" Or ws.name = "Import Info" Or ws.name = "Wafer Maps" Then Exit Sub
     If right$(ws.name, 8) = "Fail Map" Or ws.name = "FailBLK Loss Map" Or ws.name = "W&R Map" Then Exit Sub
     lastRow = ws.UsedRange.row + ws.UsedRange.rows.count - 1
@@ -2529,7 +2726,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         If grayChips.Exists(panelKey) Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(128, 128, 128): End With
                             IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
-                        ElseIf QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
+                        ElseIf Not CatIsPostFunctionISB(phaseCats(phase), CStr(item)) And QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(0, 176, 240): End With
                             IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                         Else
@@ -2562,7 +2759,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                             If grayChips.Exists(panelKey) Then
                                 .Merge: .Interior.color = RGB(128, 128, 128)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
-                            ElseIf failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
+                            ElseIf failCount = 0 And lossCount = 0 And Not CatIsPostFunctionISB(phaseCats(phase), CStr(item)) And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                                 .Merge: .Interior.color = RGB(0, 176, 240)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                             Else
@@ -2812,15 +3009,24 @@ End Function
 
 Private Function VD_Scope(ByVal cfg As Worksheet, ByVal pattern As String) As Collection
     Dim result As New Collection, data As Variant, i As Long, previous As Long, ending As Long, tno As String
-    data = cfg.Range("D2:G901").Value2
+    Dim stopCol As Long
+    stopCol = BLK_StopSignOffset(cfg)
+    data = cfg.Range("D2:H901").Value2
     For i = 1 To UBound(data, 1)
-        If StrComp(Trim$(CStr(data(i, 4))), pattern, vbTextCompare) = 0 Then ending = i: Exit For
-        If Len(Trim$(CStr(data(i, 4)))) > 0 Then previous = i
+        If StrComp(Trim$(CStr(data(i, stopCol))), pattern, vbTextCompare) = 0 Then ending = i: Exit For
+        If Len(Trim$(CStr(data(i, stopCol)))) > 0 Then previous = i
     Next i
     If ending = 0 Then Err.Raise vbObjectError + 530, , "Pattern configuration changed. Refresh Maps."
     For i = previous + 1 To ending
         tno = Trim$(CStr(data(i, 1)))
-        If Len(tno) > 0 Then result.Add Array(CStr(CLng(tno)), VD_Voltage(data(i, 3)), CStr(data(i, 2)))
+        If Len(tno) > 0 Then
+            If stopCol = 5 Then
+                If IsError(data(i, 4)) Then Err.Raise vbObjectError + 535, , "Invalid Fail Cat. at Config row " & i + 1
+                result.Add Array(CStr(CLng(tno)), VD_Voltage(data(i, 3)), CStr(data(i, 2)), data(i, 4))
+            Else
+                result.Add Array(CStr(CLng(tno)), VD_Voltage(data(i, 3)), CStr(data(i, 2)), Empty)
+            End If
+        End If
     Next i
     Set VD_Scope = result
 End Function
@@ -2938,9 +3144,53 @@ Private Function VD_Tendency(ByVal a As Variant) As String
     If CLng(a(2)) > 0 Then VD_Tendency = "Equal"
 End Function
 
-Private Function VD_FirstFail(ByVal counts As Object, ByVal scope As Collection, ByVal wt As String, ByVal dut As String, ByVal blk As Long) As Variant
-    Dim item As Variant, key As String, missing As Boolean
-    Dim groupVoltage As Variant, previousVoltage As Variant, note As String
+Public Sub BLK_SetupVminMode(ByVal wb As Workbook)
+    Dim cfg As Worksheet, options As String, mode As Long, modeCell As Range
+    Set cfg = wb.Worksheets("Config")
+    For mode = 0 To 10
+        If mode > 0 Then options = options & ","
+        options = options & "FBC" & mode
+    Next mode
+    Set modeCell = cfg.cells(17, 6 + BLK_StopSignOffset(cfg))
+    With modeCell.Offset(0, -2).Resize(1, 2)
+        .Merge: .Value2 = "Vmin Mode"
+        .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite
+    End With
+    With modeCell
+        If Len(Trim$(CStr(.Value2))) = 0 Then .Value2 = "FBC0"
+        .Interior.color = RGB(219, 234, 254)
+        .Validation.Delete
+        .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:=options
+        .Validation.IgnoreBlank = True: .Validation.InCellDropdown = True: .Validation.ShowError = True
+        .Validation.ErrorMessage = "Select FBC0 through FBC10."
+    End With
+    With modeCell.Offset(0, -2).Resize(1, 3)
+        .Font.name = "Calibri": .Font.Size = 11: .Font.Bold = True
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+    End With
+End Sub
+
+Public Function BLK_VminMode(ByVal cfg As Worksheet) As Long
+    Dim label As String, mode As Long, modeCell As Range
+    Set modeCell = cfg.cells(17, 6 + BLK_StopSignOffset(cfg))
+    If Not IsError(modeCell.Value2) Then
+        label = UCase$(Trim$(CStr(modeCell.Value2)))
+        If Len(label) = 0 Then Exit Function
+        For mode = 0 To 10
+            If label = "FBC" & mode Then
+                BLK_VminMode = mode
+                Exit Function
+            End If
+        Next mode
+    End If
+    Err.Raise vbObjectError + 534, , "Config!" & modeCell.address(False, False) & " Vmin Mode must be FBC0 through FBC10."
+End Function
+
+Private Function VD_VminResult(ByVal numericFBC As Object, ByVal scope As Collection, ByVal wt As String, ByVal dut As String, ByVal blk As Long, ByVal mode As Long) As Variant
+    Dim item As Variant, key As String, values As Variant, count As Double, missing As Boolean, anyFail As Boolean
+    Dim groupVoltage As Variant, previousVoltage As Variant, voltage As Variant, note As String, threshold As Long
+    threshold = mode
+    If threshold = 0 Then threshold = 1
     For Each item In scope
         If IsEmpty(item(1)) Then
             groupVoltage = Empty
@@ -2951,25 +3201,39 @@ Private Function VD_FirstFail(ByVal counts As Object, ByVal scope As Collection,
             previousVoltage = groupVoltage
             groupVoltage = item(1)
         End If
+
         key = wt & "|" & CStr(item(0)) & "|" & dut
-        If Not counts.Exists(key) Then
+        If Not numericFBC.Exists(key) Then
             missing = True
-        ElseIf Mid$(CStr(counts(key)), blk + 1, 1) = "1" Then
-            note = "First observed failure"
-            If IsEmpty(previousVoltage) Then note = "Previous voltage unavailable"
-            If missing Then
-                previousVoltage = Empty
-                note = "Earlier TNO missing; first failure uncertain"
+        Else
+            values = numericFBC(key)
+            count = values(blk)
+            If count > 0 Then anyFail = True
+            If count >= threshold Then
+                If mode = 0 Then
+                    voltage = previousVoltage
+                    If IsEmpty(voltage) Then note = "No previous confirmed Pass voltage"
+                Else
+                    voltage = item(1)
+                    If IsEmpty(voltage) Then note = "Trigger voltage unavailable"
+                End If
+                If missing Then
+                    voltage = Empty
+                    note = "Earlier TNO missing; first threshold crossing uncertain"
+                End If
+                VD_VminResult = Array(CStr(item(0)), item(1), note, CStr(item(2)), voltage, count, anyFail)
+                Exit Function
             End If
-            VD_FirstFail = Array(CStr(item(0)), item(1), note, CStr(item(2)), previousVoltage)
-            Exit Function
         End If
     Next item
     If missing Then
-        VD_FirstFail = Array("", Empty, "Sweep incomplete", "", Empty)
+        note = "Sweep incomplete; threshold unknown"
+    ElseIf mode > 0 Then
+        note = "Threshold not reached"
     Else
-        VD_FirstFail = Array("", Empty, "No recorded failure", "", Empty)
+        note = "No recorded failure"
     End If
+    VD_VminResult = Array("", Empty, note, "", Empty, Empty, anyFail)
 End Function
 
 Private Function VD_LegendGroups(ByVal scope As Collection, ByVal colors As Object) As Object
@@ -3024,19 +3288,19 @@ Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByV
     End With
 End Sub
 
-Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection, ByVal dut As String, ByVal endpoint As String, ByVal b As Long, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByRef states() As String, ByRef sweep() As Variant, Optional ByVal phases As Long = 3) As Long
+Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection, ByVal dut As String, ByVal endpoint As String, ByVal b As Long, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByRef states() As String, ByRef sweep() As Variant, ByVal numericFBC As Object, ByVal mode As Long, Optional ByVal phases As Long = 3) As Long
     Dim phase As Long, chosen As Long, wt As String, first As Variant
     For phase = 1 To phases
         wt = "WT" & phase
         states(phase) = VD_State(counts, wt, dut, endpoint, b, hard, wanted, predecessors)
-        sweep(phase) = Array("", Empty, "", "", Empty)
+        sweep(phase) = Array("", Empty, "", "", Empty, Empty, False)
         If states(phase) = "Fail" Or states(phase) = "Pass" Then
-            first = VD_FirstFail(counts, scope, wt, dut, b)
+            first = VD_VminResult(numericFBC, scope, wt, dut, b, mode)
             sweep(phase) = first
-            If Len(CStr(first(0))) > 0 Then
-                states(phase) = "Fail"
+            If CBool(first(6)) Then states(phase) = "Fail"
+            If states(phase) = "Fail" Then
                 If chosen = 0 Then chosen = phase
-            ElseIf CStr(first(2)) = "Sweep incomplete" Then
+            ElseIf CStr(first(2)) = "Sweep incomplete; threshold unknown" Then
                 states(phase) = "No Data"
             End If
         End If
@@ -3044,17 +3308,26 @@ Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection
     VD_BlockSweep = chosen
 End Function
 
-Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal b As Long, ByVal chosen As Long, ByRef states() As String, ByRef sweep() As Variant, ByVal stats As Object, ByVal colors As Object, Optional ByVal compact As Boolean = False)
-    Dim first As Variant, a As Variant, topCell As Range, band As Range
+Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal b As Long, ByVal chosen As Long, ByRef states() As String, ByRef sweep() As Variant, ByVal stats As Object, ByVal colors As Object, ByVal mode As Long, Optional ByVal compact As Boolean = False, Optional ByVal repair As Variant)
+    Dim first As Variant, a As Variant, topCell As Range, band As Range, wrCol As Long
     Dim label As String, notes As String, func As String, key As String, phase As Long
     label = "": notes = "BLK" & b
     If chosen > 0 Then
         first = sweep(chosen)
-        func = Trim$(CStr(first(3)))
-        If Len(func) = 0 Then func = "TNO " & CStr(first(0))
-        label = VD_VoltageText(first(4))
-        notes = notes & vbLf & "WT" & chosen & " | TNO " & first(0) & " | " & VD_VoltageText(first(1)) & vbLf & first(2)
+        notes = notes & vbLf & "WT" & chosen & " | FBC" & mode
+        If Len(CStr(first(0))) > 0 Then
+            func = Trim$(CStr(first(3)))
+            If Len(func) = 0 Then func = "TNO " & CStr(first(0))
+            If Not IsEmpty(first(4)) Then label = VD_VoltageText(first(4))
+            notes = notes & vbLf & "TNO " & first(0) & " | " & func & " | " & VD_VoltageText(first(1)) & " | " & first(5) & " fail bits"
+        End If
+        If Len(CStr(first(2))) > 0 Then notes = notes & vbLf & first(2)
+    ElseIf mode > 0 Then
+        For phase = 1 To 3
+            If states(phase) = "Pass" Then notes = notes & vbLf & "WT" & phase & " | FBC" & mode & " threshold not reached"
+        Next phase
     End If
+    If IsArray(repair) Then notes = notes & vbLf & "BL=1 | " & repair(2) & " | TNO " & repair(3)
     Set band = ws.cells(r, c).Resize(1, 6): band.Merge
     Set topCell = band.cells(1, 1)
     topCell.Value2 = label
@@ -3065,7 +3338,7 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
     Else
         band.WrapText = True: band.RowHeight = 29
     End If
-    If chosen > 0 Then band.Interior.color = CLng(colors(func))
+    If Len(func) > 0 Then band.Interior.color = CLng(colors(func))
     For phase = 1 To 3
         Set band = ws.cells(r + 1, c + (phase - 1) * 2).Resize(1, 2): band.Merge: band.RowHeight = IIf(compact, 7, 10)
         band.Borders(xlEdgeRight).LineStyle = xlContinuous
@@ -3073,7 +3346,7 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
         If states(phase) = "Pass" Then band.Interior.color = RGB(0, 176, 240)
         If states(phase) = "Fail" Then band.Interior.color = RGB(255, 0, 0)
         key = "WT" & phase & "|" & b
-        If states(phase) = "Fail" And stats.Exists(key) Then
+        If Not compact And states(phase) = "Fail" And stats.Exists(key) Then
             a = stats(key)
             If CLng(a(5)) > 0 Then
                 With ws.cells(r + 2, c + (phase - 1) * 2)
@@ -3083,6 +3356,30 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
             If CLng(a(6)) > 0 Then ws.cells(r + 2, c + (phase - 1) * 2 + 1).Value2 = a(6)
         End If
     Next phase
+    If compact Then
+        wrCol = c + 2
+        If IsArray(repair) Then
+            If CLng(repair(0)) > 0 Then ws.cells(r + 2, c + 2).Value2 = "C" & repair(0)
+            ws.cells(r + 2, c + 3).Value2 = repair(1)
+            wrCol = c + 4
+        End If
+        key = "WT" & chosen & "|" & b
+        If stats.Exists(key) Then
+            a = stats(key)
+            If CLng(a(5)) > 0 Then
+                With ws.cells(r + 2, wrCol)
+                    .Value2 = a(5): .Interior.color = RGB(255, 217, 102)
+                    .AddComment "Write match"
+                End With
+            End If
+            If CLng(a(6)) > 0 Then
+                With ws.cells(r + 2, wrCol + 1)
+                    .Value2 = a(6)
+                    .AddComment "Read match"
+                End With
+            End If
+        End If
+    End If
     With ws.cells(r + 2, c).Resize(1, 6)
         .RowHeight = IIf(compact, 11, 15): .Font.Bold = True: .ShrinkToFit = True
         .Borders.LineStyle = xlDot
@@ -3097,15 +3394,17 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     Dim scope As Collection, detail As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
     Dim selectedFirst As Variant, sweep(1 To 3) As Variant, states(1 To 3) As String, phase As Long, chosen As Long
     Dim b As Long, r As Long, c As Long, j As Long, wt As String, dut As String, endpoint As String, pattern As String
-    Dim key As String
+    Dim key As String, numericFBC As Object, mode As Long
     pattern = CStr(info(4))
     If Len(pattern) = 0 Then Exit Function
     Set cfg = wb.Worksheets("Config")
+    mode = BLK_VminMode(cfg)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
     If Not patterns.Exists(pattern) Then Exit Function
     detail = patterns(pattern): endpoint = CStr(detail(0))
     dut = info(5) & "|" & info(6)
-    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut)
+    Set numericFBC = CreateObject("Scripting.Dictionary")
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut, numericFBC)
     Set predecessors = PatternPredecessors(patterns)
     Set scope = VD_Scope(cfg, pattern)
     Set stats = VD_Stats(wb, CLng(info(5)), CLng(info(6)), pattern)
@@ -3113,7 +3412,7 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     Set ws = ReportSheet(wb, "BLK Distribution")
     SetMapDrillProperty ws, "ASCVoltageGrid", "0"
     Set idx = wb.Worksheets("Import Index")
-    ws.Range("A1:R1").Merge: ws.Range("A1").Value2 = "BLK Distribution | X" & info(5) & " Y" & info(6) & " | " & pattern
+    ws.Range("A1:R1").Merge: ws.Range("A1").Value2 = "BLK Distribution | X" & info(5) & " Y" & info(6) & " | " & pattern & " | FBC" & mode
     ws.Range("A1:R1").Interior.color = RGB(23, 50, 77): ws.Range("A1:R1").Font.color = vbWhite
     ws.Range("A1:R1").Font.Bold = True: ws.rows(1).RowHeight = 25
     ws.Range("A2:R2").Merge: ws.Range("A2").Value2 = "Double-click a block for FBC and Address details"
@@ -3143,8 +3442,8 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     VD_WriteLegend ws, scope, colors
     For b = 0 To 255
         r = 6 + 3 * (b Mod 16): c = 1 + 6 * (b \ 16)
-        chosen = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep)
-        VD_PaintBlock ws, r, c, b, chosen, states, sweep, stats, colors
+        chosen = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, numericFBC, mode)
+        VD_PaintBlock ws, r, c, b, chosen, states, sweep, stats, colors, mode
 
         If chosen = 0 Then chosen = CLng(Right$(CStr(info(3)), 1))
         wt = "WT" & chosen: key = wt & "|" & b
@@ -3155,9 +3454,12 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
         packet(b + 1, 5) = b: packet(b + 1, 6) = states(chosen)
         packet(b + 1, 7) = selectedFirst(0): packet(b + 1, 8) = selectedFirst(1): packet(b + 1, 9) = VD_Tendency(a)
         For j = 0 To 4: packet(b + 1, j + 10) = a(j): Next j
-        packet(b + 1, 15) = endpoint: packet(b + 1, 16) = selectedFirst(2)
+        packet(b + 1, 15) = endpoint
+        packet(b + 1, 16) = "FBC" & mode
+        If Not IsEmpty(selectedFirst(4)) Then packet(b + 1, 16) = packet(b + 1, 16) & " | Vmin " & VD_VoltageText(selectedFirst(4))
+        If Len(CStr(selectedFirst(2))) > 0 Then packet(b + 1, 16) = packet(b + 1, 16) & " | " & selectedFirst(2)
     Next b
-    idx.Range("BC1:BR1").Value2 = Array("WT", "X", "Y", "Pattern", "BLK", "State", "First TNO", "First Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
+    idx.Range("BC1:BR1").Value2 = Array("WT", "X", "Y", "Pattern", "BLK", "State", "Trigger TNO", "Trigger Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
     idx.Range("BC2:BR257").Value2 = packet
     SetMapDrillProperty ws, "ASCVoltageGrid", "1"
     Application.ActiveWindow.DisplayGridlines = False
@@ -3205,25 +3507,116 @@ Failed:
     BLK_AutoDistribution = Err.description
 End Function
 
+Private Function VD_IsQuadPanel(ByVal wb As Workbook, ByVal row As Long) As Boolean
+    Dim idx As Worksheet, data As Variant, last As Long, i As Long, top As Long
+    Set idx = wb.Worksheets("Import Index")
+    last = idx.cells(idx.rows.count, 46).End(xlUp).row
+    If last < 2 Then Exit Function
+    data = idx.cells(2, 46).Resize(last - 1, 8).Value2
+    For i = 1 To UBound(data, 1)
+        If CStr(data(i, 2)) = "QUAD" Then
+            top = CLng(data(i, 5))
+            If row >= top + 2 And row < top + CLng(data(i, 7)) Then
+                VD_IsQuadPanel = True
+                Exit Function
+            End If
+        End If
+    Next i
+End Function
+
+Private Sub VD_OpenPatternDistribution(ByVal wb As Workbook, ByVal map As Object, ByVal target As Range, ByVal x As Long, ByVal y As Long)
+    Dim ws As Worksheet
+    VD_BuildPatternDistribution wb, x, y
+    Set ws = wb.Worksheets("BLK Pattern Distribution")
+    ws.Range("A3:L3").Merge
+    ws.Hyperlinks.Add ws.Range("A3"), "", "'" & map.name & "'!" & target.cells(1, 1).address(False, False), , "Back to " & map.name
+    BLK_OrderSheets wb
+End Sub
+
+Private Function VD_RepairStations(ByVal cfg As Worksheet, ByVal patterns As Object) As Collection
+    Dim result As New Collection, name As Variant, item As Variant, scope As Collection, text As String
+    Set VD_RepairStations = result
+    If BLK_StopSignOffset(cfg) <> 5 Then Exit Function
+    For Each name In patterns
+        Set scope = VD_Scope(cfg, CStr(name))
+        For Each item In scope
+            text = UCase$(Trim$(CStr(item(3))))
+            If Left$(text, 1) = "C" Then text = Mid$(text, 2)
+            result.Add Array(CStr(item(0)), CStr(name), Val(text))
+        Next item
+    Next name
+End Function
+
+Private Function VD_FirstRepairStation(ByVal stations As Collection, ByVal counts As Object, ByVal dut As String, ByVal throughPhase As Long) As Variant
+    Dim phase As Long, item As Variant, key As String, mask As String, position As Long, block As Long
+    For phase = 1 To throughPhase
+        For Each item In stations
+            key = "WT" & phase & "|" & CStr(item(0)) & "|" & dut
+            If counts.Exists(key) Then
+                mask = CStr(counts(key))
+                position = InStr(1, mask, "1", vbBinaryCompare)
+                If position > 0 Then
+                    block = position - 1
+                    If InStr(position + 1, mask, "1", vbBinaryCompare) > 0 Then block = -1
+                    VD_FirstRepairStation = Array(CStr(item(0)), CStr(item(1)), item(2), block, "WT" & phase, key)
+                    Exit Function
+                End If
+            End If
+        Next item
+    Next phase
+End Function
+
+Private Function VD_FindRepairBlocks(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal patterns As Object, ByVal counts As Object, ByVal numericFBC As Object, ByRef message As String) As Object
+    Dim repairs As Object, categories As Object, stations As Collection
+    Dim dut As String, hit As Variant, values As Variant, phase As Long, category As Long
+    Set repairs = CreateObject("Scripting.Dictionary")
+    Set VD_FindRepairBlocks = repairs
+    Set stations = VD_RepairStations(wb.Worksheets("Config"), patterns)
+    If stations.count = 0 Then Exit Function
+    dut = x & "|" & y
+    For phase = 1 To phases
+        Set categories = BLK_Categories(wb, "WT" & phase)
+        If categories.Exists(dut) Then
+            category = CLng(categories(dut))
+            If category = 3 Or category = 4 Then
+                hit = VD_FirstRepairStation(stations, counts, dut, phase)
+                If IsArray(hit) Then
+                    If CLng(hit(3)) >= 0 Then
+                        values = numericFBC(hit(5))
+                        repairs(hit(1) & "|" & hit(3)) = Array(hit(2), values(CLng(hit(3))), hit(4), hit(0))
+                    Else
+                        message = "Multiple BLKs failed at the first TNO " & hit(0) & "; BL=1 location is ambiguous."
+                    End If
+                    Exit Function
+                End If
+            End If
+        End If
+    Next phase
+End Function
+
 Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
     Const sheetName As String = "BLK Pattern Distribution"
     Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
     Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
-    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long
+    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, repairs As Object, repairNote As String
     Set cfg = wb.Worksheets("Config")
+    mode = BLK_VminMode(cfg)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
     If patterns.count = 0 Then Err.Raise vbObjectError + 532, , "Set a Pattern Stop Sign in Config."
     dut = x & "|" & y
-    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut)
-    If counts.count = 0 Then Err.Raise vbObjectError + 532, , "No Function FBC found for X" & x & " Y" & y & "."
+    Set numericFBC = CreateObject("Scripting.Dictionary")
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut, numericFBC)
     If InStr(1, CStr(wb.Worksheets("Monitor Fail Analysis").Range("A2").Value2), "Source updated", vbTextCompare) > 0 Then
         Err.Raise vbObjectError + 532, , "Refresh the analysis before building BLK Pattern Distribution."
     End If
     Set predecessors = PatternPredecessors(patterns)
     Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
     phases = BLK_PhaseCount(wb)
+    Set repairs = VD_FindRepairBlocks(wb, x, y, phases, patterns, counts, numericFBC, repairNote)
     Set ws = ReportSheet(wb, sheetName)
     SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "1"
+    ws.Range("CS1:CU1").Value2 = Array(x, y, mode)
+    ws.columns("CS:DJ").Hidden = True
     With ws.Range("A:CR")
         .ColumnWidth = 2.15
     End With
@@ -3231,6 +3624,17 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
         .Merge: .Value2 = "BLK Pattern Distribution | X" & x & " Y" & y
         .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .RowHeight = 22
     End With
+    If counts.count = 0 Then
+        With ws.Range("M3:AZ3")
+            .Merge
+            .Value2 = "No Function FBC recorded for this Chip"
+        End With
+    End If
+    If Len(repairNote) > 0 Then
+        With ws.Range("BA3:CR3")
+            .Merge: .Value2 = repairNote: .ShrinkToFit = True
+        End With
+    End If
     top = 4: nav = 1
     For Each name In patterns
         If nav <= 85 Then
@@ -3240,7 +3644,7 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
         End If
         detail = patterns(name)
         Set scope = VD_Scope(cfg, CStr(name))
-        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors)
+        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, repairs)
     Next name
     With ws.Range("A1:CR" & top - 1)
         .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
@@ -3255,14 +3659,15 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Application.Goto ws.Range("A1"), True
 End Sub
 
-Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object) As Long
+Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal repairs As Object) As Long
     Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
     Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
     Dim allPass As Boolean, b As Long, phase As Long, row As Long, col As Long, dut As String
+    Dim repair As Variant, key As String, meta(1 To 48, 1 To 18) As Variant, metaRow As Long, group As Long
     dut = x & "|" & y
     allPass = True
     For b = 0 To 255
-        failPhase(b) = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, phases)
+        failPhase(b) = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, numericFBC, mode, phases)
         If failPhase(b) > 0 Then firstFail(b) = sweep(failPhase(b))
         For phase = 1 To phases
             blockStates(b, phase) = states(phase)
@@ -3271,7 +3676,7 @@ Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As 
     Next b
 
     With ws.cells(top, 1).Resize(1, 96)
-        .Merge: .Value2 = pattern & " | WT1" & IIf(phases > 1, "-WT" & phases, "")
+        .Merge: .Value2 = pattern & " | WT1" & IIf(phases > 1, "-WT" & phases, "") & " | FBC" & mode
         .Interior.color = RGB(38, 77, 111): .Font.color = vbWhite: .RowHeight = 18
     End With
     If allPass Then
@@ -3293,16 +3698,26 @@ Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As 
             With ws.cells(top + 1, col + (phase - 1) * 2).Resize(1, 2)
                 .Merge: .Value2 = "WT" & phase
             End With
-            ws.cells(top + 2, col + (phase - 1) * 2).Value2 = "W"
-            ws.cells(top + 2, col + (phase - 1) * 2 + 1).Value2 = "R"
         Next phase
+        ws.cells(top + 2, col).Resize(1, 6).Merge
+        ws.cells(top + 2, col).Value2 = "W / R or Cat / FBC / W / R"
+        ws.cells(top + 2, col).ShrinkToFit = True
     Next col
     For b = 0 To 255
         row = top + 3 + 3 * (b Mod 16): col = 1 + 6 * (b \ 16)
         For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
         If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
-        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, True
+        repair = Empty: key = pattern & "|" & b
+        If repairs.Exists(key) Then repair = repairs(key)
+        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, mode, True, repair
+        metaRow = 1 + 3 * (b Mod 16): group = 2 + (b \ 16)
+        For phase = 0 To 2
+            meta(metaRow + phase, 1) = pattern
+            meta(metaRow + phase, group) = failPhase(b)
+            meta(metaRow + phase, 18) = top + 3
+        Next phase
     Next b
+    ws.cells(top + 3, 97).Resize(48, 18).Value2 = meta
     VD_RenderPatternDistribution = VD_WriteCompactLegend(ws, top + 52, groups, colors) + 1
 End Function
 
@@ -3337,10 +3752,43 @@ End Function
 
 Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range) As Boolean
     If TypeName(ws) <> "Worksheet" Then Exit Function
+    If ws.name = "BLK Pattern Distribution" Then
+        If target.column > 96 Or target.CountLarge > 6 Then Exit Function
+        If Len(CStr(ws.cells(target.row, 97).Value2)) = 0 Then Exit Function
+        BLK_IsVoltageGridCell = (Val(CStr(ws.cells(target.row, 98 + (target.column - 1) \ 6).Value2)) > 0)
+        Exit Function
+    End If
     If ws.name <> "BLK Distribution" Then Exit Function
     If target.row < 6 Or target.row > 53 Or target.column > 96 Then Exit Function
     If target.CountLarge > 6 Then Exit Function
     BLK_IsVoltageGridCell = (VD_Property(ws, "ASCVoltageGrid") = "1")
+End Function
+
+Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Worksheet, ByVal target As Range, ByRef b As Long) As Variant
+    Dim cfg As Worksheet, patterns As Object, wanted As Object, hard As Object, numericFBC As Object, counts As Object, stats As Object
+    Dim x As Long, y As Long, phase As Long, base As Long, pattern As String, wt As String, dut As String, mode As Long, i As Long
+    Dim first As Variant, detail As Variant, a As Variant, result(1 To 1, 1 To 16) As Variant
+    x = CLng(source.Range("CS1").Value2): y = CLng(source.Range("CT1").Value2)
+    pattern = CStr(source.cells(target.row, 97).Value2)
+    base = CLng(source.cells(target.row, 114).Value2)
+    phase = CLng(source.cells(target.row, 98 + (target.column - 1) \ 6).Value2)
+    b = ((target.row - base) \ 3) + 16 * ((target.column - 1) \ 6)
+    wt = "WT" & phase: dut = x & "|" & y
+    Set cfg = wb.Worksheets("Config")
+    mode = CLng(source.Range("CU1").Value2)
+    Set patterns = ReadStopPatterns(cfg, wanted, hard)
+    detail = patterns(pattern)
+    Set numericFBC = CreateObject("Scripting.Dictionary")
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut, numericFBC)
+    first = VD_VminResult(numericFBC, VD_Scope(cfg, pattern), wt, dut, b, mode)
+    Set stats = VD_Stats(wb, x, y, pattern)
+    a = Array(0&, 0&, 0&, 0&, 0&)
+    If stats.Exists(wt & "|" & b) Then a = stats(wt & "|" & b)
+    result(1, 1) = wt: result(1, 2) = x: result(1, 3) = y: result(1, 4) = pattern: result(1, 5) = b: result(1, 6) = "Fail"
+    result(1, 7) = first(0): result(1, 8) = first(1): result(1, 9) = VD_Tendency(a)
+    For i = 0 To 4: result(1, 10 + i) = a(i): Next i
+    result(1, 15) = detail(0): result(1, 16) = "FBC" & mode & " | " & first(2)
+    VD_CompactSummary = result
 End Function
 
 Private Function VD_ChipFBC(ByVal wb As Workbook, ByVal wt As String, ByVal x As Long, ByVal y As Long) As Object
@@ -3368,15 +3816,31 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     Dim state As String, category As String, note As String, w As Variant, r As Variant, value As Variant, aX() As Variant, aY() As Variant
     Dim oldEvents As Boolean, oldScreen As Boolean, message As String
     Dim chunkStart As Long, chunkSize As Long
-    Dim haveX As Boolean, xMin As Double, xMax As Double, xPad As Double
+    Dim haveX As Boolean, xMin As Double, xMax As Double, xPad As Double, backLink As String, matchSide As Long
     oldEvents = Application.EnableEvents: oldScreen = Application.ScreenUpdating
     On Error GoTo Failed
     If Not BLK_IsVoltageGridCell(ws, target) Then Exit Function
     If InStr(1, CStr(ws.Range("A2").Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 531, , "Refresh Map and Chip details after source changes."
     Application.EnableEvents = False: Application.ScreenUpdating = False
-    b = ((target.row - 6) \ 3) + 16 * ((target.column - 1) \ 6)
-    Set ws = wb.Worksheets("Chip Fail Details")
-    Set idx = wb.Worksheets("Import Index"): meta = idx.cells(b + 2, 55).Resize(1, 16).Value2
+    If ws.name = "BLK Pattern Distribution" Then
+        backLink = "'BLK Pattern Distribution'!" & target.cells(1, 1).address(False, False)
+        If Not target.cells(1, 1).Comment Is Nothing Then
+            Select Case target.cells(1, 1).Comment.Text
+                Case "Write match": matchSide = 11
+                Case "Read match": matchSide = 12
+            End Select
+        End If
+        meta = VD_CompactSummary(wb, ws, target, b)
+        Set ws = ReportSheet(wb, "Chip Fail Details")
+        SetMapDrillProperty ws, "ASCChipDetails", "1"
+        SetMapDrillProperty ws, "ASCVoltageDetailTop", "0"
+        ws.columns("A:P").ColumnWidth = 12
+    Else
+        b = ((target.row - 6) \ 3) + 16 * ((target.column - 1) \ 6)
+        backLink = "'BLK Distribution'!" & target.cells(1, 1).address(False, False)
+        Set ws = wb.Worksheets("Chip Fail Details")
+        Set idx = wb.Worksheets("Import Index"): meta = idx.cells(b + 2, 55).Resize(1, 16).Value2
+    End If
     If CLng(meta(1, 5)) <> b Then Err.Raise vbObjectError + 531, , "BLK detail index changed; reopen Chip from Map."
     previousTop = CLng(Val(VD_Property(ws, "ASCVoltageDetailTop")))
     If previousTop > 0 Then
@@ -3394,9 +3858,9 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     Next i
     SetMapDrillProperty ws, "ASCVoltageDetailTop", CStr(top)
     ws.cells(top, 1).Resize(1, 16).Merge: ws.cells(top, 1).Value2 = meta(1, 1) & " / X" & meta(1, 2) & " Y" & meta(1, 3) & " / BLK" & b & " / " & meta(1, 4)
-    ws.Hyperlinks.Add ws.cells(top + 1, 1), "", "'BLK Distribution'!" & wb.Worksheets("BLK Distribution").cells(6 + 3 * (b Mod 16), 1 + 6 * (b \ 16)).Address(False, False), , "Back to BLK grid"
+    ws.Hyperlinks.Add ws.cells(top + 1, 1), "", backLink, , "Back to BLK grid"
     ws.cells(top + 1, 4).Resize(1, 13).Merge: ws.cells(top + 1, 4).Value2 = "Observed Monitor comparison only; not proof of full Address coverage."
-    header = Array("WT", "X", "Y", "Pattern", "BLK", "State", "First TNO", "First Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
+    header = Array("WT", "X", "Y", "Pattern", "BLK", "State", "Trigger TNO", "Trigger Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
     Dim selected(0 To 15) As Variant
     For j = 1 To 16: selected(j - 1) = meta(1, j): Next j
     summary.Add selected
@@ -3463,9 +3927,13 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
         data = source.cells(chunkStart, 1).Resize(chunkSize, 16).Value2
         For i = 1 To UBound(data, 1)
             If CStr(data(i, 1)) = CStr(meta(1, 1)) And CStr(data(i, 2)) = CStr(meta(1, 4)) And CLng(data(i, 4)) = CLng(meta(1, 2)) And CLng(data(i, 5)) = CLng(meta(1, 3)) And CLng(data(i, 6)) = b Then
+                If matchSide > 0 Then
+                    If Len(Trim$(CStr(data(i, matchSide)))) = 0 Then GoTo NextAddress
+                End If
                 category = VD_AddressClass(CStr(data(i, 11)), CStr(data(i, 12)), volts, w, r)
                 addressRows.Add Array(data(i, 1), data(i, 2), data(i, 4), data(i, 5), data(i, 6), data(i, 7), data(i, 8), data(i, 9), w, r, category, data(i, 16))
             End If
+NextAddress:
         Next i
         Next chunkStart
     End If
@@ -3546,6 +4014,13 @@ Private Function QuadPatternZero(ByVal categories As Object, ByVal masks As Obje
         End If
     Next label
     QuadPatternZero = True
+End Function
+
+Private Function CatIsPostFunctionISB(ByVal categories As Object, ByVal chip As String) As Boolean
+    Dim category As Long
+    If Not categories.Exists(chip) Then Exit Function
+    category = CLng(categories(chip))
+    CatIsPostFunctionISB = (category = 12 Or category = 13)
 End Function
 
 Private Function CatPatternZero(ByVal categories As Object, ByVal masks As Object, ByVal wt As String, ByVal endpoint As String, ByVal chip As String) As Boolean

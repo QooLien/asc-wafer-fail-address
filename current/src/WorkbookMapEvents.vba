@@ -3,7 +3,9 @@ Private Sub Workbook_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As 
     If Cancel Then Exit Sub
     'The sheet event can handle the click first. Fall back only while the clicked sheet is still active.
     If Not Application.ActiveSheet Is Sh Then Exit Sub
-    If BLKVminEngine.BLK_IsVoltageGridCell(Sh, Target) Then
+    If BLKVminEngine.BLK_TryOpenCatMap(Me, Sh, Target) Then
+        Cancel = True
+    ElseIf BLKVminEngine.BLK_IsVoltageGridCell(Sh, Target) Then
         Cancel = True
         detailMessage = BLKVminEngine.BLK_ShowBLKVoltage(Me, Sh, Target)
         If Left$(detailMessage, 6) = "Error:" Then MsgBox detailMessage, vbExclamation

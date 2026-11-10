@@ -113,6 +113,7 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
     If Not fbcOnly Then Set dst = ThisWorkbook.Worksheets("Fail Address")
     stage = "Validate Monitor / Function settings"
     BLKVminEngine.BLK_Setup cfg
+    If Not fbcOnly And Not addressOnly Then Call BLKVminEngine.BLK_VminMode(cfg)
     Set tnos = BLKVminEngine.BLK_AddressTNOs()
     If Not fbcOnly Then Set addressLabels = BuildAddressLabels(cfg)
     stage = "Select ASC files"
@@ -556,10 +557,12 @@ Private Function AuditFunctions(ByVal cfg As Worksheet, Optional ByVal scopeOver
     If Len(scopeOverride) > 0 Then scope = UCase$(Trim$(scopeOverride)) Else scope = UCase$(Trim$(CStr(cfg.Range("Q2").Value2)))
     If scope <> "" And scope <> "ALL FUNCTION" And scope <> "STOP SIGN" And scope <> "FAIL MAP" Then Err.Raise vbObjectError + 480, , "Audit scope Q2 must be All Function or Stop Sign."
     stopOnly = (scope = "STOP SIGN" Or scope = "FAIL MAP")
-    data = cfg.Range("D2:G901").Value2
+    Dim stopCol As Long
+    stopCol = BLKVminEngine.BLK_StopSignOffset(cfg)
+    data = cfg.Range("D2:H901").Value2
     For i = LBound(data, 1) To UBound(data, 1)
-        If IsError(data(i, 1)) Or IsError(data(i, 4)) Then Err.Raise vbObjectError + 480, , "Function configuration error at row " & i + 1
-        tno = Trim$(CStr(data(i, 1))): pattern = Trim$(CStr(data(i, 4)))
+        If IsError(data(i, 1)) Or IsError(data(i, stopCol)) Then Err.Raise vbObjectError + 480, , "Function configuration error at row " & i + 1
+        tno = Trim$(CStr(data(i, 1))): pattern = Trim$(CStr(data(i, stopCol)))
         If Len(tno) > 0 And (Not stopOnly Or Len(pattern) > 0) And (scope <> "FAIL MAP" Or StrComp(pattern, "Hard Fail", vbTextCompare) <> 0) Then
             If Len(tno) <> 3 Then Err.Raise vbObjectError + 480, , "Function TNO must be100-999."
             tno = CStr(AuditInteger(tno, 100, 999))
@@ -1544,11 +1547,13 @@ End Function
 
 Private Function DrillFunctionScope(ByVal cfg As Worksheet, ByVal stopTno As String, ByVal pattern As String, ByRef firstRow As Long, ByRef lastRow As Long) As Object
     Dim result As Object, data As Variant, i As Long, previous As Long, lastIndex As Long, tno As String
-    data = cfg.Range("D2:G901").Value2: Set result = CreateObject("Scripting.Dictionary")
+    Dim stopCol As Long
+    stopCol = BLKVminEngine.BLK_StopSignOffset(cfg)
+    data = cfg.Range("D2:H901").Value2: Set result = CreateObject("Scripting.Dictionary")
     For i = 1 To UBound(data, 1)
-        If IsError(data(i, 1)) Or IsError(data(i, 4)) Then Err.Raise vbObjectError + 501, , "Invalid Function configuration."
-        If Trim$(CStr(data(i, 1))) = stopTno And StrComp(Trim$(CStr(data(i, 4))), pattern, vbTextCompare) = 0 Then lastIndex = i: Exit For
-        If Len(Trim$(CStr(data(i, 4)))) > 0 Then previous = i
+        If IsError(data(i, 1)) Or IsError(data(i, stopCol)) Then Err.Raise vbObjectError + 501, , "Invalid Function configuration."
+        If Trim$(CStr(data(i, 1))) = stopTno And StrComp(Trim$(CStr(data(i, stopCol))), pattern, vbTextCompare) = 0 Then lastIndex = i: Exit For
+        If Len(Trim$(CStr(data(i, stopCol)))) > 0 Then previous = i
     Next i
     If lastIndex = 0 Then Err.Raise vbObjectError + 501, , "Pattern configuration changed. Rebuild Maps."
     firstRow = previous + 2: lastRow = lastIndex + 1
