@@ -204,7 +204,10 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
         Close #fileNo: fileOpen = False
         stage = "Parse final buffer WT" & phase
         If Not fbcOnly Then ParseASCBuffer buffer, True, headerTNO, selectedSections, accepted, skipped, localTNOs, addresses, bits, flagBytes, capacity
-        If Not fbcOnly And selectedSections = 0 Then Err.Raise vbObjectError + 5, , "WT" & phase & ": no selected tno= section. File: " & path
+        If Not fbcOnly And selectedSections = 0 Then
+            If phase = 1 Then Err.Raise vbObjectError + 5, , "WT1: no selected tno= section. File: " & path
+            WriteOperationLog ThisWorkbook, "WT" & phase, "No selected TNO sections. No Fail Address was imported for this WT."
+        End If
         If Not fbcOnly And accepted = 0 And skipped > 0 Then Err.Raise vbObjectError + 6, , "WT" & phase & ": no valid selected addresses. Previous results retained."
         sourceStats(phase, 1) = "WT" & phase
         sourceStats(phase, 2) = path
@@ -2056,6 +2059,20 @@ End Function
 Public Sub GoWaferMap()
     BLKVminEngine.BLK_GoWaferMap ThisWorkbook
 End Sub
+Public Sub OpenSelectedChipDetails()
+    Dim ws As Worksheet, selectedCell As Range
+    If TypeName(Application.ActiveSheet) <> "Worksheet" Then Exit Sub
+    Set ws = Application.ActiveSheet
+    If Not ws.Parent Is ThisWorkbook Then Exit Sub
+    If ws.Name <> "Wafer Maps" Then Exit Sub
+    Set selectedCell = Application.ActiveCell
+    If Not BLKVminEngine.BLK_IsIndexedMapCell(ThisWorkbook, ws, selectedCell) Then
+        MsgBox "Select a Chip cell on the Map, then click Chip Details.", vbInformation
+        Exit Sub
+    End If
+    BLKVminEngine.BLK_OpenIndexedMap ThisWorkbook, ws, selectedCell
+End Sub
+
 Public Sub ExportWaferMapsPPT()
     Dim path As String, started As Date
     On Error GoTo Failed

@@ -73,7 +73,14 @@ Public Function BLK_WritePhase(ByVal wb As Workbook, ByVal phase As Long) As Str
         mNextRow = 2
     End If
     If Len(mBLKError) > 0 Then BLK_WritePhase = mBLKError: Exit Function
-    If mData.count = 0 Then BLK_WritePhase = "No selected FBC records; ignored unselected/zero-TNO FBC records=" & mIgnored: Exit Function
+    If mData.count = 0 Then
+        If phase = 1 Then
+            BLK_WritePhase = "No selected FBC records; ignored unselected/zero-TNO FBC records=" & mIgnored
+        Else
+            mPhaseErrors("WT" & phase) = "No selected FBC records"
+        End If
+        Exit Function
+    End If
     If CDbl(mNextRow) + mData.count - 1 > ws.rows.count Then Err.Raise vbObjectError + 404, , "FBC by BLK exceeds Excel row limit."
     Set duts = SortedDUTs(mDUTs): startRow = mNextRow: remaining = mData.count
     take = 512: If remaining < take Then take = remaining
@@ -679,7 +686,11 @@ Private Sub WriteMapLocations(ByVal wb As Workbook)
     For i = 1 To mAvailablePhases
         ws.cells(i + 1, 4).Value2 = "WT" & i
         If mPhaseErrors.Exists("WT" & i) Then
-            If Len(CStr(mPhaseErrors("WT" & i))) > 0 Then ws.cells(i + 1, 5).Value2 = "Data Error" Else ws.cells(i + 1, 5).Value2 = "OK"
+            Select Case CStr(mPhaseErrors("WT" & i))
+                Case "": ws.cells(i + 1, 5).Value2 = "OK"
+                Case "No selected FBC records": ws.cells(i + 1, 5).Value2 = "No Data"
+                Case Else: ws.cells(i + 1, 5).Value2 = "Data Error"
+            End Select
             ws.cells(i + 1, 6).Value2 = mPhaseErrors("WT" & i)
         Else
             ws.cells(i + 1, 5).Value2 = "Not tested": ws.cells(i + 1, 6).Value2 = ""
@@ -2037,7 +2048,7 @@ Public Function BLK_PhaseCount(ByVal wb As Workbook) As Long
     If mAvailablePhases > 0 Then BLK_PhaseCount = mAvailablePhases: Exit Function
     For phase = 1 To 3
         status = CStr(wb.Worksheets("Chip Locations").cells(phase + 1, 5).Value2)
-        If status = "OK" Or status = "Data Error" Then BLK_PhaseCount = phase
+        If status = "OK" Or status = "Data Error" Or status = "No Data" Then BLK_PhaseCount = phase
     Next phase
     If BLK_PhaseCount = 0 Then BLK_PhaseCount = 1
 End Function
@@ -2351,11 +2362,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     End With
     MapNavButton ws, "navMapPPT", "Export PPT", ws.Range("F1").left, ws.Range("F1").top, ws.Range("F1:I1").width - 4, "", "ExportWaferMapsPPT"
     MapNavButton ws, "navMapRefresh", "Refresh Maps", ws.Range("J1").left, ws.Range("J1").top, ws.Range("J1:M1").width - 4, "", "BuildFailMaps"
-    ws.Range("N1:U1").Merge: ws.Range("N1").Value2 = "Double-click Chip for details"
-    With ws.Range("N1:U1")
-        .Font.name = "Calibri": .Font.Size = 11
-        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-    End With
+    MapNavButton ws, "navMapChipDetails", "Chip Details", ws.Range("N1").left, ws.Range("N1").top, ws.Range("N1:R1").width - 4, "", "OpenSelectedChipDetails"
     last = idx.cells(idx.rows.count, 46).End(xlUp).row: idx.cells(1, 46).Resize(last, 8).ClearContents
     idx.cells(1, 46).Resize(1, 8).Value2 = Array("Sheet", "Kind", "WT", "Pattern", "Top", "Left", "Rows", "Columns"): panelDest = 2
     last = loc.cells(loc.rows.count, 1).End(xlUp).row
@@ -2430,6 +2437,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     ws.columns(2).Resize(, span - 2).ColumnWidth = 6
     ws.columns(span + 1).Resize(, maxX - minX + 2).ColumnWidth = 4.88
     MapNavButton ws, "navMapHome", "Map menu", ws.cells(1, span + 1).left, ws.cells(1, span + 1).top, 85, "A6"
+    MapNavButton ws, "navMapChipDetailsRight", "Chip Details", ws.cells(1, span + 1).left + 89, ws.cells(1, span + 1).top, 95, "", "OpenSelectedChipDetails"
     For Each kind In Array("COUNT", "QUAD", "LOSS")
         slot = 0
         For phase = 1 To phases
