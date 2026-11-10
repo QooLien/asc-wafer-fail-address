@@ -2098,6 +2098,11 @@ Public Sub BLK_InvalidateDetails(ByVal wb As Workbook, ByVal message As String)
         If VD_Property(ws, "ASCVoltageGrid") = "1" Then ws.Range("A2").Value2 = message
     End If
     Set ws = Nothing
+    Set ws = wb.Worksheets("BLK Pattern Distribution")
+    If Not ws Is Nothing Then
+        If VD_Property(ws, "ASCVoltagePatternDistribution") = "1" Then ws.Visible = xlSheetVeryHidden
+    End If
+    Set ws = Nothing
     Set ws = wb.Worksheets("Chip Fail Details")
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
@@ -2164,7 +2169,7 @@ End Sub
 
 Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
     Dim lastRow As Long, lastCol As Long, c As Long, firstData As Long, height As Double, maximum As Double
-    If ws.name = "BLK Distribution" Then Exit Sub
+    If ws.name = "BLK Distribution" Or ws.name = "BLK Pattern Distribution" Then Exit Sub
     If ws.name = "Config" Or ws.name = "Import Index" Or ws.name = "FBC by BLK" Or ws.name = "Fail Analysis" Or ws.name = "Import Info" Or ws.name = "Wafer Maps" Then Exit Sub
     If right$(ws.name, 8) = "Fail Map" Or ws.name = "FailBLK Loss Map" Or ws.name = "W&R Map" Then Exit Sub
     lastRow = ws.UsedRange.row + ws.UsedRange.rows.count - 1
@@ -3159,26 +3164,49 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Bo
     VD_BuildGrid = True
 End Function
 
-Public Sub PreviewBLKDistribution()
-    Dim x As Variant, y As Variant, oldScreen As Boolean
-    x = Application.InputBox("Enter Chip X", "BLK Distribution Preview", Type:=1)
-    If VarType(x) = vbBoolean Then Exit Sub
-    y = Application.InputBox("Enter Chip Y", "BLK Distribution Preview", Type:=1)
-    If VarType(y) = vbBoolean Then Exit Sub
-    oldScreen = Application.ScreenUpdating
+Public Function BLK_AutoDistribution(ByVal wb As Workbook) As String
+    Dim summary As Worksheet, fbc As Worksheet, data As Variant, patterns As Object, wanted As Object, hard As Object
+    Dim endpoints As Object, name As Variant, detail As Variant, last As Long, i As Long, first As Long, take As Long
     On Error GoTo Failed
-    If x <> Fix(x) Or y <> Fix(y) Then Err.Raise vbObjectError + 532, , "Enter integer X and Y coordinates."
-    Application.ScreenUpdating = False
-    VD_BuildPreview ThisWorkbook, CLng(x), CLng(y)
-    Application.ScreenUpdating = oldScreen
-    Exit Sub
-Failed:
-    Application.ScreenUpdating = oldScreen
-    MsgBox Err.description, vbExclamation, "BLK Distribution Preview"
-End Sub
+    Set summary = wb.Worksheets("BLK Fail Count")
+    last = PresentationLastRow(summary, 1)
+    If last >= 2 Then
+        data = summary.Range("F2:H" & last).Value2
+        For i = 1 To UBound(data, 1)
+            If Val(CStr(data(i, 3))) > 0 Then
+                VD_BuildPatternDistribution wb, CLng(data(i, 1)), CLng(data(i, 2))
+                Exit Function
+            End If
+        Next i
+    End If
 
-Private Sub VD_BuildPreview(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
-    Const previewName As String = "BLK Distribution Preview"
+    'Without a map-counted Fail, use the first Chip with a recorded Pattern endpoint.
+    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
+    If patterns.count = 0 Then Exit Function
+    Set endpoints = CreateObject("Scripting.Dictionary")
+    For Each name In patterns
+        detail = patterns(name): endpoints(CStr(detail(0))) = True
+    Next name
+    Set fbc = wb.Worksheets("FBC by BLK")
+    last = PresentationLastRow(fbc, 2)
+    For first = 2 To last Step 512
+        take = last - first + 1: If take > 512 Then take = 512
+        data = fbc.cells(first, 2).Resize(take, 3).Value2
+        For i = 1 To UBound(data, 1)
+            If endpoints.Exists(CStr(data(i, 1))) Then
+                VD_BuildPatternDistribution wb, CLng(data(i, 2)), CLng(data(i, 3))
+                Exit Function
+            End If
+        Next i
+    Next first
+    BLK_AutoDistribution = "No Chip has a recorded Pattern endpoint for BLK Distribution."
+    Exit Function
+Failed:
+    BLK_AutoDistribution = Err.description
+End Function
+
+Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
+    Const sheetName As String = "BLK Pattern Distribution"
     Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
     Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
     Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long
@@ -3189,29 +3217,30 @@ Private Sub VD_BuildPreview(ByVal wb As Workbook, ByVal x As Long, ByVal y As Lo
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut)
     If counts.count = 0 Then Err.Raise vbObjectError + 532, , "No Function FBC found for X" & x & " Y" & y & "."
     If InStr(1, CStr(wb.Worksheets("Monitor Fail Analysis").Range("A2").Value2), "Source updated", vbTextCompare) > 0 Then
-        Err.Raise vbObjectError + 532, , "Refresh the analysis before building the preview."
+        Err.Raise vbObjectError + 532, , "Refresh the analysis before building BLK Pattern Distribution."
     End If
     Set predecessors = PatternPredecessors(patterns)
     Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
     phases = BLK_PhaseCount(wb)
-    Set ws = ReportSheet(wb, previewName)
+    Set ws = ReportSheet(wb, sheetName)
+    SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "1"
     With ws.Range("A:CR")
         .ColumnWidth = 2.15
     End With
     With ws.Range("A1:CR1")
-        .Merge: .Value2 = "BLK Distribution Preview | X" & x & " Y" & y
+        .Merge: .Value2 = "BLK Pattern Distribution | X" & x & " Y" & y
         .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .RowHeight = 22
     End With
     top = 4: nav = 1
     For Each name In patterns
         If nav <= 85 Then
             ws.cells(2, nav).Resize(1, 12).Merge
-            ws.Hyperlinks.Add ws.cells(2, nav), "", "'" & previewName & "'!A" & top, , CStr(name)
+            ws.Hyperlinks.Add ws.cells(2, nav), "", "'" & sheetName & "'!A" & top, , CStr(name)
             nav = nav + 12
         End If
         detail = patterns(name)
         Set scope = VD_Scope(cfg, CStr(name))
-        top = VD_PreviewPattern(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors)
+        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors)
     Next name
     With ws.Range("A1:CR" & top - 1)
         .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
@@ -3226,7 +3255,7 @@ Private Sub VD_BuildPreview(ByVal wb As Workbook, ByVal x As Long, ByVal y As Lo
     Application.Goto ws.Range("A1"), True
 End Sub
 
-Private Function VD_PreviewPattern(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object) As Long
+Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object) As Long
     Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
     Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
     Dim allPass As Boolean, b As Long, phase As Long, row As Long, col As Long, dut As String
@@ -3250,7 +3279,7 @@ Private Function VD_PreviewPattern(ByVal wb As Workbook, ByVal ws As Worksheet, 
             .Merge: .Value2 = "All Pass"
             .Interior.color = RGB(0, 176, 240): .RowHeight = 15
         End With
-        VD_PreviewPattern = top + 5
+        VD_RenderPatternDistribution = top + 5
         Exit Function
     End If
 
@@ -3274,10 +3303,10 @@ Private Function VD_PreviewPattern(ByVal wb As Workbook, ByVal ws As Worksheet, 
         If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
         VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, True
     Next b
-    VD_PreviewPattern = VD_PreviewLegend(ws, top + 52, groups, colors) + 1
+    VD_RenderPatternDistribution = VD_WriteCompactLegend(ws, top + 52, groups, colors) + 1
 End Function
 
-Private Function VD_PreviewLegend(ByVal ws As Worksheet, ByVal row As Long, ByVal groups As Object, ByVal colors As Object) As Long
+Private Function VD_WriteCompactLegend(ByVal ws As Worksheet, ByVal row As Long, ByVal groups As Object, ByVal colors As Object) As Long
     Dim group As Variant, item As Variant, items As Object, col As Long
     With ws.cells(row, 1).Resize(1, 96)
         .Merge: .Value2 = "Function items by test voltage"
@@ -3303,7 +3332,7 @@ Private Function VD_PreviewLegend(ByVal ws As Worksheet, ByVal row As Long, ByVa
         Next item
         row = row + 1
     Next group
-    VD_PreviewLegend = row
+    VD_WriteCompactLegend = row
 End Function
 
 Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range) As Boolean

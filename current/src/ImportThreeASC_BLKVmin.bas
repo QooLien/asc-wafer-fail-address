@@ -357,6 +357,11 @@ Private Sub RunThreeASC(ByVal fbcOnly As Boolean, Optional ByVal addressOnly As 
 SaveResult:
     Application.StatusBar = "Analysis: preparing final reports..."
     If Not addressOnly And Len(blkWarnings) = 0 Then BLKVminEngine.BLK_PublishReports ThisWorkbook
+    If Not addressOnly And Not fbcOnly And Len(blkWarnings) = 0 Then
+        Application.StatusBar = "Analysis: building BLK Distribution..."
+        blkMessage = BLKVminEngine.BLK_AutoDistribution(ThisWorkbook)
+        If Len(blkMessage) > 0 Then WriteOperationLog ThisWorkbook, "BLK Distribution", blkMessage, True
+    End If
     BLKVminEngine.BLK_BuildImportInfo ThisWorkbook
     If Not addressOnly And Not fbcOnly And Len(blkWarnings) = 0 Then
         ThisWorkbook.Worksheets("Wafer Maps").Activate
