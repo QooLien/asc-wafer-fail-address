@@ -1967,8 +1967,8 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
         ws.Range("A5:P5").RowHeight = 28: ws.Range("A5:P5").Interior.color = RGB(23, 50, 77): ws.Range("A5:P5").Font.color = vbWhite
         If Not ws.ListObjects("tblChipMonitorAddr").DataBodyRange Is Nothing Then ws.ListObjects("tblChipMonitorAddr").DataBodyRange.WrapText = True: ws.ListObjects("tblChipMonitorAddr").DataBodyRange.RowHeight = 72
     End If
-    ws.Activate: Application.ActiveWindow.DisplayGridlines = False: Application.Goto ws.Range("A1"), True
     BLK_OrderSheets wb
+    ws.Activate: Application.ActiveWindow.DisplayGridlines = False: Application.Goto ws.Range("A1"), True
     Exit Sub
 Failed:
     MsgBox "Cannot open Chip Fail Details: " & Err.description, vbExclamation
