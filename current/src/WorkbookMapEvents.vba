@@ -1,5 +1,8 @@
 Private Sub Workbook_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range, Cancel As Boolean)
     Dim detailMessage As String
+    If TypeName(Sh) = "Worksheet" Then
+        If Sh.CodeName = "WaferMapSheet" Then Exit Sub
+    End If
     If BLKVminEngine.BLK_IsVoltageGridCell(Sh, Target) Then
         Cancel = True
         detailMessage = BLKVminEngine.BLK_ShowBLKVoltage(Me, Sh, Target)

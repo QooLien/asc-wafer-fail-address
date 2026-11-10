@@ -1921,7 +1921,7 @@ End Function
 Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal target As Range)
     Dim info As Variant, ws As Worksheet, source As Worksheet, data As Variant, item As Variant, row(0 To 15) As Variant
     Dim blocks As New Collection, addresses As New Collection, lossEvidence As New Collection, allowed As Object, loss As Object, key As String, categoryCol As Long
-    Dim i As Long, j As Long, last As Long, top As Long, addrHeader As Long, t As ListObject, legacy As Boolean, r As Long
+    Dim i As Long, j As Long, last As Long, top As Long, addrHeader As Long, t As ListObject, legacy As Boolean, r As Long, isLoss As Boolean
     On Error GoTo Failed
     info = BLK_MapContext(wb, map, target): If Not IsArray(info) Then Exit Sub
     If map.name = "Wafer Maps" Then
@@ -1929,12 +1929,13 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
     End If
     If InStr(1, CStr(map.cells(1, 1).Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 512, , "Refresh analysis before opening updated sources."
     Set allowed = CreateObject("Scripting.Dictionary"): Set loss = CreateObject("Scripting.Dictionary")
-    If CStr(info(7)) = "Loss BLK Count" Then
+    isLoss = (CStr(info(7)) = "Loss BLK Count")
+    If map.name = "Wafer Maps" Or isLoss Then
         Set source = wb.Worksheets("Missing BLK Address"): last = source.cells(source.rows.count, 1).End(xlUp).row
         If last >= 5 Then
             data = source.Range("A5:O" & last).Value2
             For i = 1 To UBound(data, 1)
-                If CStr(data(i, 1)) = CStr(info(3)) And (CStr(data(i, 5)) = CStr(info(4)) Or CStr(data(i, 5)) = "Hard Fail") And CLng(data(i, 6)) = CLng(info(5)) And CLng(data(i, 7)) = CLng(info(6)) And CStr(data(i, 12)) = "No Address" Then
+                If CStr(data(i, 1)) = CStr(info(3)) And ((isLoss And CStr(data(i, 5)) = CStr(info(4))) Or StrComp(CStr(data(i, 5)), "Hard Fail", vbTextCompare) = 0) And CLng(data(i, 6)) = CLng(info(5)) And CLng(data(i, 7)) = CLng(info(6)) And CStr(data(i, 12)) = "No Address" Then
                     loss(CStr(data(i, 8))) = True
                     lossEvidence.Add Array(data(i, 1), data(i, 2), data(i, 3), data(i, 5), data(i, 8), data(i, 9), data(i, 10), data(i, 14))
                 End If
@@ -2372,6 +2373,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
     Dim navStep As Double, panelLeft As Long, panelWidth As Long, panelHeight As Long
     Dim phaseCats(1 To 3) As Object, grayChips As Object, chipKey As String, panelKey As String
+    Dim hardLoss As Object, coverage As Worksheet, hardRed As Boolean
     Dim dualData As Object, dualValue As Variant, failCount As Long, lossCount As Long, dualState As String
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
@@ -2423,6 +2425,21 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
         Set phaseCats(phase) = BLK_Categories(wb, "WT" & phase)
     Next phase
     Set grayChips = CreateObject("Scripting.Dictionary")
+    Set hardLoss = CreateObject("Scripting.Dictionary")
+    If hard.count > 0 Then
+        Set coverage = wb.Worksheets("Missing BLK Address")
+        last = coverage.cells(coverage.rows.count, 1).End(xlUp).row
+        If last >= 5 Then
+            data = coverage.Range("A5:L" & last).Value2
+            For i = 1 To UBound(data, 1)
+                If StrComp(CStr(data(i, 5)), "Hard Fail", vbTextCompare) = 0 And CStr(data(i, 12)) = "No Address" Then
+                    If Val(CStr(data(i, 9))) > 0 And Val(CStr(data(i, 10))) = 0 Then
+                        hardLoss(CStr(data(i, 1)) & "|" & CStr(data(i, 6)) & "|" & CStr(data(i, 7))) = True
+                    End If
+                End If
+            Next i
+        End If
+    End If
     Set counts = CreateObject("Scripting.Dictionary"): Set source = wb.Worksheets("Monitor Fail Analysis")
     last = source.cells(source.rows.count, 1).End(xlUp).row
     If last >= 5 Then
@@ -2508,10 +2525,11 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         End With
                         key = "WT" & phase & "|" & CStr(item)
                         panelKey = "WT" & phase & "|" & CStr(detail(0)) & "|" & CStr(item)
-                        If grayChips.Exists(panelKey) Then
+                        hardRed = hardLoss.Exists("WT" & phase & "|" & CStr(item))
+                        If grayChips.Exists(panelKey) And Not hardRed Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(128, 128, 128): End With
                             IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
-                        ElseIf QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
+                        ElseIf Not hardRed And QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(0, 176, 240): End With
                             IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
                         Else
@@ -2528,6 +2546,11 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                                 End With
                                 IndexMapCell idx, mapDest, ws, r + j \ 2, c + j Mod 2, "WT" & phase, CStr(name), x, y, "Monitor Address Count", CStr(classNames(j)), CStr(detail(0)), v, IIf(v > 0, "Recorded matches", "No recorded matches")
                             Next j
+                        End If
+                        If hardRed Then
+                            With ws.cells(r, c).Resize(2, 2)
+                                .Interior.color = vbRed: .Font.color = vbWhite
+                            End With
                         End If
                         ChipBorder ws.cells(r, c).Resize(2, 2)
                     Next item

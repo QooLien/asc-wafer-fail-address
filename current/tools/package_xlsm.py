@@ -5,17 +5,40 @@ No spreadsheet values/styles are authored here; only OPC macro relationships,
 content types and Excel host code names are added.
 """
 import pathlib
+import posixpath
+import re
 import sys
 import zipfile
 from xml.etree import ElementTree as ET
 
-base, binary, output = map(pathlib.Path, sys.argv[1:])
+base, binary, output = map(pathlib.Path, sys.argv[1:4])
+bind_wafer_events = sys.argv[4:] == ['--bind-wafer-events']
+if sys.argv[4:] and not bind_wafer_events:
+    raise ValueError('Expected --bind-wafer-events')
 NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 REL = 'http://schemas.openxmlformats.org/package/2006/relationships'
 CT = 'http://schemas.openxmlformats.org/package/2006/content-types'
 ET.register_namespace('', NS)
 with zipfile.ZipFile(base) as z:
     entries = {name: z.read(name) for name in z.namelist()}
+if bind_wafer_events:
+    book = ET.fromstring(entries['xl/workbook.xml'])
+    rels = ET.fromstring(entries['xl/_rels/workbook.xml.rels'])
+    sheet = next(node for node in book.find(f'{{{NS}}}sheets') if node.get('name') == 'Wafer Maps')
+    rel_id = sheet.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+    target = next(node.get('Target') for node in rels if node.get('Id') == rel_id)
+    part = target.lstrip('/') if target.startswith('/') else posixpath.normpath(posixpath.join('xl', target))
+    xml = entries[part]
+    # Edit just the host identifier and leave the original drawing and sheet XML intact.
+    def bind(match):
+        tag = re.sub(rb'\s+codeName="[^"]*"', b'', match.group())
+        return re.sub(rb'(/?>)$', rb' codeName="WaferMapSheet"\1', tag)
+    xml, replaced = re.subn(rb'<sheetPr\b[^>]*>', bind, xml, count=1)
+    if not replaced:
+        xml, replaced = re.subn(rb'(<worksheet\b[^>]*>)', rb'\1<sheetPr codeName="WaferMapSheet"/>', xml, count=1)
+        if not replaced:
+            raise ValueError('Wafer Maps sheet root not found')
+    entries[part] = xml
 if base.suffix.lower() == '.xlsm':
     # An Excel-saved workbook may contain unused namespace declarations referenced
     # by mc:Ignorable / AlternateContent. Keep its XML byte-for-byte unchanged.
