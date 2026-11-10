@@ -775,7 +775,7 @@ Private Function PatternPredecessors(ByVal patterns As Object) As Object
     Set PatternPredecessors = result
 End Function
 
-Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object) As Object
+Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object, Optional ByVal onlyDut As String = "") As Object
     Dim result As Object, last As Long, start As Long, take As Long, data As Variant, i As Long, b As Long
     Dim wt As String, tno As String, key As String, count As Long
     Set result = CreateObject("Scripting.Dictionary")
@@ -789,10 +789,13 @@ Private Function LoadMapCounts(ByVal ws As Worksheet, ByVal wanted As Object) As
             If wanted.Exists(tno) Then
                 wt = UCase$(Trim$(CStr(data(i, 1))))
                 If wt <> "WT1" And wt <> "WT2" And wt <> "WT3" Then Err.Raise vbObjectError + 452, , "Invalid WT at FBC output row " & start + i - 1
-                key = wt & "|" & tno & "|" & Coordinate(CStr(data(i, 3))) & "|" & Coordinate(CStr(data(i, 4)))
-                If result.Exists(key) Then Err.Raise vbObjectError + 452, , "Duplicate FBC WT/TNO/XY: " & key
-                count = CountFBCRow(data, i)
-                result.Add key, FBCRowMask(data, i)
+                key = Coordinate(CStr(data(i, 3))) & "|" & Coordinate(CStr(data(i, 4)))
+                If Len(onlyDut) = 0 Or key = onlyDut Then
+                    key = wt & "|" & tno & "|" & key
+                    If result.Exists(key) Then Err.Raise vbObjectError + 452, , "Duplicate FBC WT/TNO/XY: " & key
+                    count = CountFBCRow(data, i)
+                    result.Add key, FBCRowMask(data, i)
+                End If
             End If
         Next i
     Next start
@@ -1989,7 +1992,8 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
     ws.Range("A1:P1").Merge: ws.Range("A1").Value2 = CStr(info(3)) & " | X" & info(5) & " Y" & info(6) & " | " & info(4) & " " & info(8)
     ws.Hyperlinks.Add ws.Range("A2"), "", "'" & map.name & "'!" & map.cells(CLng(info(1)), CLng(info(2))).address(False, False), , "Back to Map"
     ws.Range("A3:P3").Merge: ws.Range("A3").Value2 = CStr(info(7)) & "=" & CStr(info(10)) & " | " & CStr(info(11)) & " | recorded Addresses=" & addresses.count
-    top = VD_BuildGrid(wb, ws, info)
+    SetMapDrillProperty ws, "ASCVoltageDetailTop", "0"
+    top = 5
     top = PutCollection(ws, top, "Fail BLK detail", Array("WT", "Pattern", "Stop TNO", "X", "Y", "Chip Fail BLK Count", "BLK", "FBC", "Pattern Address Count", "Write Fail", "Read Fail", "Write&Read Fail", "No monitor item Fail", "Endpoint Missing Count", "Coverage Basis", "Analysis Status"), blocks, "tblChipBLK")
     addrHeader = top + 1
     top = PutCollection(ws, top, "Fail Bit / Monitor matching", Array("WT", "Pattern", "Stop TNO", "X", "Y", "BLK", "WL", "BL", "IO", "Function Fail TNOs", "Write Monitor TNOs", "Read Monitor TNOs", "Write Monitor Fail", "Read Monitor Fail", "Classification", "Source Row"), addresses, "tblChipMonitorAddr")
@@ -2002,10 +2006,14 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
     ws.UsedRange.Font.name = "Calibri": ws.UsedRange.Font.Size = 11: ws.UsedRange.HorizontalAlignment = xlCenter: ws.UsedRange.VerticalAlignment = xlCenter
     ws.columns("A:P").ColumnWidth = 12: ws.columns("J:L").ColumnWidth = 24: ws.columns("O:P").ColumnWidth = 28
     ws.Range("A1:P1").Interior.color = RGB(23, 50, 77): ws.Range("A1:P1").Font.color = vbWhite
-    If left$(CStr(ws.Range("A5").Value2), 24) = "BLK Voltage Distribution" Then
-        ws.columns("A:P").ColumnWidth = 12
-        ws.Range("A5:P5").RowHeight = 28: ws.Range("A5:P5").Interior.color = RGB(23, 50, 77): ws.Range("A5:P5").Font.color = vbWhite
-        If Not ws.ListObjects("tblChipMonitorAddr").DataBodyRange Is Nothing Then ws.ListObjects("tblChipMonitorAddr").DataBodyRange.WrapText = True: ws.ListObjects("tblChipMonitorAddr").DataBodyRange.RowHeight = 72
+    If VD_BuildGrid(wb, info) Then
+        ws.Hyperlinks.Add ws.Range("E2"), "", "'BLK Distribution'!A1", , "BLK Distribution"
+        If Not ws.ListObjects("tblChipMonitorAddr").DataBodyRange Is Nothing Then
+            With ws.ListObjects("tblChipMonitorAddr").DataBodyRange
+                .WrapText = True
+                .RowHeight = 72
+            End With
+        End If
     End If
     BLK_OrderSheets wb
     ws.Activate: Application.ActiveWindow.DisplayGridlines = False: Application.Goto ws.Range("A1"), True
@@ -2085,6 +2093,11 @@ End Function
 Public Sub BLK_InvalidateDetails(ByVal wb As Workbook, ByVal message As String)
     Dim ws As Worksheet, i As Long, owned As Boolean
     On Error Resume Next
+    Set ws = wb.Worksheets("BLK Distribution")
+    If Not ws Is Nothing Then
+        If VD_Property(ws, "ASCVoltageGrid") = "1" Then ws.Range("A2").Value2 = message
+    End If
+    Set ws = Nothing
     Set ws = wb.Worksheets("Chip Fail Details")
     On Error GoTo 0
     If ws Is Nothing Then Exit Sub
@@ -2151,9 +2164,7 @@ End Sub
 
 Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
     Dim lastRow As Long, lastCol As Long, c As Long, firstData As Long, height As Double, maximum As Double
-    If ws.name = "Chip Fail Details" Then
-        If VD_Property(ws, "ASCVoltageGrid") = "1" And left$(CStr(ws.Range("A5").Value2), 24) = "BLK Voltage Distribution" Then Exit Sub
-    End If
+    If ws.name = "BLK Distribution" Then Exit Sub
     If ws.name = "Config" Or ws.name = "Import Index" Or ws.name = "FBC by BLK" Or ws.name = "Fail Analysis" Or ws.name = "Import Info" Or ws.name = "Wafer Maps" Then Exit Sub
     If right$(ws.name, 8) = "Fail Map" Or ws.name = "FailBLK Loss Map" Or ws.name = "W&R Map" Then Exit Sub
     lastRow = ws.UsedRange.row + ws.UsedRange.rows.count - 1
@@ -2875,7 +2886,7 @@ Private Function VD_MonitorVoltages(ByVal wb As Workbook) As Object
     Set VD_MonitorVoltages = result
 End Function
 
-Private Function VD_Stats(ByVal wb As Workbook, ByVal wt As String, ByVal x As Long, ByVal y As Long, ByVal pattern As String) As Object
+Private Function VD_Stats(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long, ByVal pattern As String) As Object
     Dim result As Object, seen As Object, volts As Object, ws As Worksheet, data As Variant, a As Variant
     Dim i As Long, last As Long, key As String, address As String, category As String, w As Variant, r As Variant, n As Long
     Dim chunkStart As Long, chunkSize As Long
@@ -2886,17 +2897,22 @@ Private Function VD_Stats(ByVal wb As Workbook, ByVal wt As String, ByVal x As L
         chunkSize = last - chunkStart + 1: If chunkSize > 512 Then chunkSize = 512
         data = ws.cells(chunkStart, 1).Resize(chunkSize, 16).Value2
         For i = 1 To UBound(data, 1)
-            If CStr(data(i, 1)) = wt And CStr(data(i, 2)) = pattern And CLng(data(i, 4)) = x And CLng(data(i, 5)) = y Then
-                key = CStr(data(i, 6)): address = key & "|" & data(i, 7) & "|" & data(i, 8) & "|" & data(i, 9)
+            If CStr(data(i, 2)) = pattern And CLng(data(i, 4)) = x And CLng(data(i, 5)) = y Then
+                key = CStr(data(i, 1)) & "|" & data(i, 6)
+                address = key & "|" & data(i, 7) & "|" & data(i, 8) & "|" & data(i, 9)
                 If Not seen.Exists(address) Then
                     seen(address) = True
-                    If result.Exists(key) Then a = result(key) Else a = Array(0&, 0&, 0&, 0&, 0&)
+                    If result.Exists(key) Then a = result(key) Else a = Array(0&, 0&, 0&, 0&, 0&, 0&, 0&)
                     category = VD_AddressClass(CStr(data(i, 11)), CStr(data(i, 12)), volts, w, r)
                     n = 3
                     If category = "Write worse" Then n = 0
                     If category = "Read worse" Then n = 1
                     If category = "Equal" Then n = 2
-                    a(n) = CLng(a(n)) + 1: a(4) = CLng(a(4)) + 1: result(key) = a
+                    a(n) = CLng(a(n)) + 1
+                    a(4) = CLng(a(4)) + 1
+                    If Len(Trim$(CStr(data(i, 11)))) > 0 Then a(5) = CLng(a(5)) + 1
+                    If Len(Trim$(CStr(data(i, 12)))) > 0 Then a(6) = CLng(a(6)) + 1
+                    result(key) = a
                 End If
             End If
         Next i
@@ -2917,93 +2933,216 @@ Private Function VD_Tendency(ByVal a As Variant) As String
     If CLng(a(2)) > 0 Then VD_Tendency = "Equal"
 End Function
 
-Private Function VD_Color(ByVal tendency As String) As Long
-    Select Case tendency
-        Case "Write worse": VD_Color = RGB(255, 217, 202)
-        Case "Read worse": VD_Color = RGB(189, 215, 238)
-        Case "Mixed": VD_Color = RGB(217, 210, 233)
-        Case "Equal": VD_Color = RGB(226, 239, 218)
-        Case Else: VD_Color = RGB(235, 235, 235)
-    End Select
-End Function
-
 Private Function VD_FirstFail(ByVal counts As Object, ByVal scope As Collection, ByVal wt As String, ByVal dut As String, ByVal blk As Long) As Variant
     Dim item As Variant, key As String, missing As Boolean
+    Dim groupVoltage As Variant, previousVoltage As Variant, note As String
     For Each item In scope
+        If IsEmpty(item(1)) Then
+            groupVoltage = Empty
+            previousVoltage = Empty
+        ElseIf IsEmpty(groupVoltage) Then
+            groupVoltage = item(1)
+        ElseIf CDbl(item(1)) <> CDbl(groupVoltage) Then
+            previousVoltage = groupVoltage
+            groupVoltage = item(1)
+        End If
         key = wt & "|" & CStr(item(0)) & "|" & dut
         If Not counts.Exists(key) Then
             missing = True
         ElseIf Mid$(CStr(counts(key)), blk + 1, 1) = "1" Then
-            If missing Then VD_FirstFail = Array(CStr(item(0)), Empty, "Earlier TNO missing; first failure uncertain") Else VD_FirstFail = Array(CStr(item(0)), item(1), IIf(IsEmpty(item(1)), "Function voltage missing", "First observed failure"))
+            note = "First observed failure"
+            If IsEmpty(previousVoltage) Then note = "Previous voltage unavailable"
+            If missing Then
+                previousVoltage = Empty
+                note = "Earlier TNO missing; first failure uncertain"
+            End If
+            VD_FirstFail = Array(CStr(item(0)), item(1), note, CStr(item(2)), previousVoltage)
             Exit Function
         End If
     Next item
-    If missing Then VD_FirstFail = Array("", Empty, "Sweep incomplete") Else VD_FirstFail = Array("", Empty, "No recorded failure")
+    If missing Then
+        VD_FirstFail = Array("", Empty, "Sweep incomplete", "", Empty)
+    Else
+        VD_FirstFail = Array("", Empty, "No recorded failure", "", Empty)
+    End If
 End Function
 
-Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal info As Variant) As Long
-    Dim patterns As Object, wanted As Object, hard As Object, counts As Object, predecessors As Object, stats As Object
-    Dim scope As Collection, idx As Worksheet, detail As Variant, first As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
-    Dim b As Long, r As Long, c As Long, j As Long, state As String, tendency As String, label As String, key As String
-    VD_BuildGrid = 5
-    If Len(CStr(info(4))) = 0 Then Exit Function
-    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
-    If Not patterns.Exists(CStr(info(4))) Then Exit Function
-    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted): Set predecessors = PatternPredecessors(patterns)
-    Set scope = VD_Scope(wb.Worksheets("Config"), CStr(info(4)))
-    Set stats = VD_Stats(wb, CStr(info(3)), CLng(info(5)), CLng(info(6)), CStr(info(4)))
-    Set idx = wb.Worksheets("Import Index"): detail = patterns(CStr(info(4)))
-    ws.Range("A5:P5").Merge: ws.Range("A5").Value2 = "BLK Voltage Distribution - " & CStr(info(4)) & " (double-click BLK)"
-    SetMapDrillProperty ws, "ASCVoltageGrid", "1": SetMapDrillProperty ws, "ASCVoltageDetailTop", "0"
-    idx.Range("BC1:BR257").ClearContents
-    idx.Range("BC1:BR1").Value2 = Array("WT", "X", "Y", "Pattern", "BLK", "State", "First TNO", "First Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
+Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByVal colors As Object)
+    Dim groups As Object, items As Object, entry As Variant, voltage As String, func As String
+    Dim group As Variant, name As Variant, angle As Double, row As Long
+    Set groups = CreateObject("Scripting.Dictionary")
+    For Each entry In scope
+        func = Trim$(CStr(entry(2)))
+        If Len(func) = 0 Then func = "TNO " & CStr(entry(0))
+        If Not colors.Exists(func) Then
+            angle = colors.count * 2.39996322972865
+            colors.Add func, RGB(196 + 52 * Cos(angle), 196 + 52 * Cos(angle + 2.0943951023932), 196 + 52 * Cos(angle + 4.18879020478639))
+        End If
+        voltage = VD_VoltageText(entry(1))
+        If Not groups.Exists(voltage) Then
+            Set items = CreateObject("Scripting.Dictionary")
+            items.CompareMode = vbTextCompare
+            groups.Add voltage, items
+        End If
+        Set items = groups(voltage)
+        items(func) = True
+    Next entry
+    ws.Range("A55:R55").Merge
+    ws.Range("A55").Value2 = "Function items by test voltage"
+    ws.Range("A55:R55").Interior.color = RGB(23, 50, 77)
+    ws.Range("A55:R55").Font.color = vbWhite
+    row = 56
+    For Each group In groups
+        Set items = groups(group)
+        ws.cells(row, 1).Resize(items.count, 6).Merge
+        ws.cells(row, 1).Value2 = CStr(group) & " (" & items.count & ")"
+        ws.cells(row, 1).Resize(items.count, 6).Interior.color = RGB(239, 244, 250)
+        For Each name In items
+            With ws.cells(row, 7).Resize(1, 12)
+                .Merge
+                .cells(1, 1).Value2 = CStr(name)
+                .Interior.color = CLng(colors(name))
+            End With
+            row = row + 1
+        Next name
+    Next group
+    With ws.Range("A55:R" & row - 1)
+        .Font.name = "Arial": .Font.Size = 10
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .RowHeight = 17
+    End With
+End Sub
+
+Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Boolean
+    Dim ws As Worksheet, idx As Worksheet, cfg As Worksheet, topCell As Range, band As Range
+    Dim patterns As Object, wanted As Object, hard As Object, counts As Object, predecessors As Object, stats As Object, colors As Object
+    Dim scope As Collection, detail As Variant, first As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
+    Dim selectedFirst As Variant, sweep(1 To 3) As Variant, states(1 To 3) As String, phase As Long, chosen As Long
+    Dim b As Long, r As Long, c As Long, j As Long, wt As String, dut As String, endpoint As String, pattern As String
+    Dim label As String, notes As String, func As String, key As String
+    pattern = CStr(info(4))
+    If Len(pattern) = 0 Then Exit Function
+    Set cfg = wb.Worksheets("Config")
+    Set patterns = ReadStopPatterns(cfg, wanted, hard)
+    If Not patterns.Exists(pattern) Then Exit Function
+    detail = patterns(pattern): endpoint = CStr(detail(0))
+    dut = info(5) & "|" & info(6)
+    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut)
+    Set predecessors = PatternPredecessors(patterns)
+    Set scope = VD_Scope(cfg, pattern)
+    Set stats = VD_Stats(wb, CLng(info(5)), CLng(info(6)), pattern)
+    Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
+    Set ws = ReportSheet(wb, "BLK Distribution")
+    SetMapDrillProperty ws, "ASCVoltageGrid", "0"
+    Set idx = wb.Worksheets("Import Index")
+    ws.Range("A1:R1").Merge: ws.Range("A1").Value2 = "BLK Distribution | X" & info(5) & " Y" & info(6) & " | " & pattern
+    ws.Range("A1:R1").Interior.color = RGB(23, 50, 77): ws.Range("A1:R1").Font.color = vbWhite
+    ws.Range("A1:R1").Font.Bold = True: ws.rows(1).RowHeight = 25
+    ws.Range("A2:R2").Merge: ws.Range("A2").Value2 = "Double-click a block for FBC and Address details"
+    ws.Range("A3:F3").Merge
+    ws.Hyperlinks.Add ws.Range("A3"), "", "'Chip Fail Details'!A1", , "Chip Fail Details"
+    ws.Range("G3:L3").Merge
+    ws.Hyperlinks.Add ws.Range("G3"), "", "'BLK Distribution'!A55", , "Function legend"
+    ws.Range("A1:CR53").Font.name = "Arial"
+    ws.Range("A1:CR53").HorizontalAlignment = xlCenter
+    ws.Range("A1:CR53").VerticalAlignment = xlCenter
+    ws.Range("A:CR").ColumnWidth = 4
+    ws.Range("A6:CR53").Font.Size = 9
+    For c = 1 To 96 Step 6
+        For phase = 1 To 3
+            With ws.cells(4, c + (phase - 1) * 2).Resize(1, 2)
+                .Merge
+                .cells(1, 1).Value2 = "WT" & phase
+            End With
+            ws.cells(5, c + (phase - 1) * 2).Value2 = "W"
+            ws.cells(5, c + (phase - 1) * 2 + 1).Value2 = "R"
+        Next phase
+    Next c
+    With ws.Range("A4:CR5")
+        .Font.Size = 9: .Font.Bold = True
+        .Interior.color = RGB(239, 244, 250)
+    End With
+    VD_WriteLegend ws, scope, colors
     For b = 0 To 255
-        r = 6 + b Mod 16: c = 1 + b \ 16: a = Array(0&, 0&, 0&, 0&, 0&)
-        If stats.Exists(CStr(b)) Then a = stats(CStr(b))
-        state = VD_State(counts, CStr(info(3)), info(5) & "|" & info(6), CStr(detail(0)), b, hard, wanted, predecessors)
-        tendency = VD_Tendency(a): first = Array("", Empty, "")
-        If state = "Fail" Then first = VD_FirstFail(counts, scope, CStr(info(3)), info(5) & "|" & info(6), b)
-        label = "BLK" & b
-        With ws.cells(r, c)
-            .Interior.pattern = xlSolid: .Font.color = vbBlack: .WrapText = True
-            Select Case state
-                Case "Fail"
-                    label = label & vbLf & VD_VoltageText(first(1)) & vbLf
-                    Select Case tendency
-                        Case "Write worse": label = label & "W>R"
-                        Case "Read worse": label = label & "R>W"
-                        Case Else: label = label & tendency
-                    End Select
-                    If CLng(a(3)) > 0 And CLng(a(4)) > CLng(a(3)) Then label = label & "*"
-                    .Interior.color = VD_Color(tendency)
-                Case "Pass": label = label & vbLf & "Pass": .Interior.color = vbWhite
-                Case "No Data": label = label & vbLf & "No Data": .Interior.color = RGB(235, 235, 235)
-                Case Else: label = label & vbLf & "Excluded": .Interior.color = RGB(170, 170, 170)
-            End Select
-            .Value2 = label: .Borders.LineStyle = xlContinuous: .Borders.color = RGB(150, 150, 150)
+        r = 6 + 3 * (b Mod 16): c = 1 + 6 * (b \ 16)
+        chosen = 0
+        For phase = 1 To 3
+            wt = "WT" & phase
+            states(phase) = VD_State(counts, wt, dut, endpoint, b, hard, wanted, predecessors)
+            sweep(phase) = Array("", Empty, "", "", Empty)
+            If states(phase) = "Fail" Or states(phase) = "Pass" Then
+                first = VD_FirstFail(counts, scope, wt, dut, b)
+                sweep(phase) = first
+                If Len(CStr(first(0))) > 0 Then
+                    states(phase) = "Fail"
+                    If chosen = 0 Then chosen = phase
+                ElseIf CStr(first(2)) = "Sweep incomplete" Then
+                    states(phase) = "No Data"
+                End If
+            End If
+        Next phase
+        label = "": notes = "BLK" & b
+        If chosen > 0 Then
+            first = sweep(chosen)
+            func = Trim$(CStr(first(3)))
+            If Len(func) = 0 Then func = "TNO " & CStr(first(0))
+            label = VD_VoltageText(first(4))
+            notes = notes & vbLf & "WT" & chosen & " | TNO " & first(0) & " | " & VD_VoltageText(first(1)) & vbLf & first(2)
+        End If
+        Set band = ws.cells(r, c).Resize(1, 6): band.Merge
+        Set topCell = band.cells(1, 1)
+        topCell.Value2 = label
+        topCell.AddComment notes
+        band.WrapText = True: band.Font.Bold = True: band.RowHeight = 29
+        If chosen > 0 Then band.Interior.color = CLng(colors(func))
+        For phase = 1 To 3
+            Set band = ws.cells(r + 1, c + (phase - 1) * 2).Resize(1, 2): band.Merge: band.RowHeight = 10
+            band.Borders(xlEdgeRight).LineStyle = xlContinuous
+            band.Borders(xlEdgeRight).color = RGB(190, 190, 190)
+            If states(phase) = "Pass" Then band.Interior.color = RGB(0, 176, 240)
+            If states(phase) = "Fail" Then band.Interior.color = RGB(255, 0, 0)
+            key = "WT" & phase & "|" & b
+            If states(phase) = "Fail" And stats.Exists(key) Then
+                a = stats(key)
+                If CLng(a(5)) > 0 Then
+                    With ws.cells(r + 2, c + (phase - 1) * 2)
+                        .Value2 = a(5): .Interior.color = RGB(255, 217, 102)
+                    End With
+                End If
+                If CLng(a(6)) > 0 Then ws.cells(r + 2, c + (phase - 1) * 2 + 1).Value2 = a(6)
+            End If
+        Next phase
+        With ws.cells(r + 2, c).Resize(1, 6)
+            .RowHeight = 15: .Font.Bold = True: .ShrinkToFit = True
+            .Borders.LineStyle = xlDot
+            .Borders.color = RGB(190, 190, 190)
         End With
-        packet(b + 1, 1) = info(3): packet(b + 1, 2) = info(5): packet(b + 1, 3) = info(6): packet(b + 1, 4) = info(4)
-        packet(b + 1, 5) = b: packet(b + 1, 6) = state: packet(b + 1, 7) = first(0): packet(b + 1, 8) = first(1): packet(b + 1, 9) = tendency
+        ws.cells(r, c).Resize(3, 6).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(95, 95, 95)
+
+        If chosen = 0 Then chosen = CLng(Right$(CStr(info(3)), 1))
+        wt = "WT" & chosen: key = wt & "|" & b
+        selectedFirst = sweep(chosen)
+        a = Array(0&, 0&, 0&, 0&, 0&, 0&, 0&)
+        If stats.Exists(key) Then a = stats(key)
+        packet(b + 1, 1) = wt: packet(b + 1, 2) = info(5): packet(b + 1, 3) = info(6): packet(b + 1, 4) = pattern
+        packet(b + 1, 5) = b: packet(b + 1, 6) = states(chosen)
+        packet(b + 1, 7) = selectedFirst(0): packet(b + 1, 8) = selectedFirst(1): packet(b + 1, 9) = VD_Tendency(a)
         For j = 0 To 4: packet(b + 1, j + 10) = a(j): Next j
-        packet(b + 1, 15) = detail(0): packet(b + 1, 16) = first(2)
+        packet(b + 1, 15) = endpoint: packet(b + 1, 16) = selectedFirst(2)
     Next b
+    idx.Range("BC1:BR1").Value2 = Array("WT", "X", "Y", "Pattern", "BLK", "State", "First TNO", "First Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
     idx.Range("BC2:BR257").Value2 = packet
-    ws.Range("A6:P21").RowHeight = 52
-    ws.Range("A23:D23").Merge: ws.Range("A23").Value2 = "Write worse (observed)": ws.Range("A23:D23").Interior.color = VD_Color("Write worse")
-    ws.Range("E23:H23").Merge: ws.Range("E23").Value2 = "Read worse (observed)": ws.Range("E23:H23").Interior.color = VD_Color("Read worse")
-    ws.Range("I23:L23").Merge: ws.Range("I23").Value2 = "Mixed": ws.Range("I23:L23").Interior.color = VD_Color("Mixed")
-    ws.Range("M23:P23").Merge: ws.Range("M23").Value2 = "Equal": ws.Range("M23:P23").Interior.color = VD_Color("Equal")
-    ws.Range("A24:P24").Merge: ws.Range("A24").Value2 = "Captured Addresses only. * = some uncomparable captured bits. One-sided / missing Monitor evidence is Insufficient, not Pass."
-    ws.Range("A25:P25").Merge: ws.Range("A25").Value2 = "Voltage = first Function FBC>0 in Config order, not full BLK Vmin. Color summarizes comparable observed Monitor voltages."
-    ws.rows("24:25").RowHeight = 32: ws.Range("A24:P25").WrapText = True
-    VD_BuildGrid = 28
+    SetMapDrillProperty ws, "ASCVoltageGrid", "1"
+    Application.ActiveWindow.DisplayGridlines = False
+    VD_BuildGrid = True
 End Function
 
 Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range) As Boolean
     If TypeName(ws) <> "Worksheet" Then Exit Function
-    If ws.name <> "Chip Fail Details" Or target.CountLarge <> 1 Then Exit Function
-    If target.row < 6 Or target.row > 21 Or target.column > 16 Or target.column < 1 Then Exit Function
-    BLK_IsVoltageGridCell = (VD_Property(ws, "ASCVoltageGrid") = "1" And left$(CStr(ws.Range("A5").Value2), 24) = "BLK Voltage Distribution")
+    If ws.name <> "BLK Distribution" Then Exit Function
+    If target.row < 6 Or target.row > 53 Or target.column > 96 Then Exit Function
+    If target.CountLarge > 6 Then Exit Function
+    BLK_IsVoltageGridCell = (VD_Property(ws, "ASCVoltageGrid") = "1")
 End Function
 
 Private Function VD_ChipFBC(ByVal wb As Workbook, ByVal wt As String, ByVal x As Long, ByVal y As Long) As Object
@@ -3035,9 +3174,10 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     oldEvents = Application.EnableEvents: oldScreen = Application.ScreenUpdating
     On Error GoTo Failed
     If Not BLK_IsVoltageGridCell(ws, target) Then Exit Function
-    If InStr(1, CStr(ws.Range("A3").Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 531, , "Refresh Map and Chip details after source changes."
+    If InStr(1, CStr(ws.Range("A2").Value2), "updated", vbTextCompare) > 0 Then Err.Raise vbObjectError + 531, , "Refresh Map and Chip details after source changes."
     Application.EnableEvents = False: Application.ScreenUpdating = False
-    b = (target.row - 6) + 16 * (target.column - 1)
+    b = ((target.row - 6) \ 3) + 16 * ((target.column - 1) \ 6)
+    Set ws = wb.Worksheets("Chip Fail Details")
     Set idx = wb.Worksheets("Import Index"): meta = idx.cells(b + 2, 55).Resize(1, 16).Value2
     If CLng(meta(1, 5)) <> b Then Err.Raise vbObjectError + 531, , "BLK detail index changed; reopen Chip from Map."
     previousTop = CLng(Val(VD_Property(ws, "ASCVoltageDetailTop")))
@@ -3056,7 +3196,7 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     Next i
     SetMapDrillProperty ws, "ASCVoltageDetailTop", CStr(top)
     ws.cells(top, 1).Resize(1, 16).Merge: ws.cells(top, 1).Value2 = meta(1, 1) & " / X" & meta(1, 2) & " Y" & meta(1, 3) & " / BLK" & b & " / " & meta(1, 4)
-    ws.Hyperlinks.Add ws.cells(top + 1, 1), "", "'Chip Fail Details'!A5", , "Back to BLK grid"
+    ws.Hyperlinks.Add ws.cells(top + 1, 1), "", "'BLK Distribution'!" & wb.Worksheets("BLK Distribution").cells(6 + 3 * (b Mod 16), 1 + 6 * (b \ 16)).Address(False, False), , "Back to BLK grid"
     ws.cells(top + 1, 4).Resize(1, 13).Merge: ws.cells(top + 1, 4).Value2 = "Observed Monitor comparison only; not proof of full Address coverage."
     header = Array("WT", "X", "Y", "Pattern", "BLK", "State", "First TNO", "First Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
     Dim selected(0 To 15) As Variant
@@ -3138,7 +3278,6 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     If addressRows.count > 0 Then ws.ListObjects("tblBLKObservedWR").ListColumns(9).DataBodyRange.NumberFormat = "0.00#": ws.ListObjects("tblBLKObservedWR").ListColumns(10).DataBodyRange.NumberFormat = "0.00#"
     With ws.cells(top, 1).Resize(rowIndex - top, 16): .Font.name = "Calibri": .Font.Size = 11: .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter: End With
     ws.cells(top, 1).Resize(1, 16).Interior.color = RGB(23, 50, 77): ws.cells(top, 1).Resize(1, 16).Font.color = vbWhite
-    ws.columns("A:P").ColumnWidth = 12
     chart.left = ws.cells(chartTop, 8).left: chart.width = ws.Range("H:P").width
     ws.Activate: Application.Goto ws.cells(top, 1), True
     BLK_ShowBLKVoltage = "BLK" & b & " details ready"
