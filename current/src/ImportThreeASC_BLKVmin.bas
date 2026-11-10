@@ -690,19 +690,7 @@ Private Sub BuildDetailedBLKIndex(ByVal ws As Worksheet, ByVal columns As Object
     Next start
 End Sub
 
-Public Function PatternAddressPresence(ByVal wb As Workbook) As Object
-    Dim endpoints As Object, functions As Object, columns As Object, note As String
-    If AuditLastRow(wb.Worksheets("Fail Address"), 1) < 2 Then
-        Set PatternAddressPresence = CreateObject("Scripting.Dictionary")
-        Exit Function
-    End If
-    Set endpoints = AuditFunctions(wb.Worksheets("Config"), "FAIL MAP")
-    Set functions = AuditFunctions(wb.Worksheets("Config"), "ALL FUNCTION")
-    Set columns = ResolveAuditColumns(wb, functions, note)
-    Set PatternAddressPresence = BuildPatternAddressIndex(wb, endpoints, columns, True)
-End Function
-
-Private Function BuildPatternAddressIndex(ByVal wb As Workbook, ByVal endpoints As Object, ByVal columns As Object, Optional ByVal presenceOnly As Boolean = False) As Object
+Private Function BuildPatternAddressIndex(ByVal wb As Workbook, ByVal endpoints As Object, ByVal columns As Object) As Object
     Dim result As Object, lookup As Object, scope As Object, chosen As Collection, ws As Worksheet
     Dim endpoint As Variant, entry As Variant, info As Variant, tno As Variant, key As Variant, flag As Variant
     Dim col As Long, phase As Long, low As Long, high As Long, firstRow As Long, lastConfigRow As Long
@@ -745,17 +733,13 @@ Private Function BuildPatternAddressIndex(ByVal wb As Workbook, ByVal endpoints 
                     Next tno
                     If matched Then
                         chip = "WT" & phase & "|" & CStr(endpoint) & "|" & CStr(xy(r, 1)) & "|" & CStr(xy(r, 2))
-                        If presenceOnly Then
-                            result(chip) = True
-                        Else
-                            block = AuditInteger(xy(r, 3), 0, 255)
-                            If chip <> activeChip Then
-                                If Len(activeChip) > 0 Then result(activeChip) = bits
-                                activeChip = chip
-                                If result.Exists(chip) Then bits = result(chip) Else bits = emptyBits
-                            End If
-                            bits(block) = CLng(bits(block)) + 1
+                        block = AuditInteger(xy(r, 3), 0, 255)
+                        If chip <> activeChip Then
+                            If Len(activeChip) > 0 Then result(activeChip) = bits
+                            activeChip = chip
+                            If result.Exists(chip) Then bits = result(chip) Else bits = emptyBits
                         End If
+                        bits(block) = CLng(bits(block)) + 1
                     End If
                 Next r
                 If Len(activeChip) > 0 Then result(activeChip) = bits

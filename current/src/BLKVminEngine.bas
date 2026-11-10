@@ -2333,7 +2333,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
     Dim classNames As Variant, v As Long, keep As Long, packet() As Variant
     Dim quadCategories As Object, quadEndpoints As Object, quadMasks As Object
     Dim navStep As Double, panelLeft As Long, panelWidth As Long, panelHeight As Long
-    Dim chipAddresses As Object, grayChips As Object, chipKey As String, panelKey As String
+    Dim phaseCats(1 To 3) As Object, grayChips As Object, chipKey As String, panelKey As String
     Dim dualData As Object, dualValue As Variant, failCount As Long, lossCount As Long, dualState As String
     Set idx = wb.Worksheets("Import Index"): Set loc = wb.Worksheets("Chip Locations")
     Set ws = ReportSheet(wb, "Wafer Maps")
@@ -2375,7 +2375,10 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
         detail = patterns(name): quadEndpoints(CStr(detail(0))) = True
     Next name
     Set quadMasks = LoadMapCounts(wb.Worksheets("FBC by BLK"), quadEndpoints)
-    Set chipAddresses = ImportFailAddresses.PatternAddressPresence(wb)
+    Set phaseCats(1) = quadCategories
+    For phase = 2 To phases
+        Set phaseCats(phase) = BLK_Categories(wb, "WT" & phase)
+    Next phase
     Set grayChips = CreateObject("Scripting.Dictionary")
     Set counts = CreateObject("Scripting.Dictionary"): Set source = wb.Worksheets("Monitor Fail Analysis")
     last = source.cells(source.rows.count, 1).End(xlUp).row
@@ -2463,7 +2466,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                         panelKey = "WT" & phase & "|" & CStr(detail(0)) & "|" & CStr(item)
                         If grayChips.Exists(panelKey) Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(128, 128, 128): End With
-                            IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "No Pattern Fail Address"
+                            IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
                         ElseIf QuadPatternZero(quadCategories, quadMasks, counts, "WT" & phase, CStr(name), CStr(detail(0)), CStr(item)) Then
                             With ws.cells(r, c).Resize(2, 2): .Merge: .Interior.color = RGB(0, 176, 240): End With
                             IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
@@ -2496,7 +2499,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                             panelKey = "WT" & phase & "|" & CStr(detail(0)) & "|" & CStr(item)
                             If grayChips.Exists(panelKey) Then
                                 .Merge: .Interior.color = RGB(128, 128, 128)
-                                IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "No Pattern Fail Address"
+                                IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Unavailable", "", CStr(detail(0)), Empty, "Excluded by Cat"
                             ElseIf failCount = 0 And lossCount = 0 And CatPatternZero(quadCategories, quadMasks, "WT" & phase, CStr(detail(0)), CStr(item)) Then
                                 .Merge: .Interior.color = RGB(0, 176, 240)
                                 IndexMapCell idx, mapDest, ws, r, c, "WT" & phase, CStr(name), x, y, "Confirmed Pass", "", CStr(detail(0)), 0, "WT1 Cat1-4; Pattern endpoint FBC=0"
@@ -2521,7 +2524,7 @@ Public Sub BLK_BuildUnifiedMaps(ByVal wb As Workbook)
                             c = panelLeft + 1 + CLng(mapIndex(i, 6)) - minX
                             chipKey = CStr(mapIndex(i, 6)) & "|" & CStr(mapIndex(i, 7))
                             panelKey = "WT" & phase & "|" & CStr(detail(0)) & "|" & chipKey
-                            If Not chipAddresses.Exists(panelKey) And MapChipNeedsGray(quadCategories, chipKey) Then
+                            If MapChipNeedsGray(phaseCats(phase), quadCategories, chipKey) Then
                                 grayChips(panelKey) = True
                                 ws.cells(r, c).Interior.color = RGB(128, 128, 128)
                             ElseIf Val(CStr(mapIndex(i, 11))) > 0 Then
@@ -2567,13 +2570,19 @@ Private Sub ExtendMapTitle(ByVal ws As Worksheet, ByVal top As Long, ByVal left 
     ws.cells(top + 2, left).Resize(height - 2, 1).Borders.LineStyle = xlNone
 End Sub
 
-Private Function MapChipNeedsGray(ByVal categories As Object, ByVal chip As String) As Boolean
-    If categories.Exists(chip) Then
-        Select Case CLng(categories(chip))
-            Case 1, 2: Exit Function
+Private Function MapChipNeedsGray(ByVal currentCats As Object, ByVal wt1Cats As Object, ByVal chip As String) As Boolean
+    If wt1Cats.Exists(chip) Then
+        If CLng(wt1Cats(chip)) = 20 Then
+            MapChipNeedsGray = True
+            Exit Function
+        End If
+    End If
+    If currentCats.Exists(chip) Then
+        Select Case CLng(currentCats(chip))
+            Case 10, 11, 14, 15, 16, 17, 20
+                MapChipNeedsGray = True
         End Select
     End If
-    MapChipNeedsGray = True
 End Function
 
 Private Sub CountPanelFrame(ByVal ws As Worksheet, ByVal top As Long, ByVal left As Long, ByVal minX As Long, ByVal maxX As Long, ByVal minY As Long, ByVal maxY As Long, ByVal phase As Long, ByVal patternIndex As Long)
