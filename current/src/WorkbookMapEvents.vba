@@ -1,8 +1,8 @@
 Private Sub Workbook_SheetBeforeDoubleClick(ByVal Sh As Object, ByVal Target As Range, Cancel As Boolean)
     Dim detailMessage As String
-    If TypeName(Sh) = "Worksheet" Then
-        If Sh.CodeName = "WaferMapSheet" Then Exit Sub
-    End If
+    If Cancel Then Exit Sub
+    'The sheet event can handle the click first. Fall back only while the clicked sheet is still active.
+    If Not Application.ActiveSheet Is Sh Then Exit Sub
     If BLKVminEngine.BLK_IsVoltageGridCell(Sh, Target) Then
         Cancel = True
         detailMessage = BLKVminEngine.BLK_ShowBLKVoltage(Me, Sh, Target)

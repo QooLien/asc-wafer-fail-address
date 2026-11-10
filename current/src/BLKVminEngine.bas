@@ -2967,7 +2967,7 @@ Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal
     Dim scope As Collection, idx As Worksheet, detail As Variant, first As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
     Dim b As Long, r As Long, c As Long, j As Long, state As String, tendency As String, label As String, key As String
     VD_BuildGrid = 5
-    If CStr(info(7)) <> "Fail BLK Count" Or Len(CStr(info(4))) = 0 Then Exit Function
+    If Len(CStr(info(4))) = 0 Then Exit Function
     Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
     If Not patterns.Exists(CStr(info(4))) Then Exit Function
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted): Set predecessors = PatternPredecessors(patterns)
