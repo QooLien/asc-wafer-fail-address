@@ -1784,12 +1784,12 @@ Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
                     If category = 3 Or category = 4 Then
                         hit = VD_FirstRepairStation(stations, counts, CStr(item), phase)
                         If IsArray(hit) Then
-                            category = CLng(hit(2))
+                            category = CLng(hit(1))
                             If category > 0 Then
                                 repair.Value2 = category
                                 repair.Interior.color = colors(CatGroup(category))
                             End If
-                            repair.AddComment hit(4) & " | TNO " & hit(0)
+                            repair.AddComment hit(2) & " | TNO " & hit(0)
                         End If
                     End If
                 End If
@@ -3308,10 +3308,29 @@ Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection
     VD_BlockSweep = chosen
 End Function
 
-Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal b As Long, ByVal chosen As Long, ByRef states() As String, ByRef sweep() As Variant, ByVal stats As Object, ByVal colors As Object, ByVal mode As Long, Optional ByVal compact As Boolean = False, Optional ByVal repair As Variant)
-    Dim first As Variant, a As Variant, topCell As Range, band As Range, wrCol As Long
+Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Long, ByVal b As Long, ByVal chosen As Long, ByRef states() As String, ByRef sweep() As Variant, ByVal stats As Object, ByVal colors As Object, ByVal mode As Long, Optional ByVal compact As Boolean = False, Optional ByVal allPatternsZero As Boolean = False)
+    Dim first As Variant, a As Variant, topCell As Range, band As Range, wrCol As Long, writeCounts(1 To 3) As Long, readCounts(1 To 3) As Long
     Dim label As String, notes As String, func As String, key As String, phase As Long
     label = "": notes = "BLK" & b
+    If compact Then
+        For phase = 1 To 3
+            key = "WT" & phase & "|" & b
+            If stats.Exists(key) Then
+                a = stats(key)
+                writeCounts(phase) = CLng(a(5))
+                readCounts(phase) = CLng(a(6))
+                If writeCounts(phase) > 0 Or readCounts(phase) > 0 Then allPatternsZero = False
+            End If
+        Next phase
+        If allPatternsZero Then
+            Set band = ws.cells(r, c).Resize(3, 6)
+            band.Merge
+            band.Interior.color = RGB(0, 176, 240)
+            band.cells(1, 1).AddComment notes & vbLf & "All Test Pattern FBC = 0"
+            band.BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(95, 95, 95)
+            Exit Sub
+        End If
+    End If
     If chosen > 0 Then
         first = sweep(chosen)
         notes = notes & vbLf & "WT" & chosen & " | FBC" & mode
@@ -3327,7 +3346,6 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
             If states(phase) = "Pass" Then notes = notes & vbLf & "WT" & phase & " | FBC" & mode & " threshold not reached"
         Next phase
     End If
-    If IsArray(repair) Then notes = notes & vbLf & "BL=1 | " & repair(2) & " | TNO " & repair(3)
     Set band = ws.cells(r, c).Resize(1, 6): band.Merge
     Set topCell = band.cells(1, 1)
     topCell.Value2 = label
@@ -3357,28 +3375,22 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
         End If
     Next phase
     If compact Then
-        wrCol = c + 2
-        If IsArray(repair) Then
-            If CLng(repair(0)) > 0 Then ws.cells(r + 2, c + 2).Value2 = "C" & repair(0)
-            ws.cells(r + 2, c + 3).Value2 = repair(1)
-            wrCol = c + 4
-        End If
-        key = "WT" & chosen & "|" & b
-        If stats.Exists(key) Then
-            a = stats(key)
-            If CLng(a(5)) > 0 Then
+        For phase = 1 To 3
+            wrCol = c + (phase - 1) * 2
+            If writeCounts(phase) > 0 Then
                 With ws.cells(r + 2, wrCol)
-                    .Value2 = a(5): .Interior.color = RGB(255, 217, 102)
-                    .AddComment "Write match"
+                    .Value2 = writeCounts(phase)
+                    .Interior.color = RGB(255, 217, 102)
+                    .AddComment "Write match | WT" & phase
                 End With
             End If
-            If CLng(a(6)) > 0 Then
+            If readCounts(phase) > 0 Then
                 With ws.cells(r + 2, wrCol + 1)
-                    .Value2 = a(6)
-                    .AddComment "Read match"
+                    .Value2 = readCounts(phase)
+                    .AddComment "Read match | WT" & phase
                 End With
             End If
-        End If
+        Next phase
     End If
     With ws.cells(r + 2, c).Resize(1, 6)
         .RowHeight = IIf(compact, 11, 15): .Font.Bold = True: .ShrinkToFit = True
@@ -3542,23 +3554,20 @@ Private Function VD_RepairStations(ByVal cfg As Worksheet, ByVal patterns As Obj
         For Each item In scope
             text = UCase$(Trim$(CStr(item(3))))
             If Left$(text, 1) = "C" Then text = Mid$(text, 2)
-            result.Add Array(CStr(item(0)), CStr(name), Val(text))
+            result.Add Array(CStr(item(0)), Val(text))
         Next item
     Next name
 End Function
 
 Private Function VD_FirstRepairStation(ByVal stations As Collection, ByVal counts As Object, ByVal dut As String, ByVal throughPhase As Long) As Variant
-    Dim phase As Long, item As Variant, key As String, mask As String, position As Long, block As Long
+    Dim phase As Long, item As Variant, key As String, mask As String
     For phase = 1 To throughPhase
         For Each item In stations
             key = "WT" & phase & "|" & CStr(item(0)) & "|" & dut
             If counts.Exists(key) Then
                 mask = CStr(counts(key))
-                position = InStr(1, mask, "1", vbBinaryCompare)
-                If position > 0 Then
-                    block = position - 1
-                    If InStr(position + 1, mask, "1", vbBinaryCompare) > 0 Then block = -1
-                    VD_FirstRepairStation = Array(CStr(item(0)), CStr(item(1)), item(2), block, "WT" & phase, key)
+                If InStr(1, mask, "1", vbBinaryCompare) > 0 Then
+                    VD_FirstRepairStation = Array(CStr(item(0)), item(1), "WT" & phase)
                     Exit Function
                 End If
             End If
@@ -3566,39 +3575,29 @@ Private Function VD_FirstRepairStation(ByVal stations As Collection, ByVal count
     Next phase
 End Function
 
-Private Function VD_FindRepairBlocks(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal patterns As Object, ByVal counts As Object, ByVal numericFBC As Object, ByRef message As String) As Object
-    Dim repairs As Object, categories As Object, stations As Collection
-    Dim dut As String, hit As Variant, values As Variant, phase As Long, category As Long
-    Set repairs = CreateObject("Scripting.Dictionary")
-    Set VD_FindRepairBlocks = repairs
-    Set stations = VD_RepairStations(wb.Worksheets("Config"), patterns)
-    If stations.count = 0 Then Exit Function
-    dut = x & "|" & y
+Private Function VD_ZeroPatternBlocks(ByVal counts As Object, ByVal wanted As Object, ByVal dut As String, ByVal phases As Long) As String
+    Dim tno As Variant, phase As Long, b As Long, key As String, mask As String, result As String
+    result = String$(256, "0")
     For phase = 1 To phases
-        Set categories = BLK_Categories(wb, "WT" & phase)
-        If categories.Exists(dut) Then
-            category = CLng(categories(dut))
-            If category = 3 Or category = 4 Then
-                hit = VD_FirstRepairStation(stations, counts, dut, phase)
-                If IsArray(hit) Then
-                    If CLng(hit(3)) >= 0 Then
-                        values = numericFBC(hit(5))
-                        repairs(hit(1) & "|" & hit(3)) = Array(hit(2), values(CLng(hit(3))), hit(4), hit(0))
-                    Else
-                        message = "Multiple BLKs failed at the first TNO " & hit(0) & "; BL=1 location is ambiguous."
-                    End If
-                    Exit Function
-                End If
+        For Each tno In wanted
+            key = "WT" & phase & "|" & CStr(tno) & "|" & dut
+            If Not counts.Exists(key) Then Exit Function
+            mask = CStr(counts(key))
+            If InStr(1, mask, "1", vbBinaryCompare) > 0 Then
+                For b = 1 To 256
+                    If Mid$(mask, b, 1) = "1" Then Mid$(result, b, 1) = "1"
+                Next b
             End If
-        End If
+        Next tno
     Next phase
+    VD_ZeroPatternBlocks = result
 End Function
 
 Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
     Const sheetName As String = "BLK Pattern Distribution"
     Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
     Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
-    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, repairs As Object, repairNote As String
+    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, zeroPatternBlocks As String
     Set cfg = wb.Worksheets("Config")
     mode = BLK_VminMode(cfg)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
@@ -3612,7 +3611,7 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Set predecessors = PatternPredecessors(patterns)
     Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
     phases = BLK_PhaseCount(wb)
-    Set repairs = VD_FindRepairBlocks(wb, x, y, phases, patterns, counts, numericFBC, repairNote)
+    zeroPatternBlocks = VD_ZeroPatternBlocks(counts, wanted, dut, phases)
     Set ws = ReportSheet(wb, sheetName)
     SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "1"
     ws.Range("CS1:CU1").Value2 = Array(x, y, mode)
@@ -3630,11 +3629,6 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
             .Value2 = "No Function FBC recorded for this Chip"
         End With
     End If
-    If Len(repairNote) > 0 Then
-        With ws.Range("BA3:CR3")
-            .Merge: .Value2 = repairNote: .ShrinkToFit = True
-        End With
-    End If
     top = 4: nav = 1
     For Each name In patterns
         If nav <= 85 Then
@@ -3644,7 +3638,7 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
         End If
         detail = patterns(name)
         Set scope = VD_Scope(cfg, CStr(name))
-        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, repairs)
+        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, zeroPatternBlocks)
     Next name
     With ws.Range("A1:CR" & top - 1)
         .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
@@ -3659,19 +3653,17 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Application.Goto ws.Range("A1"), True
 End Sub
 
-Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal repairs As Object) As Long
+Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal zeroPatternBlocks As String) As Long
     Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
     Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
-    Dim allPass As Boolean, b As Long, phase As Long, row As Long, col As Long, dut As String
-    Dim repair As Variant, key As String, meta(1 To 48, 1 To 18) As Variant, metaRow As Long, group As Long
+    Dim b As Long, phase As Long, row As Long, col As Long, dut As String
+    Dim meta(1 To 48, 1 To 18) As Variant, metaRow As Long, group As Long, offset As Long
     dut = x & "|" & y
-    allPass = True
     For b = 0 To 255
         failPhase(b) = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, numericFBC, mode, phases)
         If failPhase(b) > 0 Then firstFail(b) = sweep(failPhase(b))
         For phase = 1 To phases
             blockStates(b, phase) = states(phase)
-            If states(phase) <> "Pass" Then allPass = False
         Next phase
     Next b
 
@@ -3679,15 +3671,6 @@ Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As 
         .Merge: .Value2 = pattern & " | WT1" & IIf(phases > 1, "-WT" & phases, "") & " | FBC" & mode
         .Interior.color = RGB(38, 77, 111): .Font.color = vbWhite: .RowHeight = 18
     End With
-    If allPass Then
-        With ws.cells(top + 1, 1).Resize(3, 96)
-            .Merge: .Value2 = "All Pass"
-            .Interior.color = RGB(0, 176, 240): .RowHeight = 15
-        End With
-        VD_RenderPatternDistribution = top + 5
-        Exit Function
-    End If
-
     Set groups = VD_LegendGroups(scope, colors)
     Set stats = VD_Stats(wb, x, y, pattern)
     With ws.cells(top + 1, 1).Resize(2, 96)
@@ -3698,18 +3681,21 @@ Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As 
             With ws.cells(top + 1, col + (phase - 1) * 2).Resize(1, 2)
                 .Merge: .Value2 = "WT" & phase
             End With
+            ws.cells(top + 2, col + (phase - 1) * 2).Value2 = "W"
+            ws.cells(top + 2, col + (phase - 1) * 2 + 1).Value2 = "R"
         Next phase
-        ws.cells(top + 2, col).Resize(1, 6).Merge
-        ws.cells(top + 2, col).Value2 = "W / R or Cat / FBC / W / R"
-        ws.cells(top + 2, col).ShrinkToFit = True
     Next col
+    For offset = 0 To 15
+        row = top + 3 + 3 * offset
+        ws.rows(row).RowHeight = 16
+        ws.rows(row + 1).RowHeight = 7
+        ws.rows(row + 2).RowHeight = 11
+    Next offset
     For b = 0 To 255
         row = top + 3 + 3 * (b Mod 16): col = 1 + 6 * (b \ 16)
         For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
         If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
-        repair = Empty: key = pattern & "|" & b
-        If repairs.Exists(key) Then repair = repairs(key)
-        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, mode, True, repair
+        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, mode, True, (Mid$(zeroPatternBlocks, b + 1, 1) = "0")
         metaRow = 1 + 3 * (b Mod 16): group = 2 + (b \ 16)
         For phase = 0 To 2
             meta(metaRow + phase, 1) = pattern
@@ -3755,6 +3741,12 @@ Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range)
     If ws.name = "BLK Pattern Distribution" Then
         If target.column > 96 Or target.CountLarge > 6 Then Exit Function
         If Len(CStr(ws.cells(target.row, 97).Value2)) = 0 Then Exit Function
+        If Not target.cells(1, 1).Comment Is Nothing Then
+            If InStr(1, target.cells(1, 1).Comment.Text, " match | WT", vbBinaryCompare) > 0 Then
+                BLK_IsVoltageGridCell = True
+                Exit Function
+            End If
+        End If
         BLK_IsVoltageGridCell = (Val(CStr(ws.cells(target.row, 98 + (target.column - 1) \ 6).Value2)) > 0)
         Exit Function
     End If
@@ -3764,14 +3756,15 @@ Public Function BLK_IsVoltageGridCell(ByVal ws As Object, ByVal target As Range)
     BLK_IsVoltageGridCell = (VD_Property(ws, "ASCVoltageGrid") = "1")
 End Function
 
-Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Worksheet, ByVal target As Range, ByRef b As Long) As Variant
+Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Worksheet, ByVal target As Range, ByRef b As Long, ByVal monitorPhase As Long) As Variant
     Dim cfg As Worksheet, patterns As Object, wanted As Object, hard As Object, numericFBC As Object, counts As Object, stats As Object
     Dim x As Long, y As Long, phase As Long, base As Long, pattern As String, wt As String, dut As String, mode As Long, i As Long
-    Dim first As Variant, detail As Variant, a As Variant, result(1 To 1, 1 To 16) As Variant
+    Dim first As Variant, detail As Variant, a As Variant, result(1 To 1, 1 To 16) As Variant, state As String
     x = CLng(source.Range("CS1").Value2): y = CLng(source.Range("CT1").Value2)
     pattern = CStr(source.cells(target.row, 97).Value2)
     base = CLng(source.cells(target.row, 114).Value2)
-    phase = CLng(source.cells(target.row, 98 + (target.column - 1) \ 6).Value2)
+    phase = monitorPhase
+    If phase = 0 Then phase = CLng(source.cells(target.row, 98 + (target.column - 1) \ 6).Value2)
     b = ((target.row - base) \ 3) + 16 * ((target.column - 1) \ 6)
     wt = "WT" & phase: dut = x & "|" & y
     Set cfg = wb.Worksheets("Config")
@@ -3784,7 +3777,9 @@ Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Workshe
     Set stats = VD_Stats(wb, x, y, pattern)
     a = Array(0&, 0&, 0&, 0&, 0&)
     If stats.Exists(wt & "|" & b) Then a = stats(wt & "|" & b)
-    result(1, 1) = wt: result(1, 2) = x: result(1, 3) = y: result(1, 4) = pattern: result(1, 5) = b: result(1, 6) = "Fail"
+    state = VD_State(counts, wt, dut, CStr(detail(0)), b, hard, wanted, PatternPredecessors(patterns))
+    If state = "Pass" And CBool(first(6)) Then state = "Fail"
+    result(1, 1) = wt: result(1, 2) = x: result(1, 3) = y: result(1, 4) = pattern: result(1, 5) = b: result(1, 6) = state
     result(1, 7) = first(0): result(1, 8) = first(1): result(1, 9) = VD_Tendency(a)
     For i = 0 To 4: result(1, 10 + i) = a(i): Next i
     result(1, 15) = detail(0): result(1, 16) = "FBC" & mode & " | " & first(2)
@@ -3817,6 +3812,7 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     Dim oldEvents As Boolean, oldScreen As Boolean, message As String
     Dim chunkStart As Long, chunkSize As Long
     Dim haveX As Boolean, xMin As Double, xMax As Double, xPad As Double, backLink As String, matchSide As Long
+    Dim monitorPhase As Long, matchNote As String
     oldEvents = Application.EnableEvents: oldScreen = Application.ScreenUpdating
     On Error GoTo Failed
     If Not BLK_IsVoltageGridCell(ws, target) Then Exit Function
@@ -3825,12 +3821,14 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     If ws.name = "BLK Pattern Distribution" Then
         backLink = "'BLK Pattern Distribution'!" & target.cells(1, 1).address(False, False)
         If Not target.cells(1, 1).Comment Is Nothing Then
-            Select Case target.cells(1, 1).Comment.Text
-                Case "Write match": matchSide = 11
-                Case "Read match": matchSide = 12
-            End Select
+            matchNote = target.cells(1, 1).Comment.Text
+            If Left$(matchNote, 11) = "Write match" Then matchSide = 11
+            If Left$(matchNote, 10) = "Read match" Then matchSide = 12
+            If matchSide > 0 And InStr(1, matchNote, " | WT", vbBinaryCompare) > 0 Then
+                monitorPhase = CLng(Right$(matchNote, 1))
+            End If
         End If
-        meta = VD_CompactSummary(wb, ws, target, b)
+        meta = VD_CompactSummary(wb, ws, target, b, monitorPhase)
         Set ws = ReportSheet(wb, "Chip Fail Details")
         SetMapDrillProperty ws, "ASCChipDetails", "1"
         SetMapDrillProperty ws, "ASCVoltageDetailTop", "0"
