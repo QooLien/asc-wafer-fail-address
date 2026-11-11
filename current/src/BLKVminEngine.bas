@@ -3575,29 +3575,32 @@ Private Function VD_FirstRepairStation(ByVal stations As Collection, ByVal count
     Next phase
 End Function
 
-Private Function VD_ZeroPatternBlocks(ByVal counts As Object, ByVal wanted As Object, ByVal dut As String, ByVal phases As Long) As String
+Private Function VD_PatternFailMask(ByVal counts As Object, ByVal tnos As Object, ByVal dut As String, ByVal phases As Long, Optional ByVal requireComplete As Boolean = True) As String
     Dim tno As Variant, phase As Long, b As Long, key As String, mask As String, result As String
     result = String$(256, "0")
     For phase = 1 To phases
-        For Each tno In wanted
+        For Each tno In tnos
             key = "WT" & phase & "|" & CStr(tno) & "|" & dut
-            If Not counts.Exists(key) Then Exit Function
-            mask = CStr(counts(key))
-            If InStr(1, mask, "1", vbBinaryCompare) > 0 Then
-                For b = 1 To 256
-                    If Mid$(mask, b, 1) = "1" Then Mid$(result, b, 1) = "1"
-                Next b
+            If counts.Exists(key) Then
+                mask = CStr(counts(key))
+                If InStr(1, mask, "1", vbBinaryCompare) > 0 Then
+                    For b = 1 To 256
+                        If Mid$(mask, b, 1) = "1" Then Mid$(result, b, 1) = "1"
+                    Next b
+                End If
+            ElseIf requireComplete Then
+                Exit Function
             End If
         Next tno
     Next phase
-    VD_ZeroPatternBlocks = result
+    VD_PatternFailMask = result
 End Function
 
 Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
     Const sheetName As String = "BLK Pattern Distribution"
     Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
     Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
-    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, zeroPatternBlocks As String
+    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, zeroPatternBlocks As String, hardFailBlocks As String
     Set cfg = wb.Worksheets("Config")
     mode = BLK_VminMode(cfg)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
@@ -3611,7 +3614,8 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Set predecessors = PatternPredecessors(patterns)
     Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
     phases = BLK_PhaseCount(wb)
-    zeroPatternBlocks = VD_ZeroPatternBlocks(counts, wanted, dut, phases)
+    zeroPatternBlocks = VD_PatternFailMask(counts, wanted, dut, phases)
+    hardFailBlocks = VD_PatternFailMask(counts, hard, dut, phases, False)
     Set ws = ReportSheet(wb, sheetName)
     SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "1"
     ws.Range("CS1:CU1").Value2 = Array(x, y, mode)
@@ -3638,7 +3642,7 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
         End If
         detail = patterns(name)
         Set scope = VD_Scope(cfg, CStr(name))
-        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, zeroPatternBlocks)
+        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, zeroPatternBlocks, hardFailBlocks)
     Next name
     With ws.Range("A1:CR" & top - 1)
         .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
@@ -3653,7 +3657,7 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Application.Goto ws.Range("A1"), True
 End Sub
 
-Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal zeroPatternBlocks As String) As Long
+Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal zeroPatternBlocks As String, ByVal hardFailBlocks As String) As Long
     Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
     Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
     Dim b As Long, phase As Long, row As Long, col As Long, dut As String
@@ -3696,6 +3700,14 @@ Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As 
         For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
         If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
         VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, mode, True, (Mid$(zeroPatternBlocks, b + 1, 1) = "0")
+        If Mid$(hardFailBlocks, b + 1, 1) = "1" Then
+            With ws.cells(row, col).Resize(3, 6)
+                .Interior.color = RGB(255, 0, 0)
+                With .cells(1, 1).Comment
+                    .Text Text:=.Text & vbLf & "Hard Fail"
+                End With
+            End With
+        End If
         metaRow = 1 + 3 * (b Mod 16): group = 2 + (b \ 16)
         For phase = 0 To 2
             meta(metaRow + phase, 1) = pattern
