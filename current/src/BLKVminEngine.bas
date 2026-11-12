@@ -1675,13 +1675,13 @@ Private Function CatGroup(ByVal category As Long) As Long
     End Select
 End Function
 
-Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
+Public Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
     Dim ws As Worksheet, loc As Worksheet, coords As Object, phaseCats(1 To 3) As Object
     Dim item As Variant, xy As Variant, data As Variant, labels As Variant, colors As Variant
     Dim last As Long, i As Long, phase As Long, phases As Long, category As Long
     Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
     Dim width As Long, span As Long, origin As Long, legendRow As Long, repairTop As Long
-    Dim counts As Object, patterns As Object, wanted As Object, hard As Object, stations As Collection, hit As Variant, repair As Range
+    Dim counts As Object, wanted As Object, hard As Object, stations As Collection, hit As Variant, repair As Range
     Set loc = wb.Worksheets("Chip Locations")
     Set coords = CreateObject("Scripting.Dictionary")
     last = loc.cells(loc.rows.count, 1).End(xlUp).row
@@ -1712,7 +1712,7 @@ Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
     If CDbl(maxX) - minX > 99 Or CDbl(maxY) - minY > 99 Then Err.Raise vbObjectError + 533, , "Cat Wafer Map coordinate span exceeds 100."
     width = maxX - minX + 1: span = width + 2
     legendRow = 7 + maxY - minY
-    labels = Array("C1-C2 | Pass", "C3-C4 | Repair", "C10-C11 | Open/Short, Leak", "C15-C17 | ISB", "C14 | Register & SWT", "C9 | Hard Fail", "C5-C8 | Soft Fail", "C19 | Retention", "C18 | March Soft Fail", "C12-C13 | ISB After Function", "Other recorded Cat")
+    labels = Array("1-2 | Pass", "3-4 | Repair", "10-11 | Open/Short, Leak", "15-17 | ISB", "14 | Register & SWT", "9 | Hard Fail", "5-8 | Soft Fail", "19 | Retention", "18 | March Soft Fail", "12-13 | ISB After Function", "Other recorded Cat")
     colors = Array(RGB(198, 239, 206), RGB(189, 215, 238), RGB(191, 191, 191), RGB(217, 210, 233), RGB(255, 217, 102), RGB(255, 153, 153), RGB(248, 203, 173), RGB(155, 194, 230), RGB(255, 230, 153), RGB(219, 173, 219), RGB(242, 242, 242))
     Set ws = ReportSheet(wb, "Cat Wafer Map")
     SetMapDrillProperty ws, "ASCCatSpan", CStr(span)
@@ -1746,7 +1746,7 @@ Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
             If phaseCats(phase).Exists(item) Then category = CLng(phaseCats(phase)(item))
             With ws.cells(5 + y - minY, origin + 1 + x - minX)
                 .Value2 = category
-                .NumberFormat = """C""0;-0;;@"
+                .NumberFormat = "0;-0;;@"
                 .Font.Bold = True: .ShrinkToFit = True
                 .Borders.LineStyle = xlContinuous
                 .Borders.color = RGB(150, 150, 150)
@@ -1760,14 +1760,14 @@ Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
             .Interior.color = colors(i): .Font.Bold = True: .ShrinkToFit = True
         End With
     Next i
-    Set patterns = ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
-    Set stations = VD_RepairStations(wb.Worksheets("Config"), patterns)
+    Call ReadStopPatterns(wb.Worksheets("Config"), wanted, hard)
+    Set stations = VD_FailCatStations(wb.Worksheets("Config"), wanted)
     If stations.count > 0 Then
         Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted)
         repairTop = legendRow + 12
         ws.cells(1, 1).Resize(4, phases * span).Copy Destination:=ws.cells(repairTop, 1)
-        ws.cells(repairTop, 1).Value2 = "BL=1 Repair Cat"
-        ws.cells(repairTop + 1, 1).Value2 = "C3 / C4 only | Fail Cat from the first recorded Fail TNO"
+        ws.cells(repairTop, 1).Value2 = "BL=0 Failure Analysis"
+        ws.cells(repairTop + 1, 1).Value2 = "First recorded Fail TNO | Cat 1 and 2 excluded"
         For phase = 1 To phases
             origin = 1 + (phase - 1) * span
             For y = minY To maxY: ws.cells(repairTop + 4 + y - minY, origin).Value2 = y: Next y
@@ -1775,21 +1775,23 @@ Private Sub BLK_BuildCatWaferMap(ByVal wb As Workbook)
                 xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
                 Set repair = ws.cells(repairTop + 4 + y - minY, origin + 1 + x - minX)
                 repair.Value2 = 0
-                repair.NumberFormat = """C""0;-0;;@"
+                repair.NumberFormat = "0;-0;;@"
                 repair.HorizontalAlignment = xlCenter: repair.VerticalAlignment = xlCenter
                 repair.Font.name = "Arial": repair.Font.Size = 10: repair.Font.Bold = True
                 repair.Borders.LineStyle = xlContinuous: repair.Borders.color = RGB(150, 150, 150)
                 If phaseCats(phase).Exists(item) Then
                     category = CLng(phaseCats(phase)(item))
-                    If category = 3 Or category = 4 Then
-                        hit = VD_FirstRepairStation(stations, counts, CStr(item), phase)
+                    If category > 2 Then
+                        hit = VD_FirstFailCatStation(stations, counts, CStr(item), phase)
                         If IsArray(hit) Then
                             category = CLng(hit(1))
                             If category > 0 Then
                                 repair.Value2 = category
                                 repair.Interior.color = colors(CatGroup(category))
+                                repair.AddComment hit(2) & " | TNO " & hit(0)
+                            Else
+                                repair.AddComment hit(2) & " | TNO " & hit(0) & " | Config Fail Cat unavailable"
                             End If
-                            repair.AddComment hit(2) & " | TNO " & hit(0)
                         End If
                     End If
                 End If
@@ -2448,10 +2450,14 @@ Public Sub BLK_SizeOutput(ByVal ws As Worksheet)
 End Sub
 
 Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
-    Dim buttons As Object, button As Object, i As Long, action As String, found As Boolean
-    Set buttons = wb.Worksheets("Config").buttons
+    Dim buttons As Object, button As Object, i As Long, action As String, found As Boolean, catFound As Boolean
+    Dim cfg As Worksheet, anchor As Range
+    Set cfg = wb.Worksheets("Config")
+    Set buttons = cfg.buttons
     For i = 1 To buttons.count
-        If InStr(1, CStr(buttons.item(i).OnAction), "ImportASCAddressOnly", vbTextCompare) > 0 Then found = True
+        action = CStr(buttons.item(i).OnAction)
+        If InStr(1, action, "ImportASCAddressOnly", vbTextCompare) > 0 Then found = True
+        If InStr(1, action, "BuildCatClassificationMap", vbTextCompare) > 0 Then catFound = True
     Next i
     If Not found Then
         With wb.Worksheets("Config")
@@ -2461,7 +2467,12 @@ Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
         If buttons.count > 0 Then
             button.left = buttons.item(1).left: button.width = buttons.item(1).width: button.height = buttons.item(1).height
         End If
-        Set buttons = wb.Worksheets("Config").buttons
+    End If
+    If Not catFound Then
+        Set anchor = cfg.cells(20, 4 + BLK_StopSignOffset(cfg))
+        Set button = buttons.Add(buttons.item(1).left, anchor.top, buttons.item(1).width, buttons.item(1).height)
+        button.name = "btnCatClassificationMap"
+        button.OnAction = "BuildCatClassificationMap"
     End If
     For i = 1 To buttons.count
         Set button = buttons.item(i): action = CStr(button.OnAction)
@@ -2470,6 +2481,7 @@ Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
         If InStr(1, action, "BuildFailMaps", vbTextCompare) > 0 Then button.caption = ChrW(&H66F4) & ChrW(&H65B0) & " Map"
         If InStr(1, action, "FindMissingBLKAddresses", vbTextCompare) > 0 Then button.caption = ChrW(&H6838) & ChrW(&H5C0D) & " BLK Address"
         If InStr(1, action, "ImportASCAddressOnly", vbTextCompare) > 0 Then button.caption = ChrW(&H50C5) & ChrW(&H532F) & ChrW(&H5165) & " Address"
+        If InStr(1, action, "BuildCatClassificationMap", vbTextCompare) > 0 Then button.caption = "BL=0 Cat Map"
         button.Font.name = "Calibri": button.Font.Size = 11
         button.HorizontalAlignment = xlCenter: button.VerticalAlignment = xlCenter
     Next i
@@ -3545,29 +3557,35 @@ Private Sub VD_OpenPatternDistribution(ByVal wb As Workbook, ByVal map As Object
     BLK_OrderSheets wb
 End Sub
 
-Private Function VD_RepairStations(ByVal cfg As Worksheet, ByVal patterns As Object) As Collection
-    Dim result As New Collection, name As Variant, item As Variant, scope As Collection, text As String
-    Set VD_RepairStations = result
+Private Function VD_FailCatStations(ByVal cfg As Worksheet, ByVal wanted As Object) As Collection
+    Dim result As New Collection, data As Variant, row As Long, tno As String, text As String, category As Long
+    Set VD_FailCatStations = result
     If BLK_StopSignOffset(cfg) <> 5 Then Exit Function
-    For Each name In patterns
-        Set scope = VD_Scope(cfg, CStr(name))
-        For Each item In scope
-            text = UCase$(Trim$(CStr(item(3))))
-            If Left$(text, 1) = "C" Then text = Mid$(text, 2)
-            result.Add Array(CStr(item(0)), Val(text))
-        Next item
-    Next name
+    data = cfg.Range("D2:G901").Value2
+    For row = 1 To UBound(data, 1)
+        tno = Trim$(CStr(data(row, 1)))
+        If wanted.Exists(tno) Then
+            category = 0
+            If Not IsError(data(row, 4)) Then
+                text = UCase$(Trim$(CStr(data(row, 4))))
+                If Left$(text, 1) = "C" Then text = Trim$(Mid$(text, 2))
+                If Len(text) > 0 And Not text Like "*[!0-9]*" Then
+                    If Val(text) <= 2147483647# Then category = CLng(Val(text))
+                End If
+            End If
+            result.Add Array(tno, category)
+        End If
+    Next row
 End Function
 
-Private Function VD_FirstRepairStation(ByVal stations As Collection, ByVal counts As Object, ByVal dut As String, ByVal throughPhase As Long) As Variant
-    Dim phase As Long, item As Variant, key As String, mask As String
+Private Function VD_FirstFailCatStation(ByVal stations As Collection, ByVal counts As Object, ByVal dut As String, ByVal throughPhase As Long) As Variant
+    Dim phase As Long, item As Variant, key As String
     For phase = 1 To throughPhase
         For Each item In stations
             key = "WT" & phase & "|" & CStr(item(0)) & "|" & dut
             If counts.Exists(key) Then
-                mask = CStr(counts(key))
-                If InStr(1, mask, "1", vbBinaryCompare) > 0 Then
-                    VD_FirstRepairStation = Array(CStr(item(0)), item(1), "WT" & phase)
+                If InStr(1, CStr(counts(key)), "1", vbBinaryCompare) > 0 Then
+                    VD_FirstFailCatStation = Array(CStr(item(0)), item(1), "WT" & phase)
                     Exit Function
                 End If
             End If

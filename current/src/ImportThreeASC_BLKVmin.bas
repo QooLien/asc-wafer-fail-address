@@ -33,6 +33,27 @@ Public Sub ImportASCFBC()
     RunThreeASC True
 End Sub
 
+Public Sub BuildCatClassificationMap()
+    Dim oldScreen As Boolean
+    If busy Then Exit Sub
+    oldScreen = Application.ScreenUpdating
+    On Error GoTo Failed
+    If AuditLastRow(ThisWorkbook.Worksheets("Import Index"), 27) < 2 And _
+       AuditLastRow(ThisWorkbook.Worksheets("Chip Locations"), 1) < 2 Then
+        MsgBox "Import ASC files before building Cat Wafer Map.", vbInformation
+        Exit Sub
+    End If
+    Application.ScreenUpdating = False
+    BLKVminEngine.BLK_BuildCatWaferMap ThisWorkbook
+    BLKVminEngine.BLK_OrderSheets ThisWorkbook
+Done:
+    Application.ScreenUpdating = oldScreen
+    Exit Sub
+Failed:
+    MsgBox "Cannot build Cat Wafer Map: " & Err.Description, vbExclamation
+    Resume Done
+End Sub
+
 Public Sub BuildFailMaps()
     Dim text As String, started As Date, oldScreen As Boolean, oldEvents As Boolean, oldStatus As Variant
     If busy Then MsgBox "An import or Map build is already running.", vbExclamation: Exit Sub
