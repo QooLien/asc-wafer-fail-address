@@ -1,5 +1,5 @@
 param(
-    [string]$Workbook = (Join-Path $PSScriptRoot '../templates/SRAM Extra BLK Failure  Analysis_v13.xlsm'),
+    [string]$Workbook = (Join-Path $PSScriptRoot '../templates/SRAM Extra BLK Failure  Analysis_v13.1.xlsm'),
     [string]$Output = (Join-Path ([IO.Path]::GetTempPath()) 'Native_StopSign_Map_Test.xlsm'),
     [ValidateSet(64,128)][int]$ChipCount=128
 )

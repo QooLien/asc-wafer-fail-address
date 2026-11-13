@@ -1,4 +1,4 @@
-param([string]$Workbook=(Join-Path $PSScriptRoot '../templates/SRAM Extra BLK Failure  Analysis_v13.xlsm'),[string]$Output='C:/Users/dora9/outputs/Native_Log_Test.xlsm')
+param([string]$Workbook=(Join-Path $PSScriptRoot '../templates/SRAM Extra BLK Failure  Analysis_v13.1.xlsm'),[string]$Output='C:/Users/dora9/outputs/Native_Log_Test.xlsm')
 $ErrorActionPreference='Stop';Copy-Item -LiteralPath $Workbook -Destination $Output -Force
 function Check($ok,$message){if(-not $ok){throw $message}}
 $app=$null;$book=$null

@@ -1657,6 +1657,7 @@ Public Sub BLK_PublishReports(ByVal wb As Workbook)
     BLK_BuildImportInfo wb
     BLK_BuildUnifiedMaps wb
     BLK_BuildCatWaferMap wb
+    BLK_BuildChipVminMap wb
     BLK_OrderSheets wb
 End Sub
 
@@ -2303,6 +2304,9 @@ Public Sub BLK_InvalidateDetails(ByVal wb As Workbook, ByVal message As String)
     If Not ws Is Nothing Then
         If Len(VD_Property(ws, "ASCVoltagePatternDistribution")) > 0 Then ws.Visible = xlSheetVeryHidden
     End If
+    Set ws = Nothing
+    Set ws = wb.Worksheets("Chip Vmin Map")
+    If Not ws Is Nothing Then ws.Visible = xlSheetVeryHidden
     Set ws = Nothing
     Set ws = wb.Worksheets("Chip Fail Details")
     On Error GoTo 0
@@ -3552,6 +3556,279 @@ Private Function VD_FirstFailCatStation(ByVal stations As Collection, ByVal coun
     Next phase
 End Function
 
+Private Sub BLK_BuildChipVminMap(ByVal wb As Workbook)
+    Dim cfg As Worksheet, source As Worksheet, loc As Worksheet, ws As Worksheet
+    Dim patterns As Object, wanted As Object, hard As Object, coords As Object, scopes As Object
+    Dim results As Object, counts As Object, numericFBC As Object, bounds As Variant, colorRule As ColorScale
+    Dim data As Variant, xy As Variant, item As Variant, phaseResults As Variant, result As Variant
+    Dim dut As String, activeDut As String, tno As String, wt As String, key As String
+    Dim values(0 To 255) As Double, phases As Long, phase As Long, mode As Long
+    Dim last As Long, first As Long, take As Long, i As Long, b As Long
+    Dim minX As Long, maxX As Long, minY As Long, maxY As Long, x As Long, y As Long
+    Dim span As Long, width As Long, height As Long, origin As Long, current As Range
+
+    Set cfg = wb.Worksheets("Config")
+    Set patterns = ReadStopPatterns(cfg, wanted, hard)
+    If patterns.count = 0 Then Exit Sub
+    mode = BLK_VminMode(cfg): phases = BLK_PhaseCount(wb)
+    Set scopes = CreateObject("Scripting.Dictionary")
+    For Each item In patterns
+        scopes.Add CStr(item), VD_Scope(cfg, CStr(item))
+    Next item
+    Set coords = CreateObject("Scripting.Dictionary")
+    Set loc = wb.Worksheets("Chip Locations")
+    last = loc.cells(loc.rows.count, 1).End(xlUp).row
+    If last >= 2 Then
+        data = loc.Range("A2:B" & last).Value2
+        For i = 1 To UBound(data, 1)
+            coords(CStr(data(i, 1)) & "|" & CStr(data(i, 2))) = True
+        Next i
+    End If
+
+    Set results = CreateObject("Scripting.Dictionary")
+    Set counts = CreateObject("Scripting.Dictionary")
+    Set numericFBC = CreateObject("Scripting.Dictionary")
+    Set source = wb.Worksheets("FBC by BLK")
+    last = PresentationLastRow(source, 2)
+    'BLK_Finalize sorts by X and Y. Keep only one Chip's full FBC arrays in memory.
+    For first = 2 To last Step 512
+        take = last - first + 1: If take > 512 Then take = 512
+        data = source.cells(first, 1).Resize(take, 260).Value2
+        For i = 1 To take
+            tno = CStr(data(i, 2))
+            If wanted.Exists(tno) Then
+                dut = Coordinate(CStr(data(i, 3))) & "|" & Coordinate(CStr(data(i, 4)))
+                If dut <> activeDut Then
+                    If Len(activeDut) > 0 Then
+                        results.Add activeDut, CV_ChipResults(activeDut, phases, mode, patterns, scopes, hard, wanted, counts, numericFBC)
+                        counts.RemoveAll
+                        numericFBC.RemoveAll
+                    End If
+                    If results.Exists(dut) Then Err.Raise vbObjectError + 536, , "Refresh the FBC output before building Chip Vmin Map."
+                    activeDut = dut
+                    coords(dut) = True
+                End If
+                wt = CStr(data(i, 1))
+                key = wt & "|" & tno & "|" & dut
+                Call CountFBCRow(data, i)
+                counts.Add key, FBCRowMask(data, i)
+                For b = 0 To 255: values(b) = CDbl(data(i, b + 5)): Next b
+                numericFBC.Add key, values
+            End If
+        Next i
+    Next first
+    If Len(activeDut) > 0 Then results.Add activeDut, CV_ChipResults(activeDut, phases, mode, patterns, scopes, hard, wanted, counts, numericFBC)
+    If coords.count = 0 Then Exit Sub
+
+    bounds = coords.keys: xy = Split(CStr(bounds(0)), "|")
+    minX = CLng(xy(0)): maxX = minX: minY = CLng(xy(1)): maxY = minY
+    For Each item In coords
+        xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+        If x < minX Then minX = x
+        If x > maxX Then maxX = x
+        If y < minY Then minY = y
+        If y > maxY Then maxY = y
+    Next item
+    If CDbl(maxX) - minX > 99 Or CDbl(maxY) - minY > 99 Then Err.Raise vbObjectError + 536, , "Chip Vmin Map coordinate span exceeds 100."
+    width = maxX - minX + 1: height = maxY - minY + 1: span = width + 2
+    Set ws = ReportSheet(wb, "Chip Vmin Map")
+    With ws.cells(1, 1).Resize(height + 4, phases * span - 1)
+        .Font.name = "Arial": .Font.Size = 10
+        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
+        .ColumnWidth = 10: .RowHeight = 20
+    End With
+    With ws.cells(1, 1).Resize(1, phases * span - 1)
+        .Merge: .Value2 = "Chip Vmin Map | " & VD_ModeLabel(mode)
+        .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .Font.Bold = True: .Font.Size = 13
+    End With
+    With ws.cells(2, 1).Resize(1, phases * span - 1)
+        .Merge: .Value2 = "Highest eligible BLK Vmin | Tail: peak FBC > Q3 + 1.5 IQR"
+        .ShrinkToFit = True
+    End With
+    For phase = 1 To phases
+        origin = 1 + (phase - 1) * span
+        With ws.cells(3, origin).Resize(1, width + 1)
+            .Merge: .Value2 = "WT" & phase
+            .Interior.color = RGB(221, 235, 247): .Font.Bold = True
+        End With
+        ws.cells(4, origin + 1).Resize(1, width).Font.color = RGB(120, 120, 120)
+        ws.cells(5, origin).Resize(height, 1).Font.color = RGB(120, 120, 120)
+        For x = minX To maxX: ws.cells(4, origin + 1 + x - minX).Value2 = x: Next x
+        For y = minY To maxY: ws.cells(5 + y - minY, origin).Value2 = y: Next y
+    Next phase
+    For Each item In coords
+        xy = Split(CStr(item), "|"): x = CLng(xy(0)): y = CLng(xy(1))
+        If results.Exists(item) Then
+            phaseResults = results(item)
+        Else
+            phaseResults = Empty
+        End If
+        For phase = 1 To phases
+            origin = 1 + (phase - 1) * span
+            Set current = ws.cells(5 + y - minY, origin + 1 + x - minX)
+            current.Font.Bold = True: current.ShrinkToFit = True
+            current.BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(150, 150, 150)
+            If IsEmpty(phaseResults) Then
+                result = Array("No Data", "No Function FBC recorded.")
+            Else
+                result = phaseResults(phase)
+            End If
+            current.Value2 = result(0)
+            current.NumberFormat = "0.00#""v"""
+            If VarType(result(0)) = vbString Then
+                Select Case CStr(result(0))
+                    Case "Pass": current.Interior.color = RGB(221, 235, 247)
+                    Case "Below": current.Interior.color = RGB(255, 242, 204)
+                    Case Else: current.Interior.color = RGB(217, 217, 217)
+                End Select
+            End If
+            current.AddComment "WT" & phase & " | X" & x & " Y" & y & vbLf & CStr(result(1))
+        Next phase
+    Next item
+    For phase = 1 To phases
+        origin = 1 + (phase - 1) * span
+        Set colorRule = ws.cells(5, origin + 1).Resize(height, width).FormatConditions.AddColorScale(ColorScaleType:=2)
+        With colorRule.ColorScaleCriteria(1)
+            .Type = xlConditionValueLowestValue: .FormatColor.color = RGB(255, 242, 204)
+        End With
+        With colorRule.ColorScaleCriteria(2)
+            .Type = xlConditionValueHighestValue: .FormatColor.color = RGB(244, 176, 132)
+        End With
+    Next phase
+    With ws.cells(height + 6, 1).Resize(1, phases * span - 1)
+        .Merge: .Value2 = "Pass = zero FBC | Below = below threshold | No Vmin = voltage unavailable | No BLK = all excluded"
+        .ShrinkToFit = True
+    End With
+End Sub
+
+Private Function CV_ChipResults(ByVal dut As String, ByVal phases As Long, ByVal mode As Long, ByVal patterns As Object, ByVal scopes As Object, ByVal hard As Object, ByVal wanted As Object, ByVal counts As Object, ByVal numericFBC As Object) As Variant
+    Dim results(1 To 3) As Variant, phase As Long
+    Dim tno As Variant, name As Variant, item As Variant, detail As Variant, scope As Collection
+    Dim peak(0 To 255) As Double, samples(1 To 256) As Double, best(0 To 255) As Variant, bestNote(0 To 255) As String
+    Dim eligible(0 To 255) As Boolean, unknown(0 To 255) As Boolean, priorFail As String, hardFail As String
+    Dim priorComplete As Boolean, hardComplete As Boolean, scopeComplete As Boolean, priorPattern As String, endpointMask As String
+    Dim key As String, wt As String, b As Long, sampleCount As Long, limit As Double, q1 As Double, q3 As Double
+    Dim hardCount As Long, priorCount As Long, tailCount As Long, remaining As Long, missingCount As Long
+    Dim hasPositive As Boolean, noVoltage As Boolean, crossing As Variant, row As Variant, candidate As Variant
+    Dim highest As Variant, note As String, winner As String
+
+    For phase = 1 To phases
+        wt = "WT" & phase
+        hardFail = VD_PatternFailMask(counts, hard, dut, phase, False)
+        hardComplete = (Len(VD_PatternFailMask(counts, hard, dut, phase)) = 256)
+        priorFail = VD_PatternFailMask(counts, wanted, dut, phase - 1, False)
+        priorComplete = (Len(VD_PatternFailMask(counts, wanted, dut, phase - 1)) = 256)
+        Erase peak: Erase best: Erase bestNote: Erase unknown
+        For b = 0 To 255
+            eligible(b) = Mid$(hardFail, b + 1, 1) = "0" And Mid$(priorFail, b + 1, 1) = "0"
+            unknown(b) = Not hardComplete Or Not priorComplete
+        Next b
+        priorPattern = String$(256, "0")
+        For Each name In patterns
+            detail = patterns(name): Set scope = scopes(name)
+            scopeComplete = True
+            For Each item In scope
+                key = wt & "|" & CStr(item(0)) & "|" & dut
+                If Not numericFBC.Exists(key) Then scopeComplete = False: Exit For
+            Next item
+            If scopeComplete And hardComplete And priorComplete Then
+                For Each item In scope
+                    row = numericFBC(wt & "|" & CStr(item(0)) & "|" & dut)
+                    For b = 0 To 255
+                        If eligible(b) And Mid$(priorPattern, b + 1, 1) = "0" Then
+                            If row(b) > peak(b) Then peak(b) = row(b)
+                        End If
+                    Next b
+                Next item
+                For b = 0 To 255
+                    If eligible(b) And Mid$(priorPattern, b + 1, 1) = "0" And peak(b) > 0 Then
+                        crossing = VD_VminResult(numericFBC, scope, wt, dut, b, mode)
+                        If Len(CStr(crossing(0))) > 0 Then
+                            If Not IsEmpty(crossing(4)) Then
+                                If IsEmpty(best(b)) Or CDbl(crossing(4)) > CDbl(best(b)) Then
+                                    best(b) = crossing(4)
+                                    bestNote(b) = CStr(name) & " | TNO " & crossing(0) & " | " & crossing(3)
+                                End If
+                            ElseIf IsEmpty(best(b)) Then
+                                bestNote(b) = CStr(crossing(2))
+                            End If
+                        End If
+                    End If
+                Next b
+            ElseIf Not scopeComplete Then
+                For b = 0 To 255
+                    If eligible(b) And Mid$(priorPattern, b + 1, 1) = "0" Then unknown(b) = True
+                Next b
+            End If
+            key = wt & "|" & CStr(detail(0)) & "|" & dut
+            If counts.Exists(key) Then
+                endpointMask = CStr(counts(key))
+                For b = 0 To 255
+                    If Mid$(endpointMask, b + 1, 1) = "1" Then Mid$(priorPattern, b + 1, 1) = "1"
+                Next b
+            Else
+                Exit For
+            End If
+        Next name
+
+        sampleCount = 0
+        For b = 0 To 255
+            If eligible(b) And Not unknown(b) And peak(b) > 0 Then
+                sampleCount = sampleCount + 1: samples(sampleCount) = peak(b)
+            End If
+        Next b
+        limit = -1
+        If sampleCount >= 4 Then
+            ReDim candidate(1 To sampleCount)
+            For b = 1 To sampleCount: candidate(b) = samples(b): Next b
+            q1 = Application.WorksheetFunction.Quartile_Inc(candidate, 1)
+            q3 = Application.WorksheetFunction.Quartile_Inc(candidate, 3)
+            limit = q3 + 1.5 * (q3 - q1)
+        End If
+        hardCount = 0: priorCount = 0: tailCount = 0: remaining = 0: missingCount = 0
+        hasPositive = False: noVoltage = False: highest = Empty: winner = ""
+        For b = 0 To 255
+            If Mid$(hardFail, b + 1, 1) = "1" Then
+                hardCount = hardCount + 1
+            ElseIf Mid$(priorFail, b + 1, 1) = "1" Then
+                priorCount = priorCount + 1
+            ElseIf limit >= 0 And peak(b) > limit And Not unknown(b) Then
+                tailCount = tailCount + 1
+            Else
+                remaining = remaining + 1
+                If unknown(b) Then missingCount = missingCount + 1
+                If peak(b) > 0 Then hasPositive = True
+                If Not IsEmpty(best(b)) Then
+                    If IsEmpty(highest) Or CDbl(best(b)) > CDbl(highest) Then
+                        highest = best(b): winner = "BLK" & b & " | " & bestNote(b)
+                    End If
+                ElseIf Len(bestNote(b)) > 0 Then
+                    noVoltage = True
+                End If
+            End If
+        Next b
+        If IsEmpty(highest) Then
+            Select Case True
+                Case remaining = 0: highest = "No BLK"
+                Case missingCount > 0: highest = "No Data"
+                Case noVoltage: highest = "No Vmin"
+                Case hasPositive: highest = "Below"
+                Case Else: highest = "Pass"
+            End Select
+        End If
+        note = "Hard Fail: " & hardCount & " | Prior WT fail: " & priorCount & " | Tail: " & tailCount & vbLf & _
+               "Remaining: " & remaining & " | Incomplete: " & missingCount & " | Positive FBC sample: " & sampleCount
+        If limit >= 0 Then
+            note = note & vbLf & "Tail cutoff: FBC > " & Format$(limit, "0.###")
+        Else
+            note = note & vbLf & "Tail cutoff unavailable (fewer than 4 samples)"
+        End If
+        If Len(winner) > 0 Then note = note & vbLf & "Vmin: " & winner
+        results(phase) = Array(highest, note)
+    Next phase
+    CV_ChipResults = results
+End Function
+
 Private Function VD_PatternFailMask(ByVal counts As Object, ByVal tnos As Object, ByVal dut As String, ByVal phases As Long, Optional ByVal requireComplete As Boolean = True) As String
     Dim tno As Variant, phase As Long, b As Long, key As String, mask As String, result As String
     result = String$(256, "0")
