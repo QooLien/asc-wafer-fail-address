@@ -3,7 +3,7 @@ import sys
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
 from oletools.olevba import VBA_Parser
-r=Path(__file__).resolve().parents[1];p=Path(sys.argv[1]) if len(sys.argv)>1 else r/'templates/ASC_ThreeASC_FBC.xlsm'
+r=Path(__file__).resolve().parents[1];p=Path(sys.argv[1]) if len(sys.argv)>1 else r/'templates/SRAM Extra BLK Failure  Analysis_v13.xlsm'
 v=VBA_Parser(str(p));modules={n:c for _,_,n,c in v.extract_macros()};v.close()
 assert len(modules)==11
 for prefix,file in [('ImportFailAddresses.','ImportThreeASC_BLKVmin.bas'),('BLKVminEngine.','BLKVminEngine.bas')]:
