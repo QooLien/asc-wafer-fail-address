@@ -2,6 +2,7 @@ Attribute VB_Name = "BLKVminEngine"
 Option Explicit
 Option Private Module
 Private Const READ_BYTES As Long = 262144
+Private Const VMIN_FBC90 As Long = 90
 Private Const MAX_EXACT As Double = 9.00719925474099E+15
 Private Const MAX_LINE As Long = 1048576
 Private mTags As Object, mBlockTag As Object, mSpaces As Object, mDigits As Object
@@ -2200,8 +2201,9 @@ Public Sub BLK_OpenIndexedMap(ByVal wb As Workbook, ByVal map As Object, ByVal t
     ws.UsedRange.Font.name = "Calibri": ws.UsedRange.Font.Size = 11: ws.UsedRange.HorizontalAlignment = xlCenter: ws.UsedRange.VerticalAlignment = xlCenter
     ws.columns("A:P").ColumnWidth = 12: ws.columns("J:L").ColumnWidth = 24: ws.columns("O:P").ColumnWidth = 28
     ws.Range("A1:P1").Interior.color = RGB(23, 50, 77): ws.Range("A1:P1").Font.color = vbWhite
-    If VD_BuildGrid(wb, info) Then
-        ws.Hyperlinks.Add ws.Range("E2"), "", "'BLK Distribution'!A1", , "BLK Distribution"
+    If Len(CStr(info(4))) > 0 Then
+        VD_BuildPatternDistribution wb, CLng(info(5)), CLng(info(6))
+        ws.Hyperlinks.Add ws.Range("E2"), "", "'BLK Pattern Distribution'!A1", , "BLK Distribution"
         If Not ws.ListObjects("tblChipMonitorAddr").DataBodyRange Is Nothing Then
             With ws.ListObjects("tblChipMonitorAddr").DataBodyRange
                 .WrapText = True
@@ -2299,7 +2301,7 @@ Public Sub BLK_InvalidateDetails(ByVal wb As Workbook, ByVal message As String)
     Set ws = Nothing
     Set ws = wb.Worksheets("BLK Pattern Distribution")
     If Not ws Is Nothing Then
-        If VD_Property(ws, "ASCVoltagePatternDistribution") = "1" Then ws.Visible = xlSheetVeryHidden
+        If Len(VD_Property(ws, "ASCVoltagePatternDistribution")) > 0 Then ws.Visible = xlSheetVeryHidden
     End If
     Set ws = Nothing
     Set ws = wb.Worksheets("Chip Fail Details")
@@ -2451,7 +2453,7 @@ End Sub
 
 Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
     Dim buttons As Object, button As Object, i As Long, action As String, found As Boolean, catFound As Boolean
-    Dim cfg As Worksheet, anchor As Range
+    Dim cfg As Worksheet, anchor As Range, measure As Shape, buttonWidth As Double
     Set cfg = wb.Worksheets("Config")
     Set buttons = cfg.buttons
     For i = 1 To buttons.count
@@ -2474,6 +2476,13 @@ Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
         button.name = "btnCatClassificationMap"
         button.OnAction = "BuildCatClassificationMap"
     End If
+    Set measure = cfg.Shapes.AddTextbox(msoTextOrientationHorizontal, 0, 0, 10, 10)
+    With measure.TextFrame2
+        .WordWrap = msoFalse
+        .AutoSize = msoAutoSizeShapeToFitText
+        .TextRange.Font.name = "Calibri"
+        .TextRange.Font.Size = 11
+    End With
     For i = 1 To buttons.count
         Set button = buttons.item(i): action = CStr(button.OnAction)
         If InStr(1, action, "ImportASCFailAddresses", vbTextCompare) > 0 Then button.caption = ChrW(&H532F) & ChrW(&H5165) & ChrW(&H4E26) & ChrW(&H5206) & ChrW(&H6790)
@@ -2484,6 +2493,18 @@ Public Sub BLK_SimplifyButtons(ByVal wb As Workbook)
         If InStr(1, action, "BuildCatClassificationMap", vbTextCompare) > 0 Then button.caption = "BL=0 Cat Map"
         button.Font.name = "Calibri": button.Font.Size = 11
         button.HorizontalAlignment = xlCenter: button.VerticalAlignment = xlCenter
+        measure.TextFrame2.TextRange.Text = CStr(button.caption)
+        If measure.width + 14 > buttonWidth Then buttonWidth = measure.width + 14
+    Next i
+    measure.Delete
+    Set anchor = cfg.Range("I3")
+    For i = 1 To buttons.count
+        Set button = buttons.item(i)
+        button.Placement = xlFreeFloating
+        button.left = anchor.left
+        button.top = anchor.top + (i - 1) * 28
+        button.width = buttonWidth
+        button.height = 24
     Next i
 End Sub
 
@@ -3120,7 +3141,7 @@ Private Function VD_Stats(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long
         chunkSize = last - chunkStart + 1: If chunkSize > 512 Then chunkSize = 512
         data = ws.cells(chunkStart, 1).Resize(chunkSize, 16).Value2
         For i = 1 To UBound(data, 1)
-            If CStr(data(i, 2)) = pattern And CLng(data(i, 4)) = x And CLng(data(i, 5)) = y Then
+            If (Len(pattern) = 0 Or CStr(data(i, 2)) = pattern) And CLng(data(i, 4)) = x And CLng(data(i, 5)) = y Then
                 key = CStr(data(i, 1)) & "|" & data(i, 6)
                 address = key & "|" & data(i, 7) & "|" & data(i, 8) & "|" & data(i, 9)
                 If Not seen.Exists(address) Then
@@ -3157,26 +3178,34 @@ Private Function VD_Tendency(ByVal a As Variant) As String
 End Function
 
 Public Sub BLK_SetupVminMode(ByVal wb As Workbook)
-    Dim cfg As Worksheet, options As String, mode As Long, modeCell As Range
+    Dim cfg As Worksheet, options As String, mode As Long, modeCell As Range, oldCell As Range
     Set cfg = wb.Worksheets("Config")
+    Set modeCell = cfg.Range("J1")
+    Set oldCell = cfg.cells(17, 6 + BLK_StopSignOffset(cfg))
+    If CStr(oldCell.Offset(0, -2).Value2) = "Vmin Mode" Then
+        If Len(CStr(modeCell.Value2)) = 0 Then modeCell.Value2 = oldCell.Value2
+        oldCell.Offset(0, -2).Resize(1, 2).UnMerge
+        oldCell.Offset(0, -2).Resize(1, 3).Clear
+    End If
     For mode = 0 To 10
         If mode > 0 Then options = options & ","
         options = options & "FBC" & mode
     Next mode
-    Set modeCell = cfg.cells(17, 6 + BLK_StopSignOffset(cfg))
-    With modeCell.Offset(0, -2).Resize(1, 2)
-        .Merge: .Value2 = "Vmin Mode"
+    With cfg.Range("I1")
+        .Value2 = "Vmin Mode"
         .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite
     End With
     With modeCell
         If Len(Trim$(CStr(.Value2))) = 0 Then .Value2 = "FBC0"
         .Interior.color = RGB(219, 234, 254)
         .Validation.Delete
-        .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:=options
+        .Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Formula1:=options & ",FBC90%"
         .Validation.IgnoreBlank = True: .Validation.InCellDropdown = True: .Validation.ShowError = True
-        .Validation.ErrorMessage = "Select FBC0 through FBC10."
+        .Validation.ErrorMessage = "Select FBC0 through FBC10 or FBC90%."
     End With
-    With modeCell.Offset(0, -2).Resize(1, 3)
+    cfg.columns("I").ColumnWidth = 13
+    cfg.columns("J").ColumnWidth = 11
+    With cfg.Range("I1:J1")
         .Font.name = "Calibri": .Font.Size = 11: .Font.Bold = True
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
     End With
@@ -3184,10 +3213,11 @@ End Sub
 
 Public Function BLK_VminMode(ByVal cfg As Worksheet) As Long
     Dim label As String, mode As Long, modeCell As Range
-    Set modeCell = cfg.cells(17, 6 + BLK_StopSignOffset(cfg))
+    Set modeCell = cfg.Range("J1")
     If Not IsError(modeCell.Value2) Then
         label = UCase$(Trim$(CStr(modeCell.Value2)))
         If Len(label) = 0 Then Exit Function
+        If label = "FBC90%" Then BLK_VminMode = VMIN_FBC90: Exit Function
         For mode = 0 To 10
             If label = "FBC" & mode Then
                 BLK_VminMode = mode
@@ -3195,14 +3225,45 @@ Public Function BLK_VminMode(ByVal cfg As Worksheet) As Long
             End If
         Next mode
     End If
-    Err.Raise vbObjectError + 534, , "Config!" & modeCell.address(False, False) & " Vmin Mode must be FBC0 through FBC10."
+    Err.Raise vbObjectError + 534, , "Config!J1 Vmin Mode must be FBC0 through FBC10 or FBC90%."
+End Function
+
+Private Function VD_ModeLabel(ByVal mode As Long) As String
+    If mode = VMIN_FBC90 Then
+        VD_ModeLabel = "FBC90%"
+    Else
+        VD_ModeLabel = "FBC" & mode
+    End If
 End Function
 
 Private Function VD_VminResult(ByVal numericFBC As Object, ByVal scope As Collection, ByVal wt As String, ByVal dut As String, ByVal blk As Long, ByVal mode As Long) As Variant
     Dim item As Variant, key As String, values As Variant, count As Double, missing As Boolean, anyFail As Boolean
-    Dim groupVoltage As Variant, previousVoltage As Variant, voltage As Variant, note As String, threshold As Long
-    threshold = mode
-    If threshold = 0 Then threshold = 1
+    Dim groupVoltage As Variant, previousVoltage As Variant, voltage As Variant, note As String
+    Dim threshold As Double, maximum As Double
+    If mode = VMIN_FBC90 Then
+        'ASC station FBC is cumulative. The peak in this Pattern is the reference total.
+        For Each item In scope
+            key = wt & "|" & CStr(item(0)) & "|" & dut
+            If numericFBC.Exists(key) Then
+                values = numericFBC(key)
+                If values(blk) > maximum Then maximum = values(blk)
+            Else
+                missing = True
+            End If
+        Next item
+        If missing Then
+            VD_VminResult = Array("", Empty, "Sweep incomplete; threshold unknown", "", Empty, Empty, (maximum > 0))
+            Exit Function
+        End If
+        If maximum = 0 Then
+            VD_VminResult = Array("", Empty, "No recorded failure", "", Empty, Empty, False)
+            Exit Function
+        End If
+        threshold = maximum * 0.9
+    Else
+        threshold = mode
+        If threshold = 0 Then threshold = 1
+    End If
     For Each item In scope
         If IsEmpty(item(1)) Then
             groupVoltage = Empty
@@ -3229,6 +3290,7 @@ Private Function VD_VminResult(ByVal numericFBC As Object, ByVal scope As Collec
                     voltage = item(1)
                     If IsEmpty(voltage) Then note = "Trigger voltage unavailable"
                 End If
+                If mode = VMIN_FBC90 And Len(note) = 0 Then note = "90% of peak FBC " & maximum & " (threshold " & threshold & ")"
                 If missing Then
                     voltage = Empty
                     note = "Earlier TNO missing; first threshold crossing uncertain"
@@ -3270,35 +3332,6 @@ Private Function VD_LegendGroups(ByVal scope As Collection, ByVal colors As Obje
     Next entry
     Set VD_LegendGroups = groups
 End Function
-
-Private Sub VD_WriteLegend(ByVal ws As Worksheet, ByVal scope As Collection, ByVal colors As Object)
-    Dim groups As Object, items As Object, group As Variant, name As Variant, row As Long
-    Set groups = VD_LegendGroups(scope, colors)
-    ws.Range("A55:R55").Merge
-    ws.Range("A55").Value2 = "Function items by test voltage"
-    ws.Range("A55:R55").Interior.color = RGB(23, 50, 77)
-    ws.Range("A55:R55").Font.color = vbWhite
-    row = 56
-    For Each group In groups
-        Set items = groups(group)
-        ws.cells(row, 1).Resize(items.count, 6).Merge
-        ws.cells(row, 1).Value2 = CStr(group) & " (" & items.count & ")"
-        ws.cells(row, 1).Resize(items.count, 6).Interior.color = RGB(239, 244, 250)
-        For Each name In items
-            With ws.cells(row, 7).Resize(1, 12)
-                .Merge
-                .cells(1, 1).Value2 = CStr(name)
-                .Interior.color = CLng(colors(name))
-            End With
-            row = row + 1
-        Next name
-    Next group
-    With ws.Range("A55:R" & row - 1)
-        .Font.name = "Arial": .Font.Size = 10
-        .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
-        .RowHeight = 17
-    End With
-End Sub
 
 Private Function VD_BlockSweep(ByVal counts As Object, ByVal scope As Collection, ByVal dut As String, ByVal endpoint As String, ByVal b As Long, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByRef states() As String, ByRef sweep() As Variant, ByVal numericFBC As Object, ByVal mode As Long, Optional ByVal phases As Long = 3) As Long
     Dim phase As Long, chosen As Long, wt As String, first As Variant
@@ -3345,17 +3378,21 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
     End If
     If chosen > 0 Then
         first = sweep(chosen)
-        notes = notes & vbLf & "WT" & chosen & " | FBC" & mode
+        notes = notes & vbLf & "WT" & chosen & " | " & VD_ModeLabel(mode)
         If Len(CStr(first(0))) > 0 Then
             func = Trim$(CStr(first(3)))
             If Len(func) = 0 Then func = "TNO " & CStr(first(0))
-            If Not IsEmpty(first(4)) Then label = VD_VoltageText(first(4))
+            If mode = VMIN_FBC90 Then
+                label = func
+            ElseIf Not IsEmpty(first(4)) Then
+                label = VD_VoltageText(first(4))
+            End If
             notes = notes & vbLf & "TNO " & first(0) & " | " & func & " | " & VD_VoltageText(first(1)) & " | " & first(5) & " fail bits"
         End If
         If Len(CStr(first(2))) > 0 Then notes = notes & vbLf & first(2)
     ElseIf mode > 0 Then
         For phase = 1 To 3
-            If states(phase) = "Pass" Then notes = notes & vbLf & "WT" & phase & " | FBC" & mode & " threshold not reached"
+            If states(phase) = "Pass" Then notes = notes & vbLf & "WT" & phase & " | " & VD_ModeLabel(mode) & " threshold not reached"
         Next phase
     End If
     Set band = ws.cells(r, c).Resize(1, 6): band.Merge
@@ -3411,84 +3448,6 @@ Private Sub VD_PaintBlock(ByVal ws As Worksheet, ByVal r As Long, ByVal c As Lon
     End With
     ws.cells(r, c).Resize(3, 6).BorderAround LineStyle:=xlContinuous, Weight:=xlThin, color:=RGB(95, 95, 95)
 End Sub
-
-Private Function VD_BuildGrid(ByVal wb As Workbook, ByVal info As Variant) As Boolean
-    Dim ws As Worksheet, idx As Worksheet, cfg As Worksheet
-    Dim patterns As Object, wanted As Object, hard As Object, counts As Object, predecessors As Object, stats As Object, colors As Object
-    Dim scope As Collection, detail As Variant, a As Variant, packet(1 To 256, 1 To 16) As Variant
-    Dim selectedFirst As Variant, sweep(1 To 3) As Variant, states(1 To 3) As String, phase As Long, chosen As Long
-    Dim b As Long, r As Long, c As Long, j As Long, wt As String, dut As String, endpoint As String, pattern As String
-    Dim key As String, numericFBC As Object, mode As Long
-    pattern = CStr(info(4))
-    If Len(pattern) = 0 Then Exit Function
-    Set cfg = wb.Worksheets("Config")
-    mode = BLK_VminMode(cfg)
-    Set patterns = ReadStopPatterns(cfg, wanted, hard)
-    If Not patterns.Exists(pattern) Then Exit Function
-    detail = patterns(pattern): endpoint = CStr(detail(0))
-    dut = info(5) & "|" & info(6)
-    Set numericFBC = CreateObject("Scripting.Dictionary")
-    Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut, numericFBC)
-    Set predecessors = PatternPredecessors(patterns)
-    Set scope = VD_Scope(cfg, pattern)
-    Set stats = VD_Stats(wb, CLng(info(5)), CLng(info(6)), pattern)
-    Set colors = CreateObject("Scripting.Dictionary"): colors.CompareMode = vbTextCompare
-    Set ws = ReportSheet(wb, "BLK Distribution")
-    SetMapDrillProperty ws, "ASCVoltageGrid", "0"
-    Set idx = wb.Worksheets("Import Index")
-    ws.Range("A1:R1").Merge: ws.Range("A1").Value2 = "BLK Distribution | X" & info(5) & " Y" & info(6) & " | " & pattern & " | FBC" & mode
-    ws.Range("A1:R1").Interior.color = RGB(23, 50, 77): ws.Range("A1:R1").Font.color = vbWhite
-    ws.Range("A1:R1").Font.Bold = True: ws.rows(1).RowHeight = 25
-    ws.Range("A2:R2").Merge: ws.Range("A2").Value2 = "Double-click a block for FBC and Address details"
-    ws.Range("A3:F3").Merge
-    ws.Hyperlinks.Add ws.Range("A3"), "", "'Chip Fail Details'!A1", , "Chip Fail Details"
-    ws.Range("G3:L3").Merge
-    ws.Hyperlinks.Add ws.Range("G3"), "", "'BLK Distribution'!A55", , "Function legend"
-    ws.Range("A1:CR53").Font.name = "Arial"
-    ws.Range("A1:CR53").HorizontalAlignment = xlCenter
-    ws.Range("A1:CR53").VerticalAlignment = xlCenter
-    ws.Range("A:CR").ColumnWidth = 4
-    ws.Range("A6:CR53").Font.Size = 9
-    For c = 1 To 96 Step 6
-        For phase = 1 To 3
-            With ws.cells(4, c + (phase - 1) * 2).Resize(1, 2)
-                .Merge
-                .cells(1, 1).Value2 = "WT" & phase
-            End With
-            ws.cells(5, c + (phase - 1) * 2).Value2 = "W"
-            ws.cells(5, c + (phase - 1) * 2 + 1).Value2 = "R"
-        Next phase
-    Next c
-    With ws.Range("A4:CR5")
-        .Font.Size = 9: .Font.Bold = True
-        .Interior.color = RGB(239, 244, 250)
-    End With
-    VD_WriteLegend ws, scope, colors
-    For b = 0 To 255
-        r = 6 + 3 * (b Mod 16): c = 1 + 6 * (b \ 16)
-        chosen = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, numericFBC, mode)
-        VD_PaintBlock ws, r, c, b, chosen, states, sweep, stats, colors, mode
-
-        If chosen = 0 Then chosen = CLng(Right$(CStr(info(3)), 1))
-        wt = "WT" & chosen: key = wt & "|" & b
-        selectedFirst = sweep(chosen)
-        a = Array(0&, 0&, 0&, 0&, 0&, 0&, 0&)
-        If stats.Exists(key) Then a = stats(key)
-        packet(b + 1, 1) = wt: packet(b + 1, 2) = info(5): packet(b + 1, 3) = info(6): packet(b + 1, 4) = pattern
-        packet(b + 1, 5) = b: packet(b + 1, 6) = states(chosen)
-        packet(b + 1, 7) = selectedFirst(0): packet(b + 1, 8) = selectedFirst(1): packet(b + 1, 9) = VD_Tendency(a)
-        For j = 0 To 4: packet(b + 1, j + 10) = a(j): Next j
-        packet(b + 1, 15) = endpoint
-        packet(b + 1, 16) = "FBC" & mode
-        If Not IsEmpty(selectedFirst(4)) Then packet(b + 1, 16) = packet(b + 1, 16) & " | Vmin " & VD_VoltageText(selectedFirst(4))
-        If Len(CStr(selectedFirst(2))) > 0 Then packet(b + 1, 16) = packet(b + 1, 16) & " | " & selectedFirst(2)
-    Next b
-    idx.Range("BC1:BR1").Value2 = Array("WT", "X", "Y", "Pattern", "BLK", "State", "Trigger TNO", "Trigger Voltage", "Observed tendency", "Write worse", "Read worse", "Equal", "Insufficient", "Captured", "Stop TNO", "Note")
-    idx.Range("BC2:BR257").Value2 = packet
-    SetMapDrillProperty ws, "ASCVoltageGrid", "1"
-    Application.ActiveWindow.DisplayGridlines = False
-    VD_BuildGrid = True
-End Function
 
 Public Function BLK_AutoDistribution(ByVal wb As Workbook) As String
     Dim summary As Worksheet, fbc As Worksheet, data As Variant, patterns As Object, wanted As Object, hard As Object
@@ -3552,8 +3511,8 @@ Private Sub VD_OpenPatternDistribution(ByVal wb As Workbook, ByVal map As Object
     Dim ws As Worksheet
     VD_BuildPatternDistribution wb, x, y
     Set ws = wb.Worksheets("BLK Pattern Distribution")
-    ws.Range("A3:L3").Merge
-    ws.Hyperlinks.Add ws.Range("A3"), "", "'" & map.name & "'!" & target.cells(1, 1).address(False, False), , "Back to " & map.name
+    ws.Range("A2:L2").Merge
+    ws.Hyperlinks.Add ws.Range("A2"), "", "'" & map.name & "'!" & target.cells(1, 1).address(False, False), , "Back to " & map.name
     BLK_OrderSheets wb
 End Sub
 
@@ -3615,10 +3574,16 @@ Private Function VD_PatternFailMask(ByVal counts As Object, ByVal tnos As Object
 End Function
 
 Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, ByVal y As Long)
-    Const sheetName As String = "BLK Pattern Distribution"
     Dim cfg As Worksheet, ws As Worksheet, patterns As Object, wanted As Object, hard As Object
     Dim counts As Object, predecessors As Object, colors As Object, name As Variant, detail As Variant
-    Dim scope As Collection, dut As String, phases As Long, top As Long, nav As Long, numericFBC As Object, mode As Long, zeroPatternBlocks As String, hardFailBlocks As String
+    Dim scope As Collection, legendScope As New Collection, item As Variant, groups As Object, stats As Object
+    Dim dut As String, phases As Long, numericFBC As Object, mode As Long
+    Dim zeroPatternBlocks As String, hardFailBlocks As String, last As Long
+    Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
+    Dim failPhase(0 To 255) As Long, failPattern(0 To 255) As String, firstFail(0 To 255) As Variant
+    Dim b As Long, phase As Long, row As Long, col As Long, chosen As Long
+    Dim meta(1 To 48, 1 To 34) As Variant, metaRow As Long, group As Long, offset As Long
+
     Set cfg = wb.Worksheets("Config")
     mode = BLK_VminMode(cfg)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
@@ -3634,39 +3599,100 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     phases = BLK_PhaseCount(wb)
     zeroPatternBlocks = VD_PatternFailMask(counts, wanted, dut, phases)
     hardFailBlocks = VD_PatternFailMask(counts, hard, dut, phases, False)
-    Set ws = ReportSheet(wb, sheetName)
-    SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "1"
+
+    For Each name In patterns
+        detail = patterns(name)
+        Set scope = VD_Scope(cfg, CStr(name))
+        For Each item In scope: legendScope.Add item: Next item
+        For b = 0 To 255
+            chosen = VD_BlockSweep(counts, scope, dut, CStr(detail(0)), b, hard, wanted, predecessors, states, sweep, numericFBC, mode, phases)
+            If chosen > 0 Then
+                If failPhase(b) = 0 Or chosen < failPhase(b) Then
+                    failPhase(b) = chosen
+                    failPattern(b) = CStr(name)
+                    firstFail(b) = sweep(chosen)
+                End If
+            End If
+            For phase = 1 To phases
+                Select Case states(phase)
+                    Case "Fail": blockStates(b, phase) = "Fail"
+                    Case "No Data"
+                        If blockStates(b, phase) <> "Fail" Then blockStates(b, phase) = "No Data"
+                    Case Else
+                        If Len(blockStates(b, phase)) = 0 Then blockStates(b, phase) = states(phase)
+                End Select
+            Next phase
+        Next b
+    Next name
+
+    Set groups = VD_LegendGroups(legendScope, colors)
+    Set stats = VD_Stats(wb, x, y, "")
+    Set ws = ReportSheet(wb, "BLK Pattern Distribution")
+    SetMapDrillProperty ws, "ASCVoltagePatternDistribution", "2"
     ws.Range("CS1:CU1").Value2 = Array(x, y, mode)
-    ws.columns("CS:DJ").Hidden = True
-    With ws.Range("A:CR")
-        .ColumnWidth = 2.15
-    End With
+    ws.columns("CS:DZ").Hidden = True
+    ws.Range("A:CR").ColumnWidth = 2.15
     With ws.Range("A1:CR1")
-        .Merge: .Value2 = "BLK Pattern Distribution | X" & x & " Y" & y
+        .Merge: .Value2 = "256 BLK Distribution | X" & x & " Y" & y & " | WT1" & IIf(phases > 1, "-WT" & phases, "") & " | " & VD_ModeLabel(mode)
         .Interior.color = RGB(23, 50, 77): .Font.color = vbWhite: .RowHeight = 22
     End With
-    If counts.count = 0 Then
-        With ws.Range("M3:AZ3")
-            .Merge
+    With ws.Range("M2:CR2")
+        .Merge
+        If counts.count = 0 Then
             .Value2 = "No Function FBC recorded for this Chip"
+        Else
+            .Value2 = "Patterns: " & Join(patterns.keys, " / ")
+        End If
+        .ShrinkToFit = True
+    End With
+    With ws.Range("A3:CR4")
+        .Interior.color = RGB(239, 244, 250): .RowHeight = 12
+    End With
+    For col = 1 To 96 Step 6
+        For phase = 1 To phases
+            With ws.cells(3, col + (phase - 1) * 2).Resize(1, 2)
+                .Merge
+                .cells(1, 1).Value2 = "WT" & phase
+            End With
+            ws.cells(4, col + (phase - 1) * 2).Value2 = "W"
+            ws.cells(4, col + (phase - 1) * 2 + 1).Value2 = "R"
+        Next phase
+    Next col
+    For offset = 0 To 15
+        row = 5 + 3 * offset
+        ws.rows(row).RowHeight = 16
+        ws.rows(row + 1).RowHeight = 7
+        ws.rows(row + 2).RowHeight = 11
+    Next offset
+    For b = 0 To 255
+        row = 5 + 3 * (b Mod 16): col = 1 + 6 * (b \ 16)
+        For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
+        chosen = failPhase(b)
+        If chosen > 0 Then sweep(chosen) = firstFail(b)
+        VD_PaintBlock ws, row, col, b, chosen, states, sweep, stats, colors, mode, True, (Mid$(zeroPatternBlocks, b + 1, 1) = "0")
+        With ws.cells(row, col)
+            If chosen > 0 Then .Comment.Text Text:=.Comment.Text & vbLf & "Pattern: " & failPattern(b)
+            If Mid$(hardFailBlocks, b + 1, 1) = "1" Then
+                .Resize(3, 6).Interior.color = RGB(255, 0, 0)
+                .Comment.Text Text:=.Comment.Text & vbLf & "Hard Fail"
+            End If
         End With
-    End If
-    top = 4: nav = 1
-    For Each name In patterns
-        If nav <= 85 Then
-            ws.cells(2, nav).Resize(1, 12).Merge
-            ws.Hyperlinks.Add ws.cells(2, nav), "", "'" & sheetName & "'!A" & top, , CStr(name)
-            nav = nav + 12
-        End If
-        detail = patterns(name)
-        Set scope = VD_Scope(cfg, CStr(name))
-        top = VD_RenderPatternDistribution(wb, ws, top, CStr(name), CStr(detail(0)), x, y, phases, scope, counts, hard, wanted, predecessors, colors, numericFBC, mode, zeroPatternBlocks, hardFailBlocks)
-    Next name
-    With ws.Range("A1:CR" & top - 1)
+        metaRow = 1 + 3 * (b Mod 16): group = b \ 16
+        For phase = 0 To 2
+            meta(metaRow + phase, 1) = "BLK"
+            meta(metaRow + phase, 2 + group) = chosen
+            meta(metaRow + phase, 18) = 5
+            meta(metaRow + phase, 19 + group) = failPattern(b)
+        Next phase
+    Next b
+    ws.cells(5, 97).Resize(48, 34).Value2 = meta
+    last = VD_WriteCompactLegend(ws, 54, groups, colors)
+    With ws.Range("A1:CR" & last - 1)
         .Font.name = "Calibri": .Font.Bold = True: .Font.Size = 9
         .HorizontalAlignment = xlCenter: .VerticalAlignment = xlCenter
     End With
     ws.Range("A1").Font.Size = 12
+    VD_HideLegacyGrid wb
     ws.Activate
     With Application.ActiveWindow
         .DisplayGridlines = False
@@ -3675,67 +3701,15 @@ Private Sub VD_BuildPatternDistribution(ByVal wb As Workbook, ByVal x As Long, B
     Application.Goto ws.Range("A1"), True
 End Sub
 
-Private Function VD_RenderPatternDistribution(ByVal wb As Workbook, ByVal ws As Worksheet, ByVal top As Long, ByVal pattern As String, ByVal endpoint As String, ByVal x As Long, ByVal y As Long, ByVal phases As Long, ByVal scope As Collection, ByVal counts As Object, ByVal hard As Object, ByVal wanted As Object, ByVal predecessors As Object, ByVal colors As Object, ByVal numericFBC As Object, ByVal mode As Long, ByVal zeroPatternBlocks As String, ByVal hardFailBlocks As String) As Long
-    Dim states(1 To 3) As String, sweep(1 To 3) As Variant, blockStates(0 To 255, 1 To 3) As String
-    Dim failPhase(0 To 255) As Long, firstFail(0 To 255) As Variant, groups As Object, stats As Object
-    Dim b As Long, phase As Long, row As Long, col As Long, dut As String
-    Dim meta(1 To 48, 1 To 18) As Variant, metaRow As Long, group As Long, offset As Long
-    dut = x & "|" & y
-    For b = 0 To 255
-        failPhase(b) = VD_BlockSweep(counts, scope, dut, endpoint, b, hard, wanted, predecessors, states, sweep, numericFBC, mode, phases)
-        If failPhase(b) > 0 Then firstFail(b) = sweep(failPhase(b))
-        For phase = 1 To phases
-            blockStates(b, phase) = states(phase)
-        Next phase
-    Next b
-
-    With ws.cells(top, 1).Resize(1, 96)
-        .Merge: .Value2 = pattern & " | WT1" & IIf(phases > 1, "-WT" & phases, "") & " | FBC" & mode
-        .Interior.color = RGB(38, 77, 111): .Font.color = vbWhite: .RowHeight = 18
-    End With
-    Set groups = VD_LegendGroups(scope, colors)
-    Set stats = VD_Stats(wb, x, y, pattern)
-    With ws.cells(top + 1, 1).Resize(2, 96)
-        .Interior.color = RGB(239, 244, 250): .RowHeight = 12
-    End With
-    For col = 1 To 96 Step 6
-        For phase = 1 To phases
-            With ws.cells(top + 1, col + (phase - 1) * 2).Resize(1, 2)
-                .Merge: .Value2 = "WT" & phase
-            End With
-            ws.cells(top + 2, col + (phase - 1) * 2).Value2 = "W"
-            ws.cells(top + 2, col + (phase - 1) * 2 + 1).Value2 = "R"
-        Next phase
-    Next col
-    For offset = 0 To 15
-        row = top + 3 + 3 * offset
-        ws.rows(row).RowHeight = 16
-        ws.rows(row + 1).RowHeight = 7
-        ws.rows(row + 2).RowHeight = 11
-    Next offset
-    For b = 0 To 255
-        row = top + 3 + 3 * (b Mod 16): col = 1 + 6 * (b \ 16)
-        For phase = 1 To 3: states(phase) = blockStates(b, phase): Next phase
-        If failPhase(b) > 0 Then sweep(failPhase(b)) = firstFail(b)
-        VD_PaintBlock ws, row, col, b, failPhase(b), states, sweep, stats, colors, mode, True, (Mid$(zeroPatternBlocks, b + 1, 1) = "0")
-        If Mid$(hardFailBlocks, b + 1, 1) = "1" Then
-            With ws.cells(row, col).Resize(3, 6)
-                .Interior.color = RGB(255, 0, 0)
-                With .cells(1, 1).Comment
-                    .Text Text:=.Text & vbLf & "Hard Fail"
-                End With
-            End With
-        End If
-        metaRow = 1 + 3 * (b Mod 16): group = 2 + (b \ 16)
-        For phase = 0 To 2
-            meta(metaRow + phase, 1) = pattern
-            meta(metaRow + phase, group) = failPhase(b)
-            meta(metaRow + phase, 18) = top + 3
-        Next phase
-    Next b
-    ws.cells(top + 3, 97).Resize(48, 18).Value2 = meta
-    VD_RenderPatternDistribution = VD_WriteCompactLegend(ws, top + 52, groups, colors) + 1
-End Function
+Private Sub VD_HideLegacyGrid(ByVal wb As Workbook)
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = wb.Worksheets("BLK Distribution")
+    On Error GoTo 0
+    If Not ws Is Nothing Then
+        If VD_Property(ws, "ASCVoltageGrid") = "1" Then ws.Visible = xlSheetVeryHidden
+    End If
+End Sub
 
 Private Function VD_WriteCompactLegend(ByVal ws As Worksheet, ByVal row As Long, ByVal groups As Object, ByVal colors As Object) As Long
     Dim group As Variant, item As Variant, items As Object, col As Long
@@ -3791,7 +3765,11 @@ Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Workshe
     Dim x As Long, y As Long, phase As Long, base As Long, pattern As String, wt As String, dut As String, mode As Long, i As Long
     Dim first As Variant, detail As Variant, a As Variant, result(1 To 1, 1 To 16) As Variant, state As String
     x = CLng(source.Range("CS1").Value2): y = CLng(source.Range("CT1").Value2)
-    pattern = CStr(source.cells(target.row, 97).Value2)
+    If VD_Property(source, "ASCVoltagePatternDistribution") = "2" Then
+        pattern = CStr(source.cells(target.row, 115 + (target.column - 1) \ 6).Value2)
+    Else
+        pattern = CStr(source.cells(target.row, 97).Value2)
+    End If
     base = CLng(source.cells(target.row, 114).Value2)
     phase = monitorPhase
     If phase = 0 Then phase = CLng(source.cells(target.row, 98 + (target.column - 1) \ 6).Value2)
@@ -3800,11 +3778,19 @@ Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Workshe
     Set cfg = wb.Worksheets("Config")
     mode = CLng(source.Range("CU1").Value2)
     Set patterns = ReadStopPatterns(cfg, wanted, hard)
+    If Len(pattern) = 0 Then
+        detail = patterns.keys
+        pattern = CStr(detail(0))
+    End If
     detail = patterns(pattern)
     Set numericFBC = CreateObject("Scripting.Dictionary")
     Set counts = LoadMapCounts(wb.Worksheets("FBC by BLK"), wanted, dut, numericFBC)
     first = VD_VminResult(numericFBC, VD_Scope(cfg, pattern), wt, dut, b, mode)
-    Set stats = VD_Stats(wb, x, y, pattern)
+    If monitorPhase > 0 And VD_Property(source, "ASCVoltagePatternDistribution") = "2" Then
+        Set stats = VD_Stats(wb, x, y, "")
+    Else
+        Set stats = VD_Stats(wb, x, y, pattern)
+    End If
     a = Array(0&, 0&, 0&, 0&, 0&)
     If stats.Exists(wt & "|" & b) Then a = stats(wt & "|" & b)
     state = VD_State(counts, wt, dut, CStr(detail(0)), b, hard, wanted, PatternPredecessors(patterns))
@@ -3812,7 +3798,7 @@ Private Function VD_CompactSummary(ByVal wb As Workbook, ByVal source As Workshe
     result(1, 1) = wt: result(1, 2) = x: result(1, 3) = y: result(1, 4) = pattern: result(1, 5) = b: result(1, 6) = state
     result(1, 7) = first(0): result(1, 8) = first(1): result(1, 9) = VD_Tendency(a)
     For i = 0 To 4: result(1, 10 + i) = a(i): Next i
-    result(1, 15) = detail(0): result(1, 16) = "FBC" & mode & " | " & first(2)
+    result(1, 15) = detail(0): result(1, 16) = VD_ModeLabel(mode) & " | " & first(2)
     VD_CompactSummary = result
 End Function
 
@@ -3842,7 +3828,8 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     Dim oldEvents As Boolean, oldScreen As Boolean, message As String
     Dim chunkStart As Long, chunkSize As Long
     Dim haveX As Boolean, xMin As Double, xMax As Double, xPad As Double, backLink As String, matchSide As Long
-    Dim monitorPhase As Long, matchNote As String
+    Dim monitorPhase As Long, matchNote As String, allPatternMatches As Boolean
+    Dim matchedAddresses As Object, addressKey As String
     oldEvents = Application.EnableEvents: oldScreen = Application.ScreenUpdating
     On Error GoTo Failed
     If Not BLK_IsVoltageGridCell(ws, target) Then Exit Function
@@ -3858,6 +3845,7 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
                 monitorPhase = CLng(Right$(matchNote, 1))
             End If
         End If
+        allPatternMatches = (monitorPhase > 0 And VD_Property(ws, "ASCVoltagePatternDistribution") = "2")
         meta = VD_CompactSummary(wb, ws, target, b, monitorPhase)
         Set ws = ReportSheet(wb, "Chip Fail Details")
         SetMapDrillProperty ws, "ASCChipDetails", "1"
@@ -3949,14 +3937,20 @@ Public Function BLK_ShowBLKVoltage(ByVal wb As Workbook, ByVal ws As Object, ByV
     ws.cells(chartTop + 14, 8).Resize(3, 9).WrapText = True
     addressesTop = rowIndex: If addressesTop < chartTop + 18 Then addressesTop = chartTop + 18
     Set source = wb.Worksheets("Monitor Fail Analysis"): last = source.cells(source.rows.count, 1).End(xlUp).row: Set volts = VD_MonitorVoltages(wb)
+    If allPatternMatches Then Set matchedAddresses = CreateObject("Scripting.Dictionary")
     If last >= 5 Then
         For chunkStart = 5 To last Step 512
         chunkSize = last - chunkStart + 1: If chunkSize > 512 Then chunkSize = 512
         data = source.cells(chunkStart, 1).Resize(chunkSize, 16).Value2
         For i = 1 To UBound(data, 1)
-            If CStr(data(i, 1)) = CStr(meta(1, 1)) And CStr(data(i, 2)) = CStr(meta(1, 4)) And CLng(data(i, 4)) = CLng(meta(1, 2)) And CLng(data(i, 5)) = CLng(meta(1, 3)) And CLng(data(i, 6)) = b Then
+            If CStr(data(i, 1)) = CStr(meta(1, 1)) And (allPatternMatches Or CStr(data(i, 2)) = CStr(meta(1, 4))) And CLng(data(i, 4)) = CLng(meta(1, 2)) And CLng(data(i, 5)) = CLng(meta(1, 3)) And CLng(data(i, 6)) = b Then
                 If matchSide > 0 Then
                     If Len(Trim$(CStr(data(i, matchSide)))) = 0 Then GoTo NextAddress
+                End If
+                If allPatternMatches Then
+                    addressKey = data(i, 7) & "|" & data(i, 8) & "|" & data(i, 9)
+                    If matchedAddresses.Exists(addressKey) Then GoTo NextAddress
+                    matchedAddresses.Add addressKey, True
                 End If
                 category = VD_AddressClass(CStr(data(i, 11)), CStr(data(i, 12)), volts, w, r)
                 addressRows.Add Array(data(i, 1), data(i, 2), data(i, 4), data(i, 5), data(i, 6), data(i, 7), data(i, 8), data(i, 9), w, r, category, data(i, 16))
